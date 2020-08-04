@@ -2,9 +2,13 @@
 #define UCI_H
 
 
+namespace UCI {
 
-void mainLoop();
+    void mainLoop();
 
+    void start();
+
+}//namespace UCI
 
 #endif
 

@@ -13,11 +13,12 @@ int main(int argc, char *argv[]) {
     getline(cin, input);
 
     if (input == "uci") {
-        mainLoop();
+        UCI::start();
     }
      else{
          return 1;
      }
+
 
 }
 
