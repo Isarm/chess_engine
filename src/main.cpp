@@ -15,9 +15,9 @@ int main(int argc, char *argv[]) {
     if (input == "uci") {
         mainLoop();
     }
-    // else{
-    //     return 1;
-    // }
+     else{
+         return 1;
+     }
 
 }
 
