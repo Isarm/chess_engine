@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../src/include/uci.h
+
+/home/isar/projects/chess/engine/src/main.cpp
+iostream
+-
+uci.h
+/home/isar/projects/chess/engine/src/uci.h
+
+/home/isar/projects/chess/engine/src/uci.cpp
+uci.h
+/home/isar/projects/chess/engine/src/uci.h
+

@@ -1,0 +1,1 @@
+/usr/bin/c++  -g   CMakeFiles/engine.dir/src/main.cpp.o CMakeFiles/engine.dir/src/uci.cpp.o  -o engine 
