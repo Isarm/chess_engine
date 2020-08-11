@@ -143,6 +143,33 @@ engine/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine.dir/build.make CMakeFiles/engine.dir/build
 .PHONY : engine/fast
 
+src/bitboard.o: src/bitboard.cpp.o
+
+.PHONY : src/bitboard.o
+
+# target to build an object file
+src/bitboard.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine.dir/build.make CMakeFiles/engine.dir/src/bitboard.cpp.o
+.PHONY : src/bitboard.cpp.o
+
+src/bitboard.i: src/bitboard.cpp.i
+
+.PHONY : src/bitboard.i
+
+# target to preprocess a source file
+src/bitboard.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine.dir/build.make CMakeFiles/engine.dir/src/bitboard.cpp.i
+.PHONY : src/bitboard.cpp.i
+
+src/bitboard.s: src/bitboard.cpp.s
+
+.PHONY : src/bitboard.s
+
+# target to generate assembly for a file
+src/bitboard.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine.dir/build.make CMakeFiles/engine.dir/src/bitboard.cpp.s
+.PHONY : src/bitboard.cpp.s
+
 src/main.o: src/main.cpp.o
 
 .PHONY : src/main.o
@@ -169,6 +196,33 @@ src/main.s: src/main.cpp.s
 src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine.dir/build.make CMakeFiles/engine.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
+
+src/position.o: src/position.cpp.o
+
+.PHONY : src/position.o
+
+# target to build an object file
+src/position.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine.dir/build.make CMakeFiles/engine.dir/src/position.cpp.o
+.PHONY : src/position.cpp.o
+
+src/position.i: src/position.cpp.i
+
+.PHONY : src/position.i
+
+# target to preprocess a source file
+src/position.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine.dir/build.make CMakeFiles/engine.dir/src/position.cpp.i
+.PHONY : src/position.cpp.i
+
+src/position.s: src/position.cpp.s
+
+.PHONY : src/position.s
+
+# target to generate assembly for a file
+src/position.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine.dir/build.make CMakeFiles/engine.dir/src/position.cpp.s
+.PHONY : src/position.cpp.s
 
 src/uci.o: src/uci.cpp.o
 
@@ -206,9 +260,15 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... engine"
+	@echo "... src/bitboard.o"
+	@echo "... src/bitboard.i"
+	@echo "... src/bitboard.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/position.o"
+	@echo "... src/position.i"
+	@echo "... src/position.s"
 	@echo "... src/uci.o"
 	@echo "... src/uci.i"
 	@echo "... src/uci.s"

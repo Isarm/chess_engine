@@ -6,11 +6,31 @@
 
 #IncludeRegexTransform: 
 
-../src/include/uci.h
+../src/include/bitboard.h
+string
+-
 
-/home/isar/projects/chess/engine/src/main.cpp
+../src/include/dictionaries.h
+map
+-
+
+../src/include/position.h
+cstdint
+-
 iostream
 -
-uci.h
-/home/isar/projects/chess/engine/src/uci.h
+
+/home/isar/projects/chess/engine/src/position.cpp
+position.h
+-
+string
+-
+cstdint
+-
+position.h
+/home/isar/projects/chess/engine/src/position.h
+dictionaries.h
+/home/isar/projects/chess/engine/src/dictionaries.h
+bitboard.h
+/home/isar/projects/chess/engine/src/bitboard.h
 

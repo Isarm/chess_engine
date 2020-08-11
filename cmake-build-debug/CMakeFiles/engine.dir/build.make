@@ -77,9 +77,22 @@ include CMakeFiles/engine.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/engine.dir/flags.make
 
+CMakeFiles/engine.dir/src/bitboard.cpp.o: CMakeFiles/engine.dir/flags.make
+CMakeFiles/engine.dir/src/bitboard.cpp.o: ../src/bitboard.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/isar/projects/chess/engine/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/engine.dir/src/bitboard.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/engine.dir/src/bitboard.cpp.o -c /home/isar/projects/chess/engine/src/bitboard.cpp
+
+CMakeFiles/engine.dir/src/bitboard.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/engine.dir/src/bitboard.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/isar/projects/chess/engine/src/bitboard.cpp > CMakeFiles/engine.dir/src/bitboard.cpp.i
+
+CMakeFiles/engine.dir/src/bitboard.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/engine.dir/src/bitboard.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/isar/projects/chess/engine/src/bitboard.cpp -o CMakeFiles/engine.dir/src/bitboard.cpp.s
+
 CMakeFiles/engine.dir/src/main.cpp.o: CMakeFiles/engine.dir/flags.make
 CMakeFiles/engine.dir/src/main.cpp.o: ../src/main.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/isar/projects/chess/engine/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/engine.dir/src/main.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/isar/projects/chess/engine/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/engine.dir/src/main.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/engine.dir/src/main.cpp.o -c /home/isar/projects/chess/engine/src/main.cpp
 
 CMakeFiles/engine.dir/src/main.cpp.i: cmake_force
@@ -90,9 +103,22 @@ CMakeFiles/engine.dir/src/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/engine.dir/src/main.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/isar/projects/chess/engine/src/main.cpp -o CMakeFiles/engine.dir/src/main.cpp.s
 
+CMakeFiles/engine.dir/src/position.cpp.o: CMakeFiles/engine.dir/flags.make
+CMakeFiles/engine.dir/src/position.cpp.o: ../src/position.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/isar/projects/chess/engine/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/engine.dir/src/position.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/engine.dir/src/position.cpp.o -c /home/isar/projects/chess/engine/src/position.cpp
+
+CMakeFiles/engine.dir/src/position.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/engine.dir/src/position.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/isar/projects/chess/engine/src/position.cpp > CMakeFiles/engine.dir/src/position.cpp.i
+
+CMakeFiles/engine.dir/src/position.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/engine.dir/src/position.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/isar/projects/chess/engine/src/position.cpp -o CMakeFiles/engine.dir/src/position.cpp.s
+
 CMakeFiles/engine.dir/src/uci.cpp.o: CMakeFiles/engine.dir/flags.make
 CMakeFiles/engine.dir/src/uci.cpp.o: ../src/uci.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/isar/projects/chess/engine/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/engine.dir/src/uci.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/isar/projects/chess/engine/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/engine.dir/src/uci.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/engine.dir/src/uci.cpp.o -c /home/isar/projects/chess/engine/src/uci.cpp
 
 CMakeFiles/engine.dir/src/uci.cpp.i: cmake_force
@@ -105,17 +131,21 @@ CMakeFiles/engine.dir/src/uci.cpp.s: cmake_force
 
 # Object files for target engine
 engine_OBJECTS = \
+"CMakeFiles/engine.dir/src/bitboard.cpp.o" \
 "CMakeFiles/engine.dir/src/main.cpp.o" \
+"CMakeFiles/engine.dir/src/position.cpp.o" \
 "CMakeFiles/engine.dir/src/uci.cpp.o"
 
 # External object files for target engine
 engine_EXTERNAL_OBJECTS =
 
+engine: CMakeFiles/engine.dir/src/bitboard.cpp.o
 engine: CMakeFiles/engine.dir/src/main.cpp.o
+engine: CMakeFiles/engine.dir/src/position.cpp.o
 engine: CMakeFiles/engine.dir/src/uci.cpp.o
 engine: CMakeFiles/engine.dir/build.make
 engine: CMakeFiles/engine.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/isar/projects/chess/engine/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable engine"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/isar/projects/chess/engine/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable engine"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/engine.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

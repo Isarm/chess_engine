@@ -84,10 +84,25 @@
 				</MakeCommands>
 			</Target>
 		</Build>
+		<Unit filename="/home/isar/projects/chess/engine/src/bitboard.cpp">
+			<Option target="engine"/>
+		</Unit>
+		<Unit filename="/home/isar/projects/chess/engine/src/include/bitboard.h">
+			<Option target="engine"/>
+		</Unit>
+		<Unit filename="/home/isar/projects/chess/engine/src/include/dictionaries.h">
+			<Option target="engine"/>
+		</Unit>
+		<Unit filename="/home/isar/projects/chess/engine/src/include/position.h">
+			<Option target="engine"/>
+		</Unit>
 		<Unit filename="/home/isar/projects/chess/engine/src/include/uci.h">
 			<Option target="engine"/>
 		</Unit>
 		<Unit filename="/home/isar/projects/chess/engine/src/main.cpp">
+			<Option target="engine"/>
+		</Unit>
+		<Unit filename="/home/isar/projects/chess/engine/src/position.cpp">
 			<Option target="engine"/>
 		</Unit>
 		<Unit filename="/home/isar/projects/chess/engine/src/uci.cpp">

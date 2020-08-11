@@ -15,9 +15,9 @@ int main(int argc, char *argv[]) {
     if (input == "uci") {
         UCI::start();
     }
-     else{
+    else{
          return 1;
-     }
+    }
 
 
 }

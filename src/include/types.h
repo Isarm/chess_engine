@@ -5,7 +5,8 @@ using namespace std;
 #ifndef DICTIONARIES_H
 #define DICTIONARIES_H
 
-map<char, int> pieces = {
+
+static const map<char, int> FENpieces = {
         {'p', 0},
         {'n', 1},
         {'b', 2},
@@ -20,5 +21,9 @@ map<char, int> pieces = {
         {'K', 11}
 };
 
+
+enum Move{
+
+};
 
 #endif
