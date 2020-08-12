@@ -21,10 +21,7 @@ public:
 
     void GeneratePseudoLegalKnightMoves(moveList &movelist);
 
-    static bool notAFile(uint64_t bb)  ;
-    static bool notABFile(uint64_t bb) ;
-    static bool notHFile(uint64_t bb)  ;
-    static bool notGHFile(uint64_t bb) ;
+
 };
 
 #endif

@@ -83,17 +83,14 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
     this->turn ? knights = this->bitboards[BLACK_KNIGHTS] : knights = this->bitboards[WHITE_KNIGHTS];
 
 
-    uint64_t LS1B, pieceBB;
-    unsigned pieceIndex;
-    const auto debruijn64 = uint64_t(0x03f79d71b4cb0a89); // from the chess programming wiki
+    uint64_t pieceBB;
 
     while (knights != 0) {
         uint64_t currentKnightMoves = 0;
 
-        LS1B = knights & -knights; // only keeps the 1st LSB bit so that the DeBruijn bitscan can be used
-        knights ^= LS1B; // remove this bit for next cycle using XOR
-        pieceIndex = index64[(LS1B * debruijn64) >> 58]; //index64 defined in types.h
-        pieceBB = 1uLL << pieceIndex; // put the piece in bitboard
+        //grabs the first knight and returns it in a bitboard, pieceBB. Knight also gets removed from the knights variable
+        // so in the next loop the next knight will be returned.
+        pieceBB = debruijnSerialization(knights);
 
         if(notAFile(pieceBB)) {
             currentKnightMoves |= ((pieceBB >> NNW) | (pieceBB << SSW));
@@ -111,26 +108,12 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
         // use knightmoves XOR ownPieces, and then again AND to get rid of own piece blockers
         this->turn ? currentKnightMoves &= currentKnightMoves ^ bitboards[BLACK_PIECES] : currentKnightMoves &= currentKnightMoves ^ bitboards[WHITE_PIECES];
 
-
+        Bitboard::print(currentKnightMoves);
 
     }
 
 
 
 }
-
-bool Position::notAFile(uint64_t bb) {
-    return uint64_t(0x7F7F7F7F7F7F7F7F) & bb;
-}
-bool Position::notABFile(uint64_t bb){
-    return uint64_t(0xFCFCFCFCFCFCFCFC) & bb;
-}
-bool Position::notHFile(uint64_t bb) {
-    return uint64_t(0x7F7F7F7F7F7F7F7F) & bb;
-}
-bool Position::notGHFile(uint64_t bb) {
-    return uint64_t(0x3F3F3F3F3F3F3F3F) & bb;
-}
-
 
 
