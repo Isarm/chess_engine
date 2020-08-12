@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <iostream>
+#include "types.h"
 
 using namespace std;
 
@@ -9,16 +10,19 @@ using namespace std;
 class Position{
 public:
 
-    uint64_t bitboards[12]{};
-    uint64_t WHITE_PIECES;
-    uint64_t BLACK_PIECES;
+    bool turn = WHITE_TURN;
+    uint64_t bitboards[14]{};
     explicit Position(string FEN);
 
 
-    string GenerateMoves();
+    int *GeneratePseudoLegalMoves(int *moveList);
 
+    int *GeneratePseudoLegalKnightMoves(int *moveList);
 
-    string GeneratePseudoLegalMoves();
+    int *GeneratePseudoLegalMoves(int *moveList, int *moveListLength);
+
+    void initializeHelpBitboards();
+    int bitScanForward(uint64_t bb)
 };
 
 #endif

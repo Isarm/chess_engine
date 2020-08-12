@@ -34,14 +34,56 @@ Position::Position(string FEN){
         bitboards[FENpieces.at(pieceChar)] += 1uLL << BBindex; // shift the bits into place
     }
 
-    for(int i = 0; i < 12; i++){
-        cout << Bitboard::print(bitboards[i]);
+    initializeHelpBitboards();
+
+    for(unsigned long bitboard : bitboards){
+        cout << Bitboard::print(bitboard);
         cout << "\n\n";
     }
 }
 
-
-string Position::GeneratePseudoLegalMoves(){
-    
+void Position::initializeHelpBitboards() {
+    /* first 6 bitboards are black pieces
+     * 6 after are white
+    */
+    for(int i = 0; i < 6; i++){
+        bitboards[BLACK_PIECES] |= bitboards[i];
+        bitboards[WHITE_PIECES] |= bitboards[i + 6];
+    }
 }
+
+int *Position::GeneratePseudoLegalMoves(int moveList[254], int *moveListLength){
+
+    moveList = GeneratePseudoLegalKnightMoves(moveList);
+
+    return moveList;
+}
+
+int *Position::GeneratePseudoLegalKnightMoves(int *moveList) {
+    uint64_t knights;
+    this->turn ? knights = BLACK_KNIGHTS : knights = WHITE_KNIGHTS;
+
+    uint64_t LS1B;
+    int pieceIndex;
+    while(knights != 0){
+        const auto debruijn64 = uint64_t (0x03f79d71b4cb0a89); // from the chess programming wiki
+
+        LS1B = knights & -knights; // only keeps the 1st LSB bit so that the DeBruijn bitscan can be used
+        knights ^= LS1B; // remove this bit for next cycle using XOR
+
+        pieceIndex = index64[(LS1B * debruijn64) >> 58]; //index64 defined in types.h
+
+        pieceIndex
+    }
+
+
+    return nullptr;
+}
+
+
+
+
+int Position::bitScanForward(uint64_t bb) {
+}
+
 
