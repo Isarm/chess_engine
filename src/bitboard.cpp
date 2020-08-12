@@ -23,6 +23,8 @@ string Bitboard::print(uint64_t bitboard){
         binary.insert(i, " ");
     }
 
+    cout << "\n\n" << binary << "\n\n";
+
 
     return binary;
 }

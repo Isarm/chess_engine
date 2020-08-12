@@ -1,8 +1,9 @@
 
 #include <iostream>
-using namespace std;
 #include "uci.h"
 #include "position.h"
+
+using namespace std;
 
 void UCI::start() {
 
@@ -22,11 +23,12 @@ void UCI::start() {
     // give the ready signal
     cout << "readyok\n";
 
-    Position("startpos");
 }
 
 
 void UCI::mainLoop(){
-
+    Position position = Position("startpos");
+    moveList movelist;
+    position.GeneratePseudoLegalMoves(movelist);
 
 }

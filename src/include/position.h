@@ -3,6 +3,7 @@
 #include "types.h"
 
 using namespace std;
+using namespace types;
 
 #ifndef POSITION_H
 #define POSITION_H
@@ -14,15 +15,16 @@ public:
     uint64_t bitboards[14]{};
     explicit Position(string FEN);
 
-
-    int *GeneratePseudoLegalMoves(int *moveList);
-
-    int *GeneratePseudoLegalKnightMoves(int *moveList);
-
-    int *GeneratePseudoLegalMoves(int *moveList, int *moveListLength);
-
     void initializeHelpBitboards();
-    int bitScanForward(uint64_t bb)
+
+    void GeneratePseudoLegalMoves(moveList &movelist);
+
+    void GeneratePseudoLegalKnightMoves(moveList &movelist);
+
+    static bool notAFile(uint64_t bb)  ;
+    static bool notABFile(uint64_t bb) ;
+    static bool notHFile(uint64_t bb)  ;
+    static bool notGHFile(uint64_t bb) ;
 };
 
 #endif

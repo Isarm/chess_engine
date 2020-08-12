@@ -14,4 +14,4 @@ add_executable(engine
         src/main.cpp
         src/position.cpp
         src/uci.cpp
-        )
+        src/include/moveGenHelpFunctions.h)
