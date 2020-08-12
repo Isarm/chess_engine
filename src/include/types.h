@@ -30,7 +30,7 @@ namespace types {
     };
 
     enum turn {
-        WHITE_TURN, BLACK_TURN
+        BLACK_TURN, WHITE_TURN
     };
 
 

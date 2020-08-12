@@ -22,6 +22,8 @@ public:
     void GeneratePseudoLegalKnightMoves(moveList &movelist);
 
     void bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t moves, uint64_t capturemove);
+
+    void doMove(unsigned move);
 };
 
 #endif

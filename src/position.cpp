@@ -13,7 +13,7 @@ using namespace types;
 
 Position::Position(string FEN){
 
-    string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    string startFEN = "rnbqkbnr/pppppppp/8/8/8/1ppppppp/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     if(FEN == "startpos") FEN = startFEN;
 
     // initialize bitboards to 0.
@@ -48,9 +48,9 @@ Position::Position(string FEN){
 
     initializeHelpBitboards();
 
-    for(unsigned long bitboard : bitboards){
-        Bitboard::print(bitboard);
-    }
+//    for(unsigned long bitboard : bitboards){
+//        Bitboard::print(bitboard);
+//    }
 
 
 
@@ -81,7 +81,12 @@ void Position::GeneratePseudoLegalMoves(moveList &movelist) {
 void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
 
     uint64_t knights;
-    this->turn ? knights = this->bitboards[BLACK_KNIGHTS] : knights = this->bitboards[WHITE_KNIGHTS];
+    if(this->turn == WHITE_TURN) {
+        knights = this->bitboards[WHITE_KNIGHTS];
+    }
+    else{
+        knights = this->bitboards[BLACK_KNIGHTS];
+    }
 
     unsigned pieceIndex;
     uint64_t pieceBB;
@@ -107,11 +112,23 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
             currentKnightMoves |= ((pieceBB >> NEE) | (pieceBB << SEE));
         }
 
-        // use knightmoves XOR ownPieces, and then again AND to get rid of own piece blockers
-        this->turn ? currentKnightMoves &= currentKnightMoves ^ bitboards[BLACK_PIECES] : currentKnightMoves &= currentKnightMoves ^ bitboards[WHITE_PIECES];
+        if(this->turn == WHITE_TURN){
 
-        // use knightmoves AND opponent pieces to get capture moves
-        this->turn ? currentKnightCaptureMoves = currentKnightMoves & bitboards[WHITE_PIECES] : currentKnightCaptureMoves = currentKnightMoves & bitboards[BLACK_PIECES];
+            // use knightmoves XOR ownPieces, and then again AND to get rid of moves blocked by own pieces
+            currentKnightMoves &= currentKnightMoves ^ bitboards[WHITE_PIECES];
+
+
+            // use knightmoves AND opponent pieces to get capture moves (storing capturemoves differently is efficient for the search tree)
+            currentKnightCaptureMoves = currentKnightMoves & bitboards[BLACK_PIECES];
+        }
+        else{
+            currentKnightMoves &= currentKnightMoves ^ bitboards[BLACK_PIECES];
+
+            currentKnightCaptureMoves = currentKnightMoves & bitboards[WHITE_PIECES];
+        }
+
+        // remove capturemoves from the normal moves bitboard
+        currentKnightMoves = currentKnightMoves & (0xFFFFFFFFFFFFFFFF ^ currentKnightCaptureMoves);
 
         bitboardsToMovelist(movelist, pieceBB, currentKnightMoves, currentKnightCaptureMoves);
 
@@ -120,7 +137,8 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
 }
 
 
-/* for storing moves the following approach is used: (similar to stockfish)
+/* This function converts a origin bitboard and destination bitboard into a movelist
+ * for storing moves the following approach is used: (similar to stockfish)
  * bit 0-5 === origin square;
  * bit 6-11 === destination square;
  * bit 12-13 === promotion piece type (N, B, R, Q)
@@ -138,7 +156,6 @@ void Position::bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t
 
         // put origin and destination in movelist
         movelist.move[movelist.moveLength] = originInt;
-        unsigned test = destinationInt << 6u;
         movelist.move[movelist.moveLength++] |= destinationInt << 6u;
     }
 
@@ -153,4 +170,48 @@ void Position::bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t
 
 }
 
+void Position::doMove(unsigned move){
+    unsigned originInt, destinationInt;
 
+    originInt = 0x3F & move;
+    destinationInt = (0xFC0 & move) >> 6;
+
+    uint64_t originBB, destinationBB;
+
+    originBB = 1uLL << originInt;
+    destinationBB = 1uLL << destinationInt;
+
+    // find the piece that is moved.
+    int start;
+    this->turn ? start = 6 : start = 0; // set which bitboards to iterate over
+
+    int bitboardIndex = -1;
+    for(int i = start; i < (start + 6); i++) {
+        if(bitboards[i] & originBB) {
+            bitboardIndex = i;
+            break;
+        }
+    }
+
+
+    // remove origin piece
+    bitboards[bitboardIndex] &= (0xFFFFFFFFFFFFFFFF ^ originBB);
+
+
+
+    // switch to opponent bitboards and remove possible destination piece in case of capture
+    start = (start - 6) % 12;
+    for(int i = start; i < start + 6; i++){
+        bitboards[i] &= (0xFFFFFFFFFFFFFFFF ^ destinationBB);
+    }
+
+
+    // add destination piece
+    bitboards[bitboardIndex] |= destinationBB;
+
+    for(unsigned long bitboard : bitboards){
+        Bitboard::print(bitboard);
+    }
+
+
+}
