@@ -73,6 +73,7 @@ void Position::GeneratePseudoLegalMoves(moveList &movelist) {
 
     int moveListLength = 0;
 
+
     GeneratePseudoLegalKnightMoves(movelist);
 
 }
@@ -82,15 +83,16 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
     uint64_t knights;
     this->turn ? knights = this->bitboards[BLACK_KNIGHTS] : knights = this->bitboards[WHITE_KNIGHTS];
 
-
+    unsigned pieceIndex;
     uint64_t pieceBB;
 
     while (knights != 0) {
-        uint64_t currentKnightMoves = 0;
+        uint64_t currentKnightMoves = 0, currentKnightCaptureMoves = 0;
 
-        //grabs the first knight and returns it in a bitboard, pieceBB. Knight also gets removed from the knights variable
+        //grabs the first knight and returns it's index. This knight also gets removed from the knights variable bibboard
         // so in the next loop the next knight will be returned.
-        pieceBB = debruijnSerialization(knights);
+        pieceIndex = debruijnSerialization(knights);
+        pieceBB = 1uLL << pieceIndex;
 
         if(notAFile(pieceBB)) {
             currentKnightMoves |= ((pieceBB >> NNW) | (pieceBB << SSW));
@@ -108,8 +110,43 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
         // use knightmoves XOR ownPieces, and then again AND to get rid of own piece blockers
         this->turn ? currentKnightMoves &= currentKnightMoves ^ bitboards[BLACK_PIECES] : currentKnightMoves &= currentKnightMoves ^ bitboards[WHITE_PIECES];
 
-        Bitboard::print(currentKnightMoves);
+        // use knightmoves AND opponent pieces to get capture moves
+        this->turn ? currentKnightCaptureMoves = currentKnightMoves & bitboards[WHITE_PIECES] : currentKnightCaptureMoves = currentKnightMoves & bitboards[BLACK_PIECES];
 
+        bitboardsToMovelist(movelist, pieceBB, currentKnightMoves, currentKnightCaptureMoves);
+
+    }
+
+}
+
+
+/* for storing moves the following approach is used: (similar to stockfish)
+ * bit 0-5 === origin square;
+ * bit 6-11 === destination square;
+ * bit 12-13 === promotion piece type (N, B, R, Q)
+ * bit 14-15 === special move flag, promotion, en passant, castling
+ *
+ */
+
+void Position::bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations) {
+    unsigned originInt, destinationInt;
+    originInt = debruijnSerialization(origin);
+
+    while(destinations != 0){
+        // get integer of destination position
+        destinationInt = debruijnSerialization(destinations);
+
+        // put origin and destination in movelist
+        movelist.move[movelist.moveLength] = originInt;
+        unsigned test = destinationInt << 6u;
+        movelist.move[movelist.moveLength++] |= destinationInt << 6u;
+    }
+
+    while(captureDestinations != 0){
+        destinationInt = debruijnSerialization(captureDestinations);
+
+        movelist.captureMove[movelist.captureMoveLength] = originInt;
+        movelist.captureMove[movelist.captureMoveLength++] |= destinationInt << 6u;
     }
 
 

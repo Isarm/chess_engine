@@ -50,10 +50,10 @@ namespace types {
 
 
     struct moveList{
-        int move[256] = {};
-        int moveLength = 0;
-        int captureMove[128] = {};
-        int captureMoveLength = 0;
+        unsigned move[256] = {};
+        unsigned moveLength = 0;
+        unsigned captureMove[128] = {};
+        unsigned captureMoveLength = 0;
     };
 
 }

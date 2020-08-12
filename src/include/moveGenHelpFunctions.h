@@ -21,7 +21,7 @@ inline static bool notGHFile(uint64_t bb) {
 
 
 
-uint64_t debruijnSerialization(uint64_t &knights){
+unsigned debruijnSerialization(uint64_t &knights){
 
     // from the chess programming wiki
     // for the debruijn bit serialization method
@@ -40,8 +40,7 @@ uint64_t debruijnSerialization(uint64_t &knights){
     ;
     uint64_t LS1B = knights & -knights; // only keeps the 1st LSB bit so that the DeBruijn bitscan can be used
     knights ^= LS1B; // remove this bit for next cycle using XOR
-    uint64_t pieceIndex = index64[(LS1B * debruijn64) >> 58]; //index64 defined in types.h
-    return 1uLL << pieceIndex; // put the piece in bitboard and return
+    return index64[(LS1B * debruijn64) >> 58]; //index64 defined in types.h
 }
 
 
