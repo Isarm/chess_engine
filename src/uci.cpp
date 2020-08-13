@@ -30,6 +30,7 @@ void UCI::mainLoop(){
     Position position = Position("startpos");
     moveList movelist;
     position.GeneratePseudoLegalMoves(movelist);
-    position.doMove(movelist.captureMove[0]);
+    position.doMove(movelist.move[0]);
+
 
 }

@@ -12,13 +12,16 @@ class Position{
 public:
 
     bool turn = WHITE_TURN;
-    uint64_t bitboards[14]{};
+    uint64_t bitboards[15]{};
+    unsigned previousMoves[1024] = {};
+    unsigned halfMoveNumber = 0;
     explicit Position(string FEN);
 
-    void initializeHelpBitboards();
+    void generateHelpBitboards();
 
     void GeneratePseudoLegalMoves(moveList &movelist);
 
+    void GeneratePseudoLegalPawnMoves(moveList &movelist);
     void GeneratePseudoLegalKnightMoves(moveList &movelist);
 
     void bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t moves, uint64_t capturemove);

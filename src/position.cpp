@@ -13,7 +13,7 @@ using namespace types;
 
 Position::Position(string FEN){
 
-    string startFEN = "rnbqkbnr/pppppppp/8/8/8/1ppppppp/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     if(FEN == "startpos") FEN = startFEN;
 
     // initialize bitboards to 0.
@@ -46,7 +46,7 @@ Position::Position(string FEN){
     //TODO: en passant
 
 
-    initializeHelpBitboards();
+    generateHelpBitboards();
 
 //    for(unsigned long bitboard : bitboards){
 //        Bitboard::print(bitboard);
@@ -56,14 +56,17 @@ Position::Position(string FEN){
 
 }
 
-void Position::initializeHelpBitboards() {
+void Position::generateHelpBitboards() {
     /* first 6 bitboards are black pieces
      * 6 after are white
     */
+    bitboards[BLACK_PIECES] = 0;
+    bitboards[WHITE_PIECES] = 0;
     for(int i = 0; i < 6; i++){
         bitboards[BLACK_PIECES] |= bitboards[i];
         bitboards[WHITE_PIECES] |= bitboards[i + 6];
     }
+    bitboards[OCCUPIED_SQUARES] = bitboards[WHITE_PIECES] | bitboards[BLACK_PIECES];
 }
 
 
@@ -73,10 +76,63 @@ void Position::GeneratePseudoLegalMoves(moveList &movelist) {
 
     int moveListLength = 0;
 
-
+    GeneratePseudoLegalPawnMoves(movelist);
     GeneratePseudoLegalKnightMoves(movelist);
 
 }
+
+void Position::GeneratePseudoLegalPawnMoves(moveList &movelist) {
+    //TODO: en passant, pins
+    uint64_t pawns;
+
+    if(this->turn == WHITE_TURN){
+        pawns = this->bitboards[WHITE_PAWNS];
+    }
+    else{
+        pawns = this->bitboards[BLACK_PAWNS];
+    }
+
+    unsigned pieceIndex;
+    uint64_t pieceBB;
+    while(pawns != 0){
+        uint64_t currentPawnMoves = 0, currentPawnCaptureMoves = 0;
+
+        pieceIndex = debruijnSerialization(pawns);
+
+        pieceBB = 1uLL << pieceIndex;
+
+        if(this->turn == WHITE_TURN){ // pawns going NORTH, so right shift
+            currentPawnMoves = pieceBB >> 8u;
+            currentPawnMoves &= ~bitboards[OCCUPIED_SQUARES]; // make sure destination square is empty
+
+            if(currentPawnMoves && is2ndRank(pieceBB)){ //check for double pawn move, if single pawn move exists and pawn is on 2nd rank
+                currentPawnMoves |= pieceBB >> 16u;
+                currentPawnMoves &= ~bitboards[OCCUPIED_SQUARES]; // again make sure destination square is empty
+            }
+
+            // generate capture moves
+            currentPawnCaptureMoves = (pieceBB >> 7u) | (pieceBB >> 9u);
+            currentPawnCaptureMoves &= bitboards[BLACK_PIECES];
+        }
+        else{ //black's turn, pawns going south so left shift
+            currentPawnMoves = pieceBB << 8u;
+            currentPawnMoves &= ~bitboards[OCCUPIED_SQUARES]; // make sure destination square is empty
+
+            if(currentPawnMoves && is7thRank(pieceBB)){ //check for double pawn move, if single pawn move exists and pawn is on 2nd rank
+                currentPawnMoves |= pieceBB << 16u;
+                currentPawnMoves &= ~bitboards[OCCUPIED_SQUARES]; // again make sure destination square is empty
+            }
+
+            // generate capture moves
+            currentPawnCaptureMoves = (pieceBB << 7u) | (pieceBB << 9u);
+            currentPawnCaptureMoves &= bitboards[WHITE_PIECES];
+        }
+
+        // update movelist
+        bitboardsToMovelist(movelist, pieceBB, currentPawnMoves, currentPawnCaptureMoves);
+    }
+}
+
 
 void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
 
@@ -92,6 +148,7 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
     uint64_t pieceBB;
 
     while (knights != 0) {
+        //TODO: implement pinned piece check and remove pinned nights from this moveset.
         uint64_t currentKnightMoves = 0, currentKnightCaptureMoves = 0;
 
         //grabs the first knight and returns it's index. This knight also gets removed from the knights variable bibboard
@@ -112,17 +169,19 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
             currentKnightMoves |= ((pieceBB >> NEE) | (pieceBB << SEE));
         }
 
+
+
         if(this->turn == WHITE_TURN){
 
-            // use knightmoves XOR ownPieces, and then again AND to get rid of moves blocked by own pieces
-            currentKnightMoves &= currentKnightMoves ^ bitboards[WHITE_PIECES];
+            // use knightmoves AND NOT white pieces to remove blocked squares
+            currentKnightMoves &= ~bitboards[WHITE_PIECES];
 
 
             // use knightmoves AND opponent pieces to get capture moves (storing capturemoves differently is efficient for the search tree)
             currentKnightCaptureMoves = currentKnightMoves & bitboards[BLACK_PIECES];
         }
         else{
-            currentKnightMoves &= currentKnightMoves ^ bitboards[BLACK_PIECES];
+            currentKnightMoves &= ~bitboards[BLACK_PIECES];
 
             currentKnightCaptureMoves = currentKnightMoves & bitboards[WHITE_PIECES];
         }
@@ -173,6 +232,9 @@ void Position::bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t
 void Position::doMove(unsigned move){
     unsigned originInt, destinationInt;
 
+    // put into previous moves list
+    this->previousMoves[this->halfMoveNumber++] = move;
+
     originInt = 0x3F & move;
     destinationInt = (0xFC0 & move) >> 6;
 
@@ -195,19 +257,22 @@ void Position::doMove(unsigned move){
 
 
     // remove origin piece
-    bitboards[bitboardIndex] &= (0xFFFFFFFFFFFFFFFF ^ originBB);
+    bitboards[bitboardIndex] &= ~originBB;
 
 
 
     // switch to opponent bitboards and remove possible destination piece in case of capture
     start = (start - 6) % 12;
     for(int i = start; i < start + 6; i++){
-        bitboards[i] &= (0xFFFFFFFFFFFFFFFF ^ destinationBB);
+        bitboards[i] &= ~destinationBB;
     }
 
 
     // add destination piece
     bitboards[bitboardIndex] |= destinationBB;
+
+    // update help bitboards
+    generateHelpBitboards();
 
     for(unsigned long bitboard : bitboards){
         Bitboard::print(bitboard);

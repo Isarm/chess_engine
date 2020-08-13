@@ -18,10 +18,16 @@ inline static bool notHFile(uint64_t bb) {
 inline static bool notGHFile(uint64_t bb) {
     return uint64_t(0x3F3F3F3F3F3F3F3F) & bb;
 }
+inline static bool is2ndRank(uint64_t bb){
+    return uint64_t(0x00FF000000000000) & bb;
+}
+inline static bool is7thRank(uint64_t bb){
+    return uint64_t(0x000000000000FF00) & bb;
+}
 
 
 
-unsigned debruijnSerialization(uint64_t &knights){
+unsigned debruijnSerialization(uint64_t &pieces) {
 
     // from the chess programming wiki
     // for the debruijn bit serialization method
@@ -38,8 +44,8 @@ unsigned debruijnSerialization(uint64_t &knights){
             25, 14, 19, 9, 13, 8, 7, 6
     }
     ;
-    uint64_t LS1B = knights & -knights; // only keeps the 1st LSB bit so that the DeBruijn bitscan can be used
-    knights ^= LS1B; // remove this bit for next cycle using XOR
+    uint64_t LS1B = pieces & -pieces; // only keeps the 1st LSB bit so that the DeBruijn bitscan can be used
+    pieces ^= LS1B; // remove this bit for next cycle using XOR
     return index64[(LS1B * debruijn64) >> 58]; //index64 defined in types.h
 }
 
