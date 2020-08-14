@@ -16,10 +16,6 @@ Position::Position(string FEN){
     string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     if(FEN == "startpos") FEN = startFEN;
 
-    // initialize bitboards to 0.
-    for(uint64_t& i : bitboards){
-        i = 0;
-    }
 
     // loop through the FEN string until first space
     unsigned BBindex = 0; // this gets incremented when the FEN contains numbers as well
@@ -34,7 +30,7 @@ Position::Position(string FEN){
             BBindex += pieceChar - '1';
             continue;
         }
-        bitboards[FENpieces.at(pieceChar)] += 1uLL << BBindex; // shift the bits into place
+        bitboards[isupper(FENpieces.at(pieceChar))][tolower(FENpieces.at(pieceChar))] += 1uLL << BBindex; // shift the bits into place
     }
 
     if(FEN.at(++i) == 'b'){
@@ -145,7 +141,7 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
     }
 
     unsigned pieceIndex;
-    uint64_t pieceBB;
+    uint64_t pieceBB; //pieceBitboard
 
     while (knights != 0) {
         //TODO: implement pinned piece check and remove pinned nights from this moveset.
@@ -156,26 +152,13 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
         pieceIndex = debruijnSerialization(knights);
         pieceBB = 1uLL << pieceIndex;
 
-        if(notAFile(pieceBB)) {
-            currentKnightMoves |= ((pieceBB >> NNW) | (pieceBB << SSW));
-        }
-        if(notABFile(pieceBB)) {
-            currentKnightMoves |= ((pieceBB >> NWW) | (pieceBB << SWW));
-        }
-        if(notHFile(pieceBB)) {
-            currentKnightMoves |= ((pieceBB >> NNE) | (pieceBB << SSE));
-        }
-        if(notGHFile(pieceBB)) {
-            currentKnightMoves |= ((pieceBB >> NEE) | (pieceBB << SEE));
-        }
-
+        currentKnightMoves = knightAttacks(knights); //get the knight attacks (moveGenHelpFunctions.h)
 
 
         if(this->turn == WHITE_TURN){
 
             // use knightmoves AND NOT white pieces to remove blocked squares
             currentKnightMoves &= ~bitboards[WHITE_PIECES];
-
 
             // use knightmoves AND opponent pieces to get capture moves (storing capturemoves differently is efficient for the search tree)
             currentKnightCaptureMoves = currentKnightMoves & bitboards[BLACK_PIECES];
@@ -195,6 +178,16 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
 
 }
 
+
+
+void Position::GeneratePseudoLegalBishopMoves(moveList &movelist){
+
+}
+
+// checks if the king of color side is in check
+bool Position::isInCheck(bool side){
+
+}
 
 /* This function converts a origin bitboard and destination bitboard into a movelist
  * for storing moves the following approach is used: (similar to stockfish)

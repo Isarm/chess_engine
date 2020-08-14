@@ -6,6 +6,7 @@
 #define MOVEGENHELPFUNCTIONS_H
 
 
+
 inline static bool notAFile(uint64_t bb) {
     return uint64_t(0x7F7F7F7F7F7F7F7F) & bb;
 }
@@ -26,6 +27,22 @@ inline static bool is7thRank(uint64_t bb){
 }
 
 
+static uint64_t knightAttacks(uint64_t knight) {
+    uint64_t currentKnightMoves;
+    if (notAFile(knight)) {
+        currentKnightMoves |= ((knight >> NNW) | (knight << SSW));
+    }
+    if (notABFile(knight)) {
+        currentKnightMoves |= ((knight >> NWW) | (knight << SWW));
+    }
+    if (notHFile(knight)) {
+        currentKnightMoves |= ((knight >> NNE) | (knight << SSE));
+    }
+    if (notGHFile(knight)) {
+        currentKnightMoves |= ((knight >> NEE) | (knight << SEE));
+    }
+    return currentKnightMoves;
+}
 
 unsigned debruijnSerialization(uint64_t &pieces) {
 

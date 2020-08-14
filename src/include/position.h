@@ -12,8 +12,8 @@ class Position{
 public:
 
     bool turn = WHITE_TURN;
-    uint64_t bitboards[15]{};
-    unsigned previousMoves[1024] = {};
+    uint64_t bitboards[7][2]{0};
+    unsigned previousMoves[1024] = {0};
     unsigned halfMoveNumber = 0;
     explicit Position(string FEN);
 
@@ -27,6 +27,8 @@ public:
     void bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t moves, uint64_t capturemove);
 
     void doMove(unsigned move);
+
+    void GeneratePseudoLegalBishopMoves(moveList &movelist);
 };
 
 #endif

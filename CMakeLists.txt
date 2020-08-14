@@ -3,7 +3,8 @@ project(engine)
 
 set(CMAKE_CXX_STANDARD 14)
 
-include_directories(src/include)
+include_directories(src/include
+                magic-bits/src)
 
 add_executable(engine
         src/include/bitboard.h
@@ -14,4 +15,6 @@ add_executable(engine
         src/main.cpp
         src/position.cpp
         src/uci.cpp
-        src/include/moveGenHelpFunctions.h)
+        src/include/moveGenHelpFunctions.h
+        #magic-bits
+        magic-bits/src/slider_attacks.h)

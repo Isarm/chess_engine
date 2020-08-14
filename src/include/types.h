@@ -8,26 +8,24 @@ using namespace std;
 
 namespace types {
 
-    enum bitboards {
-        BLACK_PAWNS, BLACK_KNIGHTS, BLACK_BISHOPS, BLACK_ROOKS, BLACK_QUEENS, BLACK_KING,
-        WHITE_PAWNS, WHITE_KNIGHTS, WHITE_BISHOPS, WHITE_ROOKS, WHITE_QUEENS, WHITE_KING,
-        BLACK_PIECES, WHITE_PIECES, OCCUPIED_SQUARES
+    enum bitboards{
+        PAWNS, KNIGHTS, BISHOPS, ROOKS, QUEENS, KING, PIECES
     };
 
+    enum bitboards_full {
+        BLACK_PAWNS, BLACK_KNIGHTS, BLACK_BISHOPS, BLACK_ROOKS, BLACK_QUEENS, BLACK_KING,
+        WHITE_PAWNS, WHITE_KNIGHTS, WHITE_BISHOPS, WHITE_ROOKS, WHITE_QUEENS, WHITE_KING,
+        BLACK_PIECES, WHITE_PIECES
+    }; // use bitboards_full
+
     static const map<char, int> FENpieces = {
-            {'p', BLACK_PAWNS},
-            {'n', BLACK_KNIGHTS},
-            {'b', BLACK_BISHOPS},
-            {'r', BLACK_ROOKS},
-            {'q', BLACK_QUEENS},
-            {'k', BLACK_KING},
-            {'P', WHITE_PAWNS},
-            {'N', WHITE_KNIGHTS},
-            {'B', WHITE_BISHOPS},
-            {'R', WHITE_ROOKS},
-            {'Q', WHITE_QUEENS},
-            {'K', WHITE_KING}
-    };
+            {'p', PAWNS},
+            {'n', KNIGHTS},
+            {'b', BISHOPS},
+            {'r', ROOKS},
+            {'q', QUEENS},
+            {'k', KING},
+    }
 
     enum turn {
         BLACK_TURN, WHITE_TURN
