@@ -8,8 +8,16 @@ using namespace std;
 
 namespace types {
 
-    enum bitboards{
+    enum bitboards2d{
         PAWNS, KNIGHTS, BISHOPS, ROOKS, QUEENS, KING, PIECES
+    };
+
+    enum turn{
+        BLACK, WHITE
+    };
+
+    enum helpBitboards{
+        OCCUPIED_SQUARES
     };
 
     enum bitboards_full {
@@ -25,11 +33,9 @@ namespace types {
             {'r', ROOKS},
             {'q', QUEENS},
             {'k', KING},
-    }
-
-    enum turn {
-        BLACK_TURN, WHITE_TURN
     };
+
+
 
 
     enum knightMoves : unsigned {

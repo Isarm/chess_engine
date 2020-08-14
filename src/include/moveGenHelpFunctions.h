@@ -27,8 +27,8 @@ inline static bool is7thRank(uint64_t bb){
 }
 
 
-static uint64_t knightAttacks(uint64_t knight) {
-    uint64_t currentKnightMoves;
+uint64_t knightAttacks(uint64_t knight) {
+    uint64_t currentKnightMoves = 0;
     if (notAFile(knight)) {
         currentKnightMoves |= ((knight >> NNW) | (knight << SSW));
     }

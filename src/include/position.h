@@ -11,8 +11,9 @@ using namespace types;
 class Position{
 public:
 
-    bool turn = WHITE_TURN;
-    uint64_t bitboards[7][2]{0};
+    bool turn = WHITE;
+    uint64_t bitboards[2][7] = {0};
+    uint64_t helpBitboards[1] = {0};
     unsigned previousMoves[1024] = {0};
     unsigned halfMoveNumber = 0;
     explicit Position(string FEN);
@@ -29,6 +30,8 @@ public:
     void doMove(unsigned move);
 
     void GeneratePseudoLegalBishopMoves(moveList &movelist);
+
+    bool isInCheck(bool side);
 };
 
 #endif

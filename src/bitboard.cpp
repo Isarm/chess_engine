@@ -28,3 +28,16 @@ string Bitboard::print(uint64_t bitboard){
 
     return binary;
 }
+
+void Bitboard::printAll(uint64_t bitboard[2][7]) {
+
+    for(int i = 0; i < 2; i++){
+        cout << "\n-----------------";
+        for(int j = 0; j < 7; j++){
+            print(bitboard[i][j]);
+        }
+
+    }
+
+
+}
