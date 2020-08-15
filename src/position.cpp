@@ -7,6 +7,7 @@
 #include "types.h"
 #include "bitboard.h"
 #include "moveGenHelpFunctions.h"
+#include "slider_attacks.h"
 
 using namespace std;
 using namespace types;
@@ -21,7 +22,7 @@ Position::Position(string FEN){
     unsigned BBindex = 0; // this gets incremented when the FEN contains numbers as well
     char pieceChar = FEN.at(0);
     int i; // initialize here as it is also needed outside of the scope of the for loop
-    for(i = 0; pieceChar != ' '; i++, BBindex++, pieceChar = FEN.at(i)){ // for loop for first part of FEN until first space
+    for(i = 0; pieceChar != ' '; i++, BBindex++, pieceChar = FEN.at(i)){ // loop for first part of FEN until first space
         if(pieceChar == '/'){
             BBindex--; // account for (incorrect) increment, as it is simply a new row
             continue;
@@ -45,6 +46,9 @@ Position::Position(string FEN){
 
     generateHelpBitboards();
 
+    sliderAttacks = SliderAttacks();
+    sliderAttacks.Initialize(); // initialize slider attacks
+
 //    for(unsigned long bitboard : bitboards){
 //        Bitboard::print(bitboard);
 //    }
@@ -54,9 +58,7 @@ Position::Position(string FEN){
 }
 
 void Position::generateHelpBitboards() {
-    /* first 6 bitboards are black pieces
-     * 6 after are white
-    */
+
     bitboards[BLACK][PIECES] = 0;
     bitboards[WHITE][PIECES] = 0;
     for(int i = 0; i < 6; i++){
@@ -75,6 +77,7 @@ void Position::GeneratePseudoLegalMoves(moveList &movelist) {
 
     GeneratePseudoLegalPawnMoves(movelist);
     GeneratePseudoLegalKnightMoves(movelist);
+    GeneratePseudoLegalSliderMoves(movelist);
 
 }
 
@@ -132,11 +135,11 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
     knights = bitboards[this->turn][KNIGHTS];
 
     unsigned pieceIndex;
-    uint64_t pieceBB; //pieceBitboard
+    uint64_t pieceBB, currentKnightMoves, currentKnightCaptures; //pieceBitboard
 
     while (knights != 0) {
         //TODO: implement pinned piece check and remove pinned nights from this moveset.
-        uint64_t currentKnightMoves = 0, currentKnightCaptureMoves = 0;
+        currentKnightMoves = 0, currentKnightCaptures = 0;
 
         //grabs the first knight and returns it's index. This knight also gets removed from the knights variable bibboard
         // so in the next loop the next knight will be returned.
@@ -150,13 +153,13 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
         currentKnightMoves &= ~bitboards[this->turn][PIECES];
 
         // use knightmoves AND opponent pieces to get capture moves (storing capturemoves differently is efficient for the search tree)
-        currentKnightCaptureMoves = currentKnightMoves & bitboards[!this->turn][PIECES];
+        currentKnightCaptures = currentKnightMoves & bitboards[!this->turn][PIECES];
 
 
         // remove capturemoves from the normal moves bitboard
-        currentKnightMoves = currentKnightMoves & (0xFFFFFFFFFFFFFFFF ^ currentKnightCaptureMoves);
+        currentKnightMoves  &= ~currentKnightCaptures;
 
-        bitboardsToMovelist(movelist, pieceBB, currentKnightMoves, currentKnightCaptureMoves);
+        bitboardsToMovelist(movelist, pieceBB, currentKnightMoves, currentKnightCaptures);
 
     }
 
@@ -164,12 +167,70 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
 
 
 
-void Position::GeneratePseudoLegalBishopMoves(moveList &movelist){
+void Position::GeneratePseudoLegalSliderMoves(moveList &movelist){
 
+    unsigned pieceIndex;
+    uint64_t pieceBB, currentPieceMoves, currentPieceCaptures;
+    int sliders[] = {BISHOPS, ROOKS, QUEENS}; // sliders to loop over
+    for(int &currentSlider: sliders) {
+        uint64_t currentPiece;
+        currentPiece = bitboards[this->turn][currentSlider];
+        while (currentPiece != 0) {
+            currentPieceMoves = 0, currentPieceCaptures = 0;
+
+            pieceIndex = debruijnSerialization(currentPiece);
+            pieceBB = 1uLL << pieceIndex;
+
+            // get slider attacks
+            switch (currentSlider) {
+                case BISHOPS:
+                    currentPieceMoves = sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], int(pieceIndex));
+                    break;
+                case ROOKS:
+                    currentPieceMoves = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], int(pieceIndex));
+                    break;
+                case QUEENS:
+                    currentPieceMoves = sliderAttacks.QueenAttacks(helpBitboards[OCCUPIED_SQUARES], int(pieceIndex));
+                    break;
+            }
+
+            // remove same side blockers
+            currentPieceMoves &= ~bitboards[this->turn][PIECES];
+
+            // divide in capture and normal moves
+            currentPieceCaptures &= bitboards[!this->turn][PIECES];
+            currentPieceMoves &= ~currentPieceCaptures;
+
+            bitboardsToMovelist(movelist, pieceBB, currentPieceMoves, currentPieceCaptures);
+        }
+    }
 }
 
 // checks if the king of color side is in check
 bool Position::isInCheck(bool side){
+    uint64_t king = bitboards[side][KING];
+    unsigned kingIndex = debruijnSerialization(king);
+    king = 1uLL << kingIndex; // as the king bit gets removed in debruijnSerialization function
+
+    //check knight attacks
+    if(knightAttacks(king) & bitboards[!side][KNIGHTS]) return true;
+
+    // check bishop attacks (+ queen diagonal attack)
+    if(sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], int(kingIndex)) & (bitboards[!side][BISHOPS] | bitboards[!side][QUEENS])) return true;
+
+    // check rook attacks (+ queen straight line attack)
+    if(sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], int(kingIndex)) & (bitboards[!side][ROOKS]) | bitboards[!side][QUEENS]) return true;
+
+    // check pawn attacks
+    if(side == WHITE){ // pawns going north, so king "attacks" south, so left shift
+        if((king << 9 | king << 7) & bitboards[BLACK][PAWNS]) return true;
+    }
+    else{
+        if((king >> 9 | king >> 7) & bitboards[WHITE][PAWNS]) return true;
+    }
+
+    return false;
+
 
 }
 

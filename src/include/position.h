@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <iostream>
 #include "types.h"
+#include "slider_attacks.h"
 
 using namespace std;
 using namespace types;
@@ -16,6 +17,9 @@ public:
     uint64_t helpBitboards[1] = {0};
     unsigned previousMoves[1024] = {0};
     unsigned halfMoveNumber = 0;
+
+    SliderAttacks sliderAttacks;
+
     explicit Position(string FEN);
 
     void generateHelpBitboards();
@@ -29,7 +33,7 @@ public:
 
     void doMove(unsigned move);
 
-    void GeneratePseudoLegalBishopMoves(moveList &movelist);
+    void GeneratePseudoLegalSliderMoves(moveList &movelist);
 
     bool isInCheck(bool side);
 };
