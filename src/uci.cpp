@@ -27,7 +27,8 @@ void UCI::start() {
 
 
 void UCI::mainLoop(){
-    Position position = Position("startpos");
+
+    Position position = Position("rnbqkbnr/pppppppp/8/8/8/8/P6P/RNBQKBNR w KQkq - 0 1");
     moveList movelist;
     position.GeneratePseudoLegalMoves(movelist);
     position.doMove(movelist.move[0]);

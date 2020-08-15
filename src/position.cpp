@@ -198,7 +198,7 @@ void Position::GeneratePseudoLegalSliderMoves(moveList &movelist){
             currentPieceMoves &= ~bitboards[this->turn][PIECES];
 
             // divide in capture and normal moves
-            currentPieceCaptures &= bitboards[!this->turn][PIECES];
+            currentPieceCaptures = currentPieceMoves & bitboards[!this->turn][PIECES];
             currentPieceMoves &= ~currentPieceCaptures;
 
             bitboardsToMovelist(movelist, pieceBB, currentPieceMoves, currentPieceCaptures);
