@@ -22,5 +22,5 @@ int main(int argc, char *argv[]) {
     UCI::mainLoop();
 
 
-}
+b}
 

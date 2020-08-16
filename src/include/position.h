@@ -22,20 +22,22 @@ public:
 
     explicit Position(string FEN);
 
-    void generateHelpBitboards();
-
     void GeneratePseudoLegalMoves(moveList &movelist);
-
-    void GeneratePseudoLegalPawnMoves(moveList &movelist);
-    void GeneratePseudoLegalKnightMoves(moveList &movelist);
-
-    void bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t moves, uint64_t capturemove);
 
     void doMove(unsigned move);
 
+
+
+private:
+    void generateHelpBitboards();
+
+    void GeneratePseudoLegalPawnMoves(moveList &movelist);
+    void GeneratePseudoLegalKnightMoves(moveList &movelist);
     void GeneratePseudoLegalSliderMoves(moveList &movelist);
 
-    bool isInCheck(bool side);
+    void bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t moves, uint64_t capturemove);
+    bool squareAttackedBy(uint64_t square, bool colour);
+    uint64_t pinnedPieces(uint64_t pinnedOrigin, bool colour);
 };
 
 #endif

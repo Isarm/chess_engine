@@ -206,27 +206,52 @@ void Position::GeneratePseudoLegalSliderMoves(moveList &movelist){
     }
 }
 
-// checks if the king of color side is in check
-bool Position::isInCheck(bool side){
-    uint64_t king = bitboards[side][KING];
-    unsigned kingIndex = debruijnSerialization(king);
-    king = 1uLL << kingIndex; // as the king bit gets removed in debruijnSerialization function
+// pinnedOrigin is the location that will be checked for pins (e.g. pinnedOrigin is king for legality check)
+// pinned pieces are of color $colour
+uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
+
+    unsigned squareIndex = debruijnSerialization(pinnedOrigin);
+    uint64_t pinnedPieces;
+
+    // check bishop/queen diagonal pins
+    uint64_t diagonalAttacks = sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], squareIndex);
+
+    //get $colour blockers
+    uint64_t blockers = bitboards[colour][PIECES] & diagonalAttacks;
+
+    // regenerate diagonal attacks, but with the blockers removed
+    diagonalAttacks = sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES] & ~blockers, squareIndex);
+
+
+    //similar procedure for rook/queen rook attacks
+    uint64_t rookAttacks = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], squareIndex);
+    blockers = bitboards[colour][PIECES] & rookAttacks;
+    rookAttacks = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES] & ~blockers, squareIndex);
+
+
+
+}
+
+// checks if the square is attacked by $colour
+bool Position::squareAttackedBy(uint64_t squareAttacked, bool colour){
+    unsigned squareIndex = debruijnSerialization(squareAttacked);
+    squareAttacked = 1uLL << squareIndex; // as the square bit gets removed in debruijnSerialization function
 
     //check knight attacks
-    if(knightAttacks(king) & bitboards[!side][KNIGHTS]) return true;
+    if(knightAttacks(squareAttacked) & bitboards[colour][KNIGHTS]) return true;
 
     // check bishop attacks (+ queen diagonal attack)
-    if(sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], int(kingIndex)) & (bitboards[!side][BISHOPS] | bitboards[!side][QUEENS])) return true;
+    if(sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], int(squareIndex)) & (bitboards[colour][BISHOPS] | bitboards[colour][QUEENS])) return true;
 
     // check rook attacks (+ queen straight line attack)
-    if(sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], int(kingIndex)) & (bitboards[!side][ROOKS]) | bitboards[!side][QUEENS]) return true;
+    if(sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], int(squareIndex)) & (bitboards[colour][ROOKS]) | bitboards[colour][QUEENS]) return true;
 
     // check pawn attacks
-    if(side == WHITE){ // pawns going north, so king "attacks" south, so left shift
-        if((king << 9 | king << 7) & bitboards[BLACK][PAWNS]) return true;
+    if(colour == BLACK){ // pawns going north (because white does attacking), so squareAttacked "attacks" south, so left shift
+        if((squareAttacked << 9u | squareAttacked << 7u) & bitboards[BLACK][PAWNS]) return true;
     }
     else{
-        if((king >> 9 | king >> 7) & bitboards[WHITE][PAWNS]) return true;
+        if((squareAttacked >> 9u | squareAttacked >> 7u) & bitboards[WHITE][PAWNS]) return true;
     }
 
     return false;
