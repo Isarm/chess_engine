@@ -35,7 +35,14 @@ namespace types {
             {'k', KING},
     };
 
-
+    static const map<int, char> FENpiecesReverse = {
+            {PAWNS, 'p'},
+            {KNIGHTS, 'n'},
+            {BISHOPS, 'b'},
+            {ROOKS, 'r'},
+            {QUEENS, 'q'},
+            {KING, 'k'}
+    };
 
 
     enum knightMoves : unsigned {
@@ -50,7 +57,27 @@ namespace types {
     };
 
 
+    enum moveListShift : unsigned{
+        ORIGIN_SQUARE_SHIFT = 0,
+        DESTINATION_SQUARE_SHIFT = 6,
+        PROMOTION_TYPE_SHIFT = 12,
+        SPECIAL_MOVE_FLAG_SHIFT = 14,
+        CAPTURE_MOVE_FLAG_SHIFT = 16,
+        CAPTURED_PIECE_TYPE_SHIFT = 17,
+        CAPTURED_PIECE_INDEX_SHIFT = 20,
 
+
+    };
+
+    enum moveListMask : unsigned{
+        ORIGIN_SQAURE_MASK = 0x3F,
+        DESTINATION_SQARE_MASK = 0xFC0,
+        PROMOTION_TYPE_MASK = 0x3000,
+        SPECIAL_MOVE_FLAG_MASK = 0xC000,
+        CAPTURE_MOVE_FLAG_MASK = 0x10000,
+        CAPTURED_PIECE_TYPE_MASK = 0xE0000,
+        CAPTURED_PIECE_INDEX_MASK = 0x3F00000,
+    };
 
 
     struct moveList{

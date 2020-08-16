@@ -68,6 +68,42 @@ void Position::generateHelpBitboards() {
     helpBitboards[OCCUPIED_SQUARES] = bitboards[BLACK][PIECES] | bitboards[WHITE][PIECES];
 }
 
+void Position::prettyPrint() {
+
+    char printArray[64] = {};
+    unsigned index;
+
+    for (int i = 0; i < 6; i++) {
+
+        if(bitboards[WHITE][i]) {
+            index = debruijnSerialization(bitboards[WHITE][i]);
+            printArray[index] = toupper(FENpiecesReverse.at(i));
+        }
+        if(bitboards[BLACK][i]) {
+            index = debruijnSerialization(bitboards[BLACK][i]);
+            printArray[index] = FENpiecesReverse.at(i);
+        }
+    }
+
+    cout << "__________\n|";
+    if (printArray[0]) {
+        cout << " " << printArray[0] << " ";
+    } else {
+        cout << " . ";
+    }
+    for (int i = 1; i < 64; i++) {
+        if (i % 8 == 0) {
+            cout << "|\n|";
+        }
+        if (printArray[i]) {
+            cout << " " << printArray[i] << " ";
+        } else {
+            cout << " . ";
+        }
+
+    }
+    cout << "|\n__________\n\n";
+}
 
 
 
@@ -251,19 +287,19 @@ uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
     return pinnedPieces;
 }
 
-// checks if the square is attacked by $colour
+// checks if the square of $colour is attacked
 bool Position::squareAttacked(uint64_t square, bool colour){
     unsigned squareIndex = debruijnSerialization(square);
     square = 1uLL << squareIndex; // as the square bit gets removed in debruijnSerialization function
 
     //check knight attacks
-    if(knightAttacks(square) & bitboards[colour][KNIGHTS]) return true;
+    if(knightAttacks(square) & bitboards[!colour][KNIGHTS]) return true;
 
     // check bishop attacks (+ queen diagonal attack)
-    if(sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], int(squareIndex)) & (bitboards[colour][BISHOPS] | bitboards[colour][QUEENS])) return true;
+    if(sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], int(squareIndex)) & (bitboards[!colour][BISHOPS] | bitboards[!colour][QUEENS])) return true;
 
     // check rook attacks (+ queen straight line attack)
-    if(sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], int(squareIndex)) & (bitboards[colour][ROOKS]) | bitboards[colour][QUEENS]) return true;
+    if(sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], int(squareIndex)) & (bitboards[!colour][ROOKS] | bitboards[!colour][QUEENS])) return true;
 
     // check pawn attacks
     if(colour == BLACK){ // pawns going north (because white does attacking), so squareAttacked "attacks" south, so left shift
@@ -296,41 +332,33 @@ void Position::bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t
         destinationInt = debruijnSerialization(destinations);
 
         // put origin and destination in movelist
-        movelist.move[movelist.moveLength] = originInt;
-        movelist.move[movelist.moveLength++] |= destinationInt << 6u;
+        movelist.move[movelist.moveLength] = originInt << ORIGIN_SQUARE_SHIFT;
+        movelist.move[movelist.moveLength++] |= destinationInt << DESTINATION_SQUARE_SHIFT;
     }
 
     while(captureDestinations != 0){
         destinationInt = debruijnSerialization(captureDestinations);
 
         movelist.captureMove[movelist.captureMoveLength] = originInt;
-        movelist.captureMove[movelist.captureMoveLength++] |= destinationInt << 6u;
+        movelist.captureMove[movelist.captureMoveLength++] |= destinationInt << DESTINATION_SQUARE_SHIFT;
     }
 
 
 
 }
 
-void Position::doMove(unsigned move){
-    unsigned originInt, destinationInt;
-
-    // put into previous moves list
-    this->previousMoves[this->halfMoveNumber++] = move;
-
-    originInt = 0x3F & move;
-    destinationInt = (0xFC0 & move) >> 6;
-
-    uint64_t originBB, destinationBB;
-
-    originBB = 1uLL << originInt;
-    destinationBB = 1uLL << destinationInt;
+/*
+ * This method checks which piece occupies originInt, and moves that piece to destinationInt. It does NOT check captures.
+ * @param originInt origin bitboard
+ * @param destinationInt destination bitboard
+ * @param colour specify which colour moves (speeds up the search for the piece)
+ */
+void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour){
 
     // find the piece that is moved.
-    int start;
-
     int pieceToMove = -1;
     for(int i = 0; i < 6; i++) {
-        if(bitboards[this->turn][i] & originBB) {
+        if(bitboards[colour][i] & originBB) {
             pieceToMove = i;
             break;
         }
@@ -339,21 +367,76 @@ void Position::doMove(unsigned move){
     // remove origin piece
     bitboards[this->turn][pieceToMove] &= ~originBB;
 
-
-    // switch to opponent bitboards and remove possible destination piece in case of capture
-    for(int i = 0; i < 6; i++){
-        bitboards[!this->turn][i] &= ~destinationBB;
-    }
-
-
     // add destination piece
     bitboards[this->turn][pieceToMove] |= destinationBB;
-
-    // update help bitboards
-    generateHelpBitboards();
-
-    Bitboard::printAll(bitboards);
+};
 
 
 
+
+// doMove  does the move and stores move information in the previesMoves array
+// other than the 15 bits used in the bitboardsToMoveList convention the following bits are used:
+// bit 16 capturemoveflag
+// bit 17-19 captured piece
+// bit 20-25 captured piece index
+// in types.h the enum can be found for the shifts and the masks
+void Position::doMove(unsigned move){
+    unsigned originInt, destinationInt;
+
+
+    originInt = (ORIGIN_SQAURE_MASK & move) >> ORIGIN_SQUARE_SHIFT;
+    destinationInt = (DESTINATION_SQARE_MASK & move) >> DESTINATION_SQUARE_SHIFT;
+
+    uint64_t originBB, destinationBB;
+
+    originBB = 1uLL << originInt;
+    destinationBB = 1uLL << destinationInt;
+
+    MovePiece(originBB, destinationBB, this->turn);
+
+    // switch to opponent bitboards and remove possible destination piece in case of capture
+    // also save this piece in the previousMoves array as it needs to be restored in case of undoMove
+    uint64_t capturedPiece;
+    for(unsigned i = 0; i < 6; i++){
+        capturedPiece = bitboards[!this->turn][i] & destinationBB;
+        if(capturedPiece) {
+            bitboards[!this->turn][i] &= ~capturedPiece;
+
+            // store the capture move specifications
+            move |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
+            move |= i << CAPTURED_PIECE_TYPE_SHIFT;
+            move |= debruijnSerialization(capturedPiece) << CAPTURED_PIECE_INDEX_SHIFT;
+            break;
+        }
+    }
+    // put into previous moves list
+    this->previousMoves[this->halfMoveNumber++] = move;
 }
+
+
+void Position::undoMove() {
+    unsigned originInt, destinationInt;
+
+    // get the move
+    unsigned move = this->previousMoves[this->halfMoveNumber];
+    // revert back to 0
+    this->previousMoves[this->halfMoveNumber--] = 0;
+
+    originInt = (move & ORIGIN_SQAURE_MASK) >> ORIGIN_SQUARE_SHIFT;
+    destinationInt = (move & DESTINATION_SQARE_MASK) >> DESTINATION_SQUARE_SHIFT;
+
+    uint64_t originBB = 1uLL << originInt;
+    uint64_t destinationBB = 1uLL << destinationInt;
+
+    // move the piece from destination to origin (so a possible wrong order warning is expected)
+    MovePiece(destinationBB, originBB, !this->turn);
+
+    // put the captured piece back
+    if(move & CAPTURE_MOVE_FLAG_MASK){
+        unsigned pieceIndex = (move & CAPTURED_PIECE_INDEX_MASK) >> CAPTURED_PIECE_INDEX_SHIFT;
+        unsigned pieceType = (move & CAPTURED_PIECE_TYPE_MASK) >> CAPTURED_PIECE_TYPE_SHIFT;
+        bitboards[this->turn][pieceType] |= 1uLL << pieceIndex;
+    }
+}
+
+

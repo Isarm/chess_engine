@@ -24,16 +24,17 @@ public:
 
     explicit Position(string FEN);
 
+    void generateHelpBitboards();
     void GenerateMoves(moveList &movelist);
 
     void doMove(unsigned move);
+    void undoMove();
 
-
+    void prettyPrint();
 
 private:
 
 
-    void generateHelpBitboards();
 
     void GeneratePawnMoves(moveList &movelist);
     void GenerateKnightMoves(moveList &movelist);
@@ -42,6 +43,9 @@ private:
     void bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t moves, uint64_t capturemove);
     bool squareAttacked(uint64_t square, bool colour);
     uint64_t pinnedPieces(uint64_t pinnedOrigin, bool colour);
+
+    void MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour);
+
 };
 
 #endif

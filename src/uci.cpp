@@ -34,6 +34,10 @@ void UCI::mainLoop(){
     Position position = Position(pinnedPiecesTest);
     moveList movelist;
     position.GenerateMoves(movelist);
+    position.prettyPrint();
+
     position.doMove(movelist.move[0]);
+
+    position.prettyPrint();
 
 }
