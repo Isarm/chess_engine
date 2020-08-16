@@ -77,7 +77,7 @@ void Position::prettyPrint() {
 
         if(bitboards[WHITE][i]) {
             index = debruijnSerialization(bitboards[WHITE][i]);
-            printArray[index] = toupper(FENpiecesReverse.at(i));
+            printArray[index] = char(toupper(FENpiecesReverse.at(i)));
         }
         if(bitboards[BLACK][i]) {
             index = debruijnSerialization(bitboards[BLACK][i]);
@@ -108,7 +108,6 @@ void Position::prettyPrint() {
 
 
 void Position::GenerateMoves(moveList &movelist) {
-
 
     this->isIncheck = squareAttacked(bitboards[this->turn][KING], this->turn);
     this->helpBitboards[PINNED_PIECES] = pinnedPieces(bitboards[this->turn][KING], this->turn);
@@ -211,8 +210,6 @@ void Position::GenerateSliderMoves(moveList &movelist){
         uint64_t currentPiece;
         currentPiece = bitboards[this->turn][currentSlider];
         while (currentPiece != 0) {
-            currentPieceMoves = 0, currentPieceCaptures ;
-
             pieceIndex = debruijnSerialization(currentPiece);
             pieceBB = 1uLL << pieceIndex;
 
@@ -226,6 +223,9 @@ void Position::GenerateSliderMoves(moveList &movelist){
                     break;
                 case QUEENS:
                     currentPieceMoves = sliderAttacks.QueenAttacks(helpBitboards[OCCUPIED_SQUARES], int(pieceIndex));
+                    break;
+                default:
+                    currentPieceMoves = 0;
                     break;
             }
 
@@ -271,8 +271,6 @@ uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
     //similar procedure for rook/queen rook attacks
     uint64_t rookAttacks = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], squareIndex);
     blockers = bitboards[colour][PIECES] & rookAttacks;
-    rookAttacks = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES] & ~blockers, squareIndex);
-
 
     while(blockers!= 0) {
         // get a single blocker
@@ -369,9 +367,7 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
 
     // add destination piece
     bitboards[this->turn][pieceToMove] |= destinationBB;
-};
-
-
+}
 
 
 // doMove  does the move and stores move information in the previesMoves array
