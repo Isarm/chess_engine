@@ -17,7 +17,7 @@ namespace types {
     };
 
     enum helpBitboards{
-        OCCUPIED_SQUARES
+        OCCUPIED_SQUARES, PINNED_PIECES
     };
 
     enum bitboards_full {

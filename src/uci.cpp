@@ -28,10 +28,12 @@ void UCI::start() {
 
 void UCI::mainLoop(){
 
-    Position position = Position("rnbqkbnr/pppppppp/8/8/8/8/P6P/RNBQKBNR w KQkq - 0 1");
-    moveList movelist;
-    position.GeneratePseudoLegalMoves(movelist);
-    position.doMove(movelist.move[0]);
+    string pinnedPiecesTest = "2q5/8/6b1/2B5/8/3R4/RrKN2r1/8 w - - 0 1";
 
+
+    Position position = Position(pinnedPiecesTest);
+    moveList movelist;
+    position.GenerateMoves(movelist);
+    position.doMove(movelist.move[0]);
 
 }

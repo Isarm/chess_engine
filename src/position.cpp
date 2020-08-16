@@ -71,17 +71,18 @@ void Position::generateHelpBitboards() {
 
 
 
-void Position::GeneratePseudoLegalMoves(moveList &movelist) {
+void Position::GenerateMoves(moveList &movelist) {
 
-    int moveListLength = 0;
 
-    GeneratePseudoLegalPawnMoves(movelist);
-    GeneratePseudoLegalKnightMoves(movelist);
-    GeneratePseudoLegalSliderMoves(movelist);
+    this->isIncheck = squareAttacked(bitboards[this->turn][KING], this->turn);
+    this->helpBitboards[PINNED_PIECES] = pinnedPieces(bitboards[this->turn][KING], this->turn);
+    GeneratePawnMoves(movelist);
+    GenerateKnightMoves(movelist);
+    GenerateSliderMoves(movelist);
 
 }
 
-void Position::GeneratePseudoLegalPawnMoves(moveList &movelist) {
+void Position::GeneratePawnMoves(moveList &movelist) {
     //TODO: en passant, pins
     uint64_t pawns;
 
@@ -90,7 +91,7 @@ void Position::GeneratePseudoLegalPawnMoves(moveList &movelist) {
     unsigned pieceIndex;
     uint64_t pieceBB;
     while(pawns != 0){
-        uint64_t currentPawnMoves = 0, currentPawnCaptureMoves = 0;
+        uint64_t currentPawnMoves, currentPawnCaptureMoves;
 
         pieceIndex = debruijnSerialization(pawns);
 
@@ -129,7 +130,7 @@ void Position::GeneratePseudoLegalPawnMoves(moveList &movelist) {
 }
 
 
-void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
+void Position::GenerateKnightMoves(moveList &movelist) {
 
     uint64_t knights;
     knights = bitboards[this->turn][KNIGHTS];
@@ -139,7 +140,6 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
 
     while (knights != 0) {
         //TODO: implement pinned piece check and remove pinned nights from this moveset.
-        currentKnightMoves = 0, currentKnightCaptures = 0;
 
         //grabs the first knight and returns it's index. This knight also gets removed from the knights variable bibboard
         // so in the next loop the next knight will be returned.
@@ -162,12 +162,11 @@ void Position::GeneratePseudoLegalKnightMoves(moveList &movelist) {
         bitboardsToMovelist(movelist, pieceBB, currentKnightMoves, currentKnightCaptures);
 
     }
-
 }
 
 
 
-void Position::GeneratePseudoLegalSliderMoves(moveList &movelist){
+void Position::GenerateSliderMoves(moveList &movelist){
 
     unsigned pieceIndex;
     uint64_t pieceBB, currentPieceMoves, currentPieceCaptures;
@@ -176,7 +175,7 @@ void Position::GeneratePseudoLegalSliderMoves(moveList &movelist){
         uint64_t currentPiece;
         currentPiece = bitboards[this->turn][currentSlider];
         while (currentPiece != 0) {
-            currentPieceMoves = 0, currentPieceCaptures = 0;
+            currentPieceMoves = 0, currentPieceCaptures ;
 
             pieceIndex = debruijnSerialization(currentPiece);
             pieceBB = 1uLL << pieceIndex;
@@ -210,8 +209,8 @@ void Position::GeneratePseudoLegalSliderMoves(moveList &movelist){
 // pinned pieces are of color $colour
 uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
 
-    unsigned squareIndex = debruijnSerialization(pinnedOrigin);
-    uint64_t pinnedPieces;
+    int squareIndex = (int) debruijnSerialization(pinnedOrigin);
+    uint64_t pinnedPieces = 0;
 
     // check bishop/queen diagonal pins
     uint64_t diagonalAttacks = sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], squareIndex);
@@ -219,8 +218,18 @@ uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
     //get $colour blockers
     uint64_t blockers = bitboards[colour][PIECES] & diagonalAttacks;
 
-    // regenerate diagonal attacks, but with the blockers removed
-    diagonalAttacks = sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES] & ~blockers, squareIndex);
+    // regenerate diagonal attacks, but remove the blockers one by one
+    uint64_t singleBlocker;
+    while(blockers!= 0) {
+        // get a single blocker
+        singleBlocker = debruijnSerialization(blockers);
+        singleBlocker = 1uLL << singleBlocker;
+
+        diagonalAttacks = sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES] & ~singleBlocker, squareIndex);
+        if(diagonalAttacks & (bitboards[!colour][BISHOPS] | bitboards[!colour][QUEENS])){
+            pinnedPieces |= singleBlocker;
+        }
+    }
 
 
     //similar procedure for rook/queen rook attacks
@@ -229,16 +238,26 @@ uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
     rookAttacks = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES] & ~blockers, squareIndex);
 
 
+    while(blockers!= 0) {
+        // get a single blocker
+        singleBlocker = debruijnSerialization(blockers);
+        singleBlocker = 1uLL << singleBlocker;
 
+        diagonalAttacks = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES] & ~singleBlocker, squareIndex);
+        if(diagonalAttacks & (bitboards[!colour][ROOKS] | bitboards[!colour][QUEENS])){
+            pinnedPieces |= singleBlocker;
+        }
+    }
+    return pinnedPieces;
 }
 
 // checks if the square is attacked by $colour
-bool Position::squareAttackedBy(uint64_t squareAttacked, bool colour){
-    unsigned squareIndex = debruijnSerialization(squareAttacked);
-    squareAttacked = 1uLL << squareIndex; // as the square bit gets removed in debruijnSerialization function
+bool Position::squareAttacked(uint64_t square, bool colour){
+    unsigned squareIndex = debruijnSerialization(square);
+    square = 1uLL << squareIndex; // as the square bit gets removed in debruijnSerialization function
 
     //check knight attacks
-    if(knightAttacks(squareAttacked) & bitboards[colour][KNIGHTS]) return true;
+    if(knightAttacks(square) & bitboards[colour][KNIGHTS]) return true;
 
     // check bishop attacks (+ queen diagonal attack)
     if(sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], int(squareIndex)) & (bitboards[colour][BISHOPS] | bitboards[colour][QUEENS])) return true;
@@ -248,10 +267,10 @@ bool Position::squareAttackedBy(uint64_t squareAttacked, bool colour){
 
     // check pawn attacks
     if(colour == BLACK){ // pawns going north (because white does attacking), so squareAttacked "attacks" south, so left shift
-        if((squareAttacked << 9u | squareAttacked << 7u) & bitboards[BLACK][PAWNS]) return true;
+        if((square << 9u | square << 7u) & bitboards[BLACK][PAWNS]) return true;
     }
     else{
-        if((squareAttacked >> 9u | squareAttacked >> 7u) & bitboards[WHITE][PAWNS]) return true;
+        if((square >> 9u | square >> 7u) & bitboards[WHITE][PAWNS]) return true;
     }
 
     return false;
