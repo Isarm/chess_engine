@@ -39,10 +39,10 @@ void UCI::mainLoop(){
 
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    perftCounts pfcount = position.PERFT(5);
+    perftCounts pfcount = position.PERFT(6);
     auto t2 = std::chrono::high_resolution_clock::now();
 
-    cout << "\n\n" << pfcount.total << "\n";
+    cout << "\n\n" << "Nodes: " << pfcount.total << "\n";
     cout << "Normal: " << pfcount.normal << "\n";
     cout << "Capture: " << pfcount.captures << "\n";
 
