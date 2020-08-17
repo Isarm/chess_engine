@@ -2,6 +2,7 @@
 #include <iostream>
 #include "uci.h"
 #include "position.h"
+#include <chrono>
 
 using namespace std;
 
@@ -30,15 +31,27 @@ void UCI::mainLoop(){
 
 
     string pinnedPiecesTest = "2q5/8/6b1/2B5/8/3R4/RrKN2r1/8 w - - 0 1";
+    string blacktoplay = "1kq5/8/r5b1/2B5/8/3R4/R1KN2r1/8 b - - 0 1";
+    string startP2 = "rnbqkbnr/pppppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR b KQkq - 0 1";
 
-    Position position = Position(pinnedPiecesTest);
-    moveList movelist;
-    position.prettyPrint();
-    position.GenerateMoves(movelist);
+    Position position = Position("startpos");
     position.prettyPrint();
 
-    position.doMove(movelist.move[0]);
 
-    position.prettyPrint();
+    auto t1 = std::chrono::high_resolution_clock::now();
+    perftCounts pfcount = position.PERFT(5);
+    auto t2 = std::chrono::high_resolution_clock::now();
+
+    cout << "\n\n" << pfcount.total << "\n";
+    cout << "Normal: " << pfcount.normal << "\n";
+    cout << "Capture: " << pfcount.captures << "\n";
+
+    int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count();
+
+    cout << "Time: "
+              << milliseconds
+              << " milliseconds\n";
+
+    cout << "Nodes/s: "  << pfcount.total / milliseconds * 1000 << "\n";
 
 }

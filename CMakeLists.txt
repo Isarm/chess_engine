@@ -15,7 +15,7 @@ add_executable(engine
         src/main.cpp
         src/position.cpp
         src/uci.cpp
-        src/include/moveGenHelpFunctions.h
+        src/include/useful.h
         #magic-bits
         magic-bits/src/slider_attacks.h
         magic-bits/src/slider_attacks.cpp)

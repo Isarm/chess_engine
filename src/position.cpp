@@ -6,11 +6,11 @@
 #include "position.h"
 #include "definitions.h"
 #include "bitboard.h"
-#include "moveGenHelpFunctions.h"
+#include "useful.h"
 #include "slider_attacks.h"
 
 using namespace std;
-using namespace types;
+using namespace definitions;
 
 Position::Position(string FEN){
 
@@ -81,6 +81,7 @@ void Position::prettyPrint() {
             BB = bitboards[WHITE][i];
             while(BB != 0) {
                 index = debruijnSerialization(BB);
+                BB &= ~(1uLL << index); // remove this piece from BB
                 printArray[index] = char(toupper(FENpiecesReverse.at(i)));
             }
         }
@@ -88,6 +89,7 @@ void Position::prettyPrint() {
             BB = bitboards[BLACK][i];
             while (BB != 0) {
                 index = debruijnSerialization(BB);
+                BB &= ~(1uLL << index); // remove this piece from BB
                 printArray[index] = FENpiecesReverse.at(i);
             }
         }
@@ -122,6 +124,8 @@ void Position::GenerateMoves(moveList &movelist) {
     GeneratePawnMoves(movelist);
     GenerateKnightMoves(movelist);
     GenerateSliderMoves(movelist);
+    GenerateKingMoves(movelist);
+
 
 }
 
@@ -139,6 +143,7 @@ void Position::GeneratePawnMoves(moveList &movelist) {
         pieceIndex = debruijnSerialization(pawns);
 
         pieceBB = 1uLL << pieceIndex;
+        pawns &= ~pieceBB;
 
         if(this->turn == WHITE){ // pawns going NORTH, so right shift
             currentPawnMoves = pieceBB >> N;
@@ -190,6 +195,8 @@ void Position::GenerateKnightMoves(moveList &movelist) {
         pieceIndex = debruijnSerialization(knights);
         pieceBB = 1uLL << pieceIndex;
 
+        knights &= ~pieceBB; //remove knight from knights bitboard
+
         currentKnightMoves = knightAttacks(pieceBB); //get the knight attacks (moveGenHelpFunctions.h)
 
 
@@ -222,6 +229,8 @@ void Position::GenerateSliderMoves(moveList &movelist){
             pieceIndex = debruijnSerialization(currentPiece);
             pieceBB = 1uLL << pieceIndex;
 
+            currentPiece &= ~pieceBB; // remove single piece from current pieceBB
+
             // get slider attacks
             switch (currentSlider) {
                 case BISHOPS:
@@ -250,6 +259,19 @@ void Position::GenerateSliderMoves(moveList &movelist){
     }
 }
 
+void Position::GenerateKingMoves(moveList &movelist){
+    uint64_t king = bitboards[this->turn][KING];
+
+    uint64_t kingMoves = kingAttacks(king);
+
+    kingMoves &= ~bitboards[this->turn][PIECES];
+    uint64_t kingAttackMoves = kingMoves & bitboards[!this->turn][PIECES];
+    kingMoves &= ~kingAttackMoves;
+
+    bitboardsToLegalMovelist(movelist, king, kingMoves, kingAttackMoves, true);
+
+}
+
 // pinnedOrigin is the location that will be checked for pins (e.g. pinnedOrigin is king for legality check)
 // pinned pieces are of colour $colour
 uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
@@ -270,6 +292,8 @@ uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
         singleBlocker = debruijnSerialization(blockers);
         singleBlocker = 1uLL << singleBlocker;
 
+        blockers &= ~singleBlocker; // remove singleBlocker from blockers bb
+
         diagonalAttacks = sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES] & ~singleBlocker, squareIndex);
         if(diagonalAttacks & (bitboards[!colour][BISHOPS] | bitboards[!colour][QUEENS])){
             pinnedPieces |= singleBlocker;
@@ -284,6 +308,8 @@ uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
         // get a single blocker
         singleBlocker = debruijnSerialization(blockers);
         singleBlocker = 1uLL << singleBlocker;
+
+        blockers &= ~singleBlocker; // remove singleBlocker from blockers bb
 
         diagonalAttacks = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES] & ~singleBlocker, squareIndex);
         if(diagonalAttacks & (bitboards[!colour][ROOKS] | bitboards[!colour][QUEENS])){
@@ -308,13 +334,13 @@ bool Position::squareAttacked(uint64_t square, bool colour){
     if(sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], int(squareIndex)) & (bitboards[!colour][ROOKS] | bitboards[!colour][QUEENS])) return true;
 
     // check pawn attacks
-    if(colour == BLACK){ // pawns going north (because white does attacking), so squareAttacked "attacks" south, so left shift
-        if(notAFile(square) && (square << SW & bitboards[BLACK][PAWNS])) return true;
-        if(notHFile(square) && (square << SE & bitboards[BLACK][PAWNS])) return true;
+    if(colour == WHITE){ // pawns going south (because black does attacking), so squareAttacked "attacks" north, so right shift
+        if(notAFile(square) && (square >> NW & bitboards[BLACK][PAWNS])) return true;
+        if(notHFile(square) && (square >> NE & bitboards[BLACK][PAWNS])) return true;
     }
     else{
-        if(notAFile(square) && (square >> NW & bitboards[WHITE][PAWNS])) return true;
-        if(notHFile(square) && (square >> NE & bitboards[WHITE][PAWNS])) return true;
+        if(notAFile(square) && (square << SW & bitboards[WHITE][PAWNS])) return true;
+        if(notHFile(square) && (square << SE & bitboards[WHITE][PAWNS])) return true;
     }
 
     return false;
@@ -333,7 +359,7 @@ bool Position::squareAttacked(uint64_t square, bool colour){
  *
  */
 
-void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations) {
+void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations, bool kingMoveFlag) {
     unsigned originInt, destinationInt, move;
     originInt = debruijnSerialization(origin);
     origin |= 1uLL << originInt; // restore origin as debruijnSerialization removes this bit by default
@@ -346,26 +372,25 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
         // get integer of destination position
         destinationInt = debruijnSerialization(destinations);
 
+        destinations &= ~(1uLL << destinationInt);
+
         // generate the move
         move = originInt << ORIGIN_SQUARE_SHIFT;
         move |= destinationInt << DESTINATION_SQUARE_SHIFT;
 
         if(pinnedFlag){
-            uint64_t king = bitboards[this->turn][KING];
-            unsigned kingInt = debruijnSerialization(king);
+            unsigned kingInt = debruijnSerialization(bitboards[this->turn][KING]);
             // if the piece does not move in the same line as the king, the move is illegal, thus continue with the next move
             if(rayDirectionLookup(kingInt, originInt) != rayDirectionLookup(originInt, destinationInt)) continue;
         }
 
-
-        if(isIncheck){
+        if(isIncheck || kingMoveFlag){
             doMove(move);
             // check if the king is still attacked after this move
             if(squareAttacked(bitboards[!this->turn][KING], !this->turn)){
                 undoMove();
                 continue;
             }
-
             undoMove();
         }
 
@@ -377,18 +402,19 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
     while(captureDestinations != 0){
         destinationInt = debruijnSerialization(captureDestinations);
 
+        captureDestinations &= ~(1uLL << destinationInt);
+
         // generate the move
         move = originInt << ORIGIN_SQUARE_SHIFT;
         move |= destinationInt << DESTINATION_SQUARE_SHIFT;
 
         if(pinnedFlag){
-            uint64_t king = bitboards[this->turn][KING];
-            unsigned kingInt = debruijnSerialization(king);
+            unsigned kingInt = debruijnSerialization(bitboards[this->turn][KING]);
             // if the piece does not move in the same line as the king, the move is illegal, thus continue with the next move
             if(rayDirectionLookup(kingInt, originInt) != rayDirectionLookup(originInt, destinationInt)) continue;
         }
 
-        if(isIncheck){
+        if(isIncheck || kingMoveFlag){
             doMove(move);
             // check if the king is still attacked after this move
             if(squareAttacked(bitboards[!this->turn][KING], !this->turn)){
@@ -424,10 +450,10 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
     }
 
     // remove origin piece
-    bitboards[this->turn][pieceToMove] &= ~originBB;
+    bitboards[colour][pieceToMove] &= ~originBB;
 
     // add destination piece
-    bitboards[this->turn][pieceToMove] |= destinationBB;
+    bitboards[colour][pieceToMove] |= destinationBB;
 }
 
 
@@ -436,13 +462,13 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
 // bit 16 capturemoveflag
 // bit 17-19 captured piece
 // bit 20-25 captured piece index
-// in types.h the enum can be found for the shifts and the masks
+// in definitions.h the enum can be found for the shifts and the masks
 void Position::doMove(unsigned move){
     unsigned originInt, destinationInt;
 
 
-    originInt = (ORIGIN_SQAURE_MASK & move) >> ORIGIN_SQUARE_SHIFT;
-    destinationInt = (DESTINATION_SQARE_MASK & move) >> DESTINATION_SQUARE_SHIFT;
+    originInt = (ORIGIN_SQUARE_MASK & move) >> ORIGIN_SQUARE_SHIFT;
+    destinationInt = (DESTINATION_SQUARE_MASK & move) >> DESTINATION_SQUARE_SHIFT;
 
     uint64_t originBB, destinationBB;
 
@@ -471,6 +497,7 @@ void Position::doMove(unsigned move){
 
     this->turn = !this->turn;
     generateHelpBitboards();
+
 }
 
 // undo the last made move
@@ -478,12 +505,12 @@ void Position::undoMove() {
     unsigned originInt, destinationInt;
 
     // get the move
-    unsigned move = this->previousMoves[this->halfMoveNumber];
+    unsigned move = this->previousMoves[this->halfMoveNumber - 1];
     // revert back to 0
-    this->previousMoves[this->halfMoveNumber--] = 0;
+    this->previousMoves[--this->halfMoveNumber] = 0;
 
-    originInt = (move & ORIGIN_SQAURE_MASK) >> ORIGIN_SQUARE_SHIFT;
-    destinationInt = (move & DESTINATION_SQARE_MASK) >> DESTINATION_SQUARE_SHIFT;
+    originInt = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
+    destinationInt = (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
 
     uint64_t originBB = 1uLL << originInt;
     uint64_t destinationBB = 1uLL << destinationInt;
@@ -500,6 +527,61 @@ void Position::undoMove() {
 
     this->turn = !this->turn;
     generateHelpBitboards();
+
 }
 
 
+perftCounts Position::PERFT(int depth, bool tree){
+
+    perftCounts pfcount, pfcountTemp;
+
+    definitions::moveList movelist;
+
+    uint64_t totalMoves = 0, captureMoves = 0, normalMoves = 0;
+    uint64_t temp;
+
+
+    GenerateMoves(movelist);
+
+
+    if(depth == 1){
+
+        captureMoves = movelist.captureMoveLength;
+        normalMoves = movelist.moveLength;
+
+        pfcount.captures = captureMoves;
+        pfcount.normal = normalMoves;
+        pfcount.total = normalMoves + captureMoves;
+        return pfcount;
+    }
+
+    for(int i = 0; i < movelist.moveLength; i++){
+        doMove(movelist.move[i]);
+        pfcountTemp = PERFT(depth - 1, false);
+        if(tree) {
+            cout << moveToStrNotation(movelist.move[i]) << " " << pfcountTemp.total << "\n";
+        }
+        captureMoves += pfcountTemp.captures;
+        normalMoves += pfcountTemp.normal;
+        totalMoves += pfcountTemp.total;
+        undoMove();
+    }
+
+    for(int i = 0; i < movelist.captureMoveLength; i++){
+        doMove(movelist.captureMove[i]);
+        pfcountTemp = PERFT(depth - 1, false);
+        if(tree) {
+            cout << moveToStrNotation(movelist.captureMove[i]) << " " << pfcountTemp.total << "\n";
+        }
+        captureMoves += pfcountTemp.captures;
+        normalMoves += pfcountTemp.normal;
+        totalMoves += pfcountTemp.total;
+        undoMove();
+    }
+
+    pfcount.total = totalMoves;
+    pfcount.normal = normalMoves;
+    pfcount.captures = captureMoves;
+
+    return pfcount;
+};

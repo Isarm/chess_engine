@@ -4,7 +4,7 @@
 #include "slider_attacks.h"
 
 using namespace std;
-using namespace types;
+using namespace definitions;
 
 #ifndef POSITION_H
 #define POSITION_H
@@ -32,6 +32,7 @@ public:
 
     void prettyPrint();
 
+    perftCounts PERFT(int depth, bool tree = true);
 private:
 
 
@@ -40,13 +41,13 @@ private:
     void GenerateKnightMoves(moveList &movelist);
     void GenerateSliderMoves(moveList &movelist);
 
-    void bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations);
+    void bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations, bool kingMoveFlag = false);
     bool squareAttacked(uint64_t square, bool colour);
     uint64_t pinnedPieces(uint64_t pinnedOrigin, bool colour);
 
     void MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour);
 
-    bool legalityCheck(unsigned int originInt, unsigned int destinationInt, bool pinned);
+    void GenerateKingMoves(moveList &movelist);
 };
 
 #endif

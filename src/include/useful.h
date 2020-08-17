@@ -7,7 +7,7 @@
 
 
 inline static bool notAFile(uint64_t bb) {
-    return uint64_t(0x7F7F7F7F7F7F7F7F) & bb;
+    return uint64_t(0xFEFEFEFEFEFEFEFE) & bb;
 }
 
 inline static bool notABFile(uint64_t bb) {
@@ -48,7 +48,21 @@ uint64_t knightAttacks(uint64_t knight) {
     return currentKnightMoves;
 }
 
-unsigned debruijnSerialization(uint64_t &pieces) {
+uint64_t kingAttacks(uint64_t king){
+    uint64_t kingAttacks = 0;
+    if(notAFile(king)){
+        kingAttacks |= (king >> NW) | (king >> W) | (king << SW);
+    }
+    if(notHFile(king)) {
+        kingAttacks |= (king >> NE) | (king << E) | (king << SE);
+    }
+    kingAttacks |= (king >> N) | (king << S);
+
+    return kingAttacks;
+
+}
+
+static unsigned debruijnSerialization(uint64_t pieces) {
 
     // from the chess programming wiki
     // for the debruijn bit serialization method
@@ -65,8 +79,7 @@ unsigned debruijnSerialization(uint64_t &pieces) {
             25, 14, 19, 9, 13, 8, 7, 6
     };
     uint64_t LS1B = pieces & -pieces; // only keeps the 1st LSB bit so that the DeBruijn bitscan can be used
-    pieces ^= LS1B; // remove this bit for next cycle using XOR
-    return index64[(LS1B * debruijn64) >> 58u]; //index64 defined in types.h
+    return index64[(LS1B * debruijn64) >> 58u]; //index64 defined in definitions.h
 }
 
 // lookup table for direction from square a to square b
@@ -91,6 +104,21 @@ void rayDirectionLookupInitialize() {
 inline int rayDirectionLookup(unsigned a, unsigned b) {
     return rayDirectionsTable[a][b];
 }
+
+inline string moveToStrNotation(unsigned move){
+    unsigned originInt = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
+    unsigned destinationInt =  (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
+
+    char str[5];
+    str[0] = originInt%8 + 'a';
+    str[1] = 8 - int(originInt/8) + '0';
+    str[2] = destinationInt%8 + 'a';
+    str[3] = 8 - int(destinationInt/8) + '0';
+
+    return string(str);
+
+
+};
 
 
 
