@@ -8,7 +8,7 @@ include_directories(src/include
 
 add_executable(engine
         src/include/bitboard.h
-        src/include/types.h
+        src/include/definitions.h
         src/include/position.h
         src/include/uci.h
         src/bitboard.cpp

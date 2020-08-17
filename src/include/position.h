@@ -1,6 +1,6 @@
 #include <cstdint>
 #include <iostream>
-#include "types.h"
+#include "definitions.h"
 #include "slider_attacks.h"
 
 using namespace std;
@@ -40,7 +40,7 @@ private:
     void GenerateKnightMoves(moveList &movelist);
     void GenerateSliderMoves(moveList &movelist);
 
-    static void bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t moves, uint64_t capturemove);
+    void bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t moves, uint64_t capturemove);
     bool squareAttacked(uint64_t square, bool colour);
     uint64_t pinnedPieces(uint64_t pinnedOrigin, bool colour);
 

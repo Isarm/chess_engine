@@ -4,7 +4,7 @@
 #include <cstdint>
 
 #include "position.h"
-#include "types.h"
+#include "definitions.h"
 #include "bitboard.h"
 #include "moveGenHelpFunctions.h"
 #include "slider_attacks.h"
@@ -72,16 +72,22 @@ void Position::prettyPrint() {
 
     char printArray[64] = {};
     unsigned index;
-
+    uint64_t BB;
     for (int i = 0; i < 6; i++) {
 
         if(bitboards[WHITE][i]) {
-            index = debruijnSerialization(bitboards[WHITE][i]);
-            printArray[index] = char(toupper(FENpiecesReverse.at(i)));
+            BB = bitboards[WHITE][i];
+            while(BB != 0) {
+                index = debruijnSerialization(BB);
+                printArray[index] = char(toupper(FENpiecesReverse.at(i)));
+            }
         }
         if(bitboards[BLACK][i]) {
-            index = debruijnSerialization(bitboards[BLACK][i]);
-            printArray[index] = FENpiecesReverse.at(i);
+            BB = bitboards[BLACK][i];
+            while (BB != 0) {
+                index = debruijnSerialization(BB);
+                printArray[index] = FENpiecesReverse.at(i);
+            }
         }
     }
 
@@ -126,36 +132,38 @@ void Position::GeneratePawnMoves(moveList &movelist) {
     unsigned pieceIndex;
     uint64_t pieceBB;
     while(pawns != 0){
-        uint64_t currentPawnMoves, currentPawnCaptureMoves;
+        uint64_t currentPawnMoves, currentPawnCaptureMoves = 0;
 
         pieceIndex = debruijnSerialization(pawns);
 
         pieceBB = 1uLL << pieceIndex;
 
         if(this->turn == WHITE){ // pawns going NORTH, so right shift
-            currentPawnMoves = pieceBB >> 8u;
+            currentPawnMoves = pieceBB >> N;
             currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // make sure destination square is empty
 
             if(currentPawnMoves && is2ndRank(pieceBB)){ //check for double pawn move, if single pawn move exists and pawn is on 2nd rank
-                currentPawnMoves |= pieceBB >> 16u;
+                currentPawnMoves |= pieceBB >> NN;
                 currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // again make sure destination square is empty
             }
 
             // generate capture moves
-            currentPawnCaptureMoves = (pieceBB >> 7u) | (pieceBB >> 9u);
+            if(notAFile(pieceBB)) currentPawnCaptureMoves |= pieceBB >> NW;
+            if(notHFile(pieceBB)) currentPawnCaptureMoves |= pieceBB >> NE;
             currentPawnCaptureMoves &= bitboards[BLACK][PIECES];
         }
         else{ //black's turn, pawns going south so left shift
-            currentPawnMoves = pieceBB << 8u;
+            currentPawnMoves = pieceBB << S;
             currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // make sure destination square is empty
 
             if(currentPawnMoves && is7thRank(pieceBB)){ //check for double pawn move, if single pawn move exists and pawn is on 2nd rank
-                currentPawnMoves |= pieceBB << 16u;
+                currentPawnMoves |= pieceBB << SS;
                 currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // again make sure destination square is empty
             }
 
             // generate capture moves
-            currentPawnCaptureMoves = (pieceBB << 7u) | (pieceBB << 9u);
+            if(notAFile(pieceBB)) currentPawnCaptureMoves |= pieceBB << SW;
+            if(notHFile(pieceBB)) currentPawnCaptureMoves |= pieceBB << SE;
             currentPawnCaptureMoves &= bitboards[WHITE][PIECES];
         }
 
@@ -174,7 +182,6 @@ void Position::GenerateKnightMoves(moveList &movelist) {
     uint64_t pieceBB, currentKnightMoves, currentKnightCaptures; //pieceBitboard
 
     while (knights != 0) {
-        //TODO: implement pinned piece check and remove pinned nights from this moveset.
 
         //grabs the first knight and returns it's index. This knight also gets removed from the knights variable bibboard
         // so in the next loop the next knight will be returned.
@@ -206,7 +213,7 @@ void Position::GenerateSliderMoves(moveList &movelist){
     unsigned pieceIndex;
     uint64_t pieceBB, currentPieceMoves, currentPieceCaptures;
     int sliders[] = {BISHOPS, ROOKS, QUEENS}; // sliders to loop over
-    for(int &currentSlider: sliders) {
+    for(int currentSlider: sliders) {
         uint64_t currentPiece;
         currentPiece = bitboards[this->turn][currentSlider];
         while (currentPiece != 0) {
@@ -242,7 +249,7 @@ void Position::GenerateSliderMoves(moveList &movelist){
 }
 
 // pinnedOrigin is the location that will be checked for pins (e.g. pinnedOrigin is king for legality check)
-// pinned pieces are of color $colour
+// pinned pieces are of colour $colour
 uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
 
     int squareIndex = (int) debruijnSerialization(pinnedOrigin);
@@ -266,7 +273,6 @@ uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
             pinnedPieces |= singleBlocker;
         }
     }
-
 
     //similar procedure for rook/queen rook attacks
     uint64_t rookAttacks = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], squareIndex);
@@ -301,14 +307,15 @@ bool Position::squareAttacked(uint64_t square, bool colour){
 
     // check pawn attacks
     if(colour == BLACK){ // pawns going north (because white does attacking), so squareAttacked "attacks" south, so left shift
-        if((square << 9u | square << 7u) & bitboards[BLACK][PAWNS]) return true;
+        if(notAFile(square) && (square << SW & bitboards[BLACK][PAWNS])) return true;
+        if(notHFile(square) && (square << SE & bitboards[BLACK][PAWNS])) return true;
     }
     else{
-        if((square >> 9u | square >> 7u) & bitboards[WHITE][PAWNS]) return true;
+        if(notAFile(square) && (square >> NW & bitboards[WHITE][PAWNS])) return true;
+        if(notHFile(square) && (square >> NE & bitboards[WHITE][PAWNS])) return true;
     }
 
     return false;
-
 
 }
 
@@ -325,6 +332,10 @@ void Position::bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t
     unsigned originInt, destinationInt;
     originInt = debruijnSerialization(origin);
 
+    // check if the piece is pinned
+    bool pinnedFlag = false;
+    if(origin & helpBitboards[PINNED_PIECES]) pinnedFlag = true;
+
     while(destinations != 0){
         // get integer of destination position
         destinationInt = debruijnSerialization(destinations);
@@ -340,9 +351,6 @@ void Position::bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t
         movelist.captureMove[movelist.captureMoveLength] = originInt;
         movelist.captureMove[movelist.captureMoveLength++] |= destinationInt << DESTINATION_SQUARE_SHIFT;
     }
-
-
-
 }
 
 /*

@@ -45,15 +45,28 @@ namespace types {
     };
 
 
-    enum knightMoves : unsigned {
-        NNW = 17, // right shift
-        NNE = 15, // right shift
-        NWW = 10, // right shift
-        NEE = 6,  // right shift
-        SWW = 6,  // left shift
-        SEE = 10, // left shift
-        SSW = 15, // left shift
-        SSE = 17  // left shift
+    enum directionsShifting : unsigned {
+        NNW  = 17, // right shift
+        NN   = 16,  // right shift
+        NNE  = 15, // right shift
+        NWW  = 10, // right shift
+        NW   = 9,  // right shift
+        N    = 8,  // right shift
+        NE   = 7,  // right shift
+        NEE  = 6,  // right shift
+
+        SWW  = 6,  // left shift
+        SW   = 7,  // left shift
+        S    = 8,  // left shift
+        SE   = 9,  // left shift
+        SEE  = 10, // left shift
+        SSW  = 15, // left shift
+        SS   = 16, // left shift
+        SSE  = 17  // left shift
+    };
+
+    enum rayDirections : int{
+        VERTICAL_RAY = 1, HORIZONTAL_RAY, NORTHWEST_RAY, SOUTHWEST_RAY
     };
 
 

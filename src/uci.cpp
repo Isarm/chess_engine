@@ -2,6 +2,7 @@
 #include <iostream>
 #include "uci.h"
 #include "position.h"
+#include "moveGenHelpFunctions.h"
 
 using namespace std;
 
@@ -28,11 +29,14 @@ void UCI::start() {
 
 void UCI::mainLoop(){
 
+
+
     string pinnedPiecesTest = "2q5/8/6b1/2B5/8/3R4/RrKN2r1/8 w - - 0 1";
 
 
     Position position = Position(pinnedPiecesTest);
     moveList movelist;
+    position.prettyPrint();
     position.GenerateMoves(movelist);
     position.prettyPrint();
 
