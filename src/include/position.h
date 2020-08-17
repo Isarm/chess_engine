@@ -40,12 +40,13 @@ private:
     void GenerateKnightMoves(moveList &movelist);
     void GenerateSliderMoves(moveList &movelist);
 
-    void bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t moves, uint64_t capturemove);
+    void bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations);
     bool squareAttacked(uint64_t square, bool colour);
     uint64_t pinnedPieces(uint64_t pinnedOrigin, bool colour);
 
     void MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour);
 
+    bool legalityCheck(unsigned int originInt, unsigned int destinationInt, bool pinned);
 };
 
 #endif

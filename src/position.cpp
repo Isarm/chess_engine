@@ -49,6 +49,8 @@ Position::Position(string FEN){
     sliderAttacks = SliderAttacks();
     sliderAttacks.Initialize(); // initialize slider attacks
 
+    rayDirectionLookupInitialize(); // initialize ray lookup table;
+
 //    for(unsigned long bitboard : bitboards){
 //        Bitboard::print(bitboard);
 //    }
@@ -168,7 +170,7 @@ void Position::GeneratePawnMoves(moveList &movelist) {
         }
 
         // update movelist
-        bitboardsToMovelist(movelist, pieceBB, currentPawnMoves, currentPawnCaptureMoves);
+        bitboardsToLegalMovelist(movelist, pieceBB, currentPawnMoves, currentPawnCaptureMoves);
     }
 }
 
@@ -201,7 +203,7 @@ void Position::GenerateKnightMoves(moveList &movelist) {
         // remove capturemoves from the normal moves bitboard
         currentKnightMoves  &= ~currentKnightCaptures;
 
-        bitboardsToMovelist(movelist, pieceBB, currentKnightMoves, currentKnightCaptures);
+        bitboardsToLegalMovelist(movelist, pieceBB, currentKnightMoves, currentKnightCaptures);
 
     }
 }
@@ -243,7 +245,7 @@ void Position::GenerateSliderMoves(moveList &movelist){
             currentPieceCaptures = currentPieceMoves & bitboards[!this->turn][PIECES];
             currentPieceMoves &= ~currentPieceCaptures;
 
-            bitboardsToMovelist(movelist, pieceBB, currentPieceMoves, currentPieceCaptures);
+            bitboardsToLegalMovelist(movelist, pieceBB, currentPieceMoves, currentPieceCaptures);
         }
     }
 }
@@ -319,8 +321,11 @@ bool Position::squareAttacked(uint64_t square, bool colour){
 
 }
 
-/* This function converts a origin bitboard and destination bitboard into a movelist
- * for storing moves the following approach is used: (similar to stockfish)
+/* This function converts a origin bitboard and destination bitboard into a movelist.
+ * The function assumes the moves are pseudo legal, and performs a legality check to make sure that the king is not
+ * left in check after the move has been made.
+ *
+ * For storing moves the following approach is used: (similar to stockfish)
  * bit 0-5 === origin square;
  * bit 6-11 === destination square;
  * bit 12-13 === promotion piece type (N, B, R, Q)
@@ -328,9 +333,10 @@ bool Position::squareAttacked(uint64_t square, bool colour){
  *
  */
 
-void Position::bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations) {
-    unsigned originInt, destinationInt;
+void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations) {
+    unsigned originInt, destinationInt, move;
     originInt = debruijnSerialization(origin);
+    origin |= 1uLL << originInt; // restore origin as debruijnSerialization removes this bit by default
 
     // check if the piece is pinned
     bool pinnedFlag = false;
@@ -340,18 +346,65 @@ void Position::bitboardsToMovelist(moveList &movelist, uint64_t origin, uint64_t
         // get integer of destination position
         destinationInt = debruijnSerialization(destinations);
 
-        // put origin and destination in movelist
-        movelist.move[movelist.moveLength] = originInt << ORIGIN_SQUARE_SHIFT;
-        movelist.move[movelist.moveLength++] |= destinationInt << DESTINATION_SQUARE_SHIFT;
+        // generate the move
+        move = originInt << ORIGIN_SQUARE_SHIFT;
+        move |= destinationInt << DESTINATION_SQUARE_SHIFT;
+
+        if(pinnedFlag){
+            uint64_t king = bitboards[this->turn][KING];
+            unsigned kingInt = debruijnSerialization(king);
+            // if the piece does not move in the same line as the king, the move is illegal, thus continue with the next move
+            if(rayDirectionLookup(kingInt, originInt) != rayDirectionLookup(originInt, destinationInt)) continue;
+        }
+
+
+        if(isIncheck){
+            doMove(move);
+            // check if the king is still attacked after this move
+            if(squareAttacked(bitboards[!this->turn][KING], !this->turn)){
+                undoMove();
+                continue;
+            }
+
+            undoMove();
+        }
+
+        movelist.move[movelist.moveLength++] = move;
+
     }
 
+    // capture moves
     while(captureDestinations != 0){
         destinationInt = debruijnSerialization(captureDestinations);
 
-        movelist.captureMove[movelist.captureMoveLength] = originInt;
-        movelist.captureMove[movelist.captureMoveLength++] |= destinationInt << DESTINATION_SQUARE_SHIFT;
+        // generate the move
+        move = originInt << ORIGIN_SQUARE_SHIFT;
+        move |= destinationInt << DESTINATION_SQUARE_SHIFT;
+
+        if(pinnedFlag){
+            uint64_t king = bitboards[this->turn][KING];
+            unsigned kingInt = debruijnSerialization(king);
+            // if the piece does not move in the same line as the king, the move is illegal, thus continue with the next move
+            if(rayDirectionLookup(kingInt, originInt) != rayDirectionLookup(originInt, destinationInt)) continue;
+        }
+
+        if(isIncheck){
+            doMove(move);
+            // check if the king is still attacked after this move
+            if(squareAttacked(bitboards[!this->turn][KING], !this->turn)){
+                undoMove();
+                continue;
+            }
+            else{
+                undoMove();
+            }
+        }
+        movelist.captureMove[movelist.captureMoveLength++] = move;
     }
 }
+
+
+
 
 /*
  * This method checks which piece occupies originInt, and moves that piece to destinationInt. It does NOT check captures.
@@ -378,7 +431,7 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
 }
 
 
-// doMove  does the move and stores move information in the previesMoves array
+// doMove does the move and stores move information in the previesMoves array
 // other than the 15 bits used in the bitboardsToMoveList convention the following bits are used:
 // bit 16 capturemoveflag
 // bit 17-19 captured piece
@@ -415,9 +468,12 @@ void Position::doMove(unsigned move){
     }
     // put into previous moves list
     this->previousMoves[this->halfMoveNumber++] = move;
+
+    this->turn = !this->turn;
+    generateHelpBitboards();
 }
 
-
+// undo the last made move
 void Position::undoMove() {
     unsigned originInt, destinationInt;
 
@@ -441,6 +497,9 @@ void Position::undoMove() {
         unsigned pieceType = (move & CAPTURED_PIECE_TYPE_MASK) >> CAPTURED_PIECE_TYPE_SHIFT;
         bitboards[this->turn][pieceType] |= 1uLL << pieceIndex;
     }
+
+    this->turn = !this->turn;
+    generateHelpBitboards();
 }
 
 
