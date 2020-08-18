@@ -3,7 +3,7 @@
 using namespace std;
 
 #include "uci.h"
-#include "definitions.h"
+#include "tests.h"
 
 bool debug = 1;
 
@@ -17,14 +17,13 @@ int main(int argc, char *argv[]) {
 
         if (input == "uci") {
             UCI::start();
-        } else {
-            return 1;
         }
 
         UCI::mainLoop();
     }
-
-    UCI::mainLoop();
+    else{
+        testmain();
+    }
 
 }
 

@@ -8,6 +8,9 @@ namespace UCI {
 
     void start();
 
+    void perft();
+
+
 }//namespace UCI
 
 #endif

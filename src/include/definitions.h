@@ -80,8 +80,7 @@ namespace definitions {
         CAPTURE_MOVE_FLAG_SHIFT = 16,
         CAPTURED_PIECE_TYPE_SHIFT = 17,
         CAPTURED_PIECE_INDEX_SHIFT = 20,
-
-
+        EN_PASSANT_DESTINATION_SQUARE_SHIFT = 26,
     };
 
     enum moveListMask : unsigned{
@@ -92,12 +91,26 @@ namespace definitions {
         CAPTURE_MOVE_FLAG_MASK = 0x10000,
         CAPTURED_PIECE_TYPE_MASK = 0xE0000,
         CAPTURED_PIECE_INDEX_MASK = 0x3F00000,
+        EN_PASSANT_DESTINATION_SQUARE_MASK = 0xFC000000,
     };
 
     enum specialMoves : unsigned{
-        PROMOTION = 1,
-        EN_PASSANT = 2,
-        CASTLING = 3,
+        PROMOTION_FLAG = 1,
+        EN_PASSANT_FLAG = 2,
+        CASTLING_FLAG = 3,
+    };
+
+    enum castlingRights : unsigned{
+        NO_CASTLING_RIGHTS = 0x0,
+        WHITE_KINGSIDE_CASTLING_RIGHTS = 0x1,
+        WHITE_QUEENSIDE_CASTLING_RIGHTS = 0x2,
+        BLACK_KINGSIDE_CASTLING_RIGHTS = 0x4,
+        BLACK_QUEENSIDE_CASTLING_RIGHTS = 0x8,
+
+        WHITE_CASTLING_RIGHTS = 0x3,
+        BLACK_CASTLING_RIGHTS = 0xC,
+
+        ALL_CASTLING_RIGHTS = 0xF,
     };
 
     struct moveList{
@@ -124,6 +137,8 @@ namespace definitions {
         uint64_t normal = 0;
         uint64_t captures = 0;
     };
+
+
 
 
 }
