@@ -138,7 +138,7 @@ void Position::GeneratePawnMoves(moveList &movelist) {
     unsigned pieceIndex;
     uint64_t pieceBB;
     while(pawns != 0){
-        uint64_t currentPawnMoves, currentPawnCaptureMoves = 0;
+        uint64_t currentPawnMoves, currentPawnCaptureMoves = 0, enPassantMove;
 
         pieceIndex = debruijnSerialization(pawns);
 
@@ -157,7 +157,10 @@ void Position::GeneratePawnMoves(moveList &movelist) {
             // generate capture moves
             if(notAFile(pieceBB)) currentPawnCaptureMoves |= pieceBB >> NW;
             if(notHFile(pieceBB)) currentPawnCaptureMoves |= pieceBB >> NE;
+            enPassantMove = currentPawnCaptureMoves & bitboards[BLACK][EN_PASSANT_SQUARES];
             currentPawnCaptureMoves &= bitboards[BLACK][PIECES];
+
+
         }
         else{ //black's turn, pawns going south so left shift
             currentPawnMoves = pieceBB << S;
@@ -171,13 +174,20 @@ void Position::GeneratePawnMoves(moveList &movelist) {
             // generate capture moves
             if(notAFile(pieceBB)) currentPawnCaptureMoves |= pieceBB << SW;
             if(notHFile(pieceBB)) currentPawnCaptureMoves |= pieceBB << SE;
+            enPassantMove = currentPawnCaptureMoves & bitboards[WHITE][EN_PASSANT_SQUARES];
             currentPawnCaptureMoves &= bitboards[WHITE][PIECES];
+        }
+
+        // en passant moves
+        if(enPassantMove){
+            bitboardsToLegalMovelist(movelist, pieceBB, enPassantMove, 0, false, true);
         }
 
         // update movelist
         bitboardsToLegalMovelist(movelist, pieceBB, currentPawnMoves, currentPawnCaptureMoves);
     }
 }
+
 
 
 void Position::GenerateKnightMoves(moveList &movelist) {
@@ -272,6 +282,8 @@ void Position::GenerateKingMoves(moveList &movelist){
 
 }
 
+
+
 // pinnedOrigin is the location that will be checked for pins (e.g. pinnedOrigin is king for legality check)
 // pinned pieces are of colour $colour
 uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
@@ -357,9 +369,10 @@ bool Position::squareAttacked(uint64_t square, bool colour){
  * bit 12-13 === promotion piece type (N, B, R, Q)
  * bit 14-15 === special move flag, promotion, en passant, castling
  *
+ *
  */
 
-void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations, bool kingMoveFlag) {
+void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations, bool kingMoveFlag, bool enPassantMoveFlag) {
     unsigned originInt, destinationInt, move;
     originInt = debruijnSerialization(origin);
     origin |= 1uLL << originInt; // restore origin as debruijnSerialization removes this bit by default
@@ -377,6 +390,10 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
         // generate the move
         move = originInt << ORIGIN_SQUARE_SHIFT;
         move |= destinationInt << DESTINATION_SQUARE_SHIFT;
+
+        if(enPassantMoveFlag){
+            move |= EN_PASSANT << SPECIAL_MOVE_FLAG_SHIFT;
+        }
 
         if(pinnedFlag){
             unsigned kingInt = debruijnSerialization(bitboards[this->turn][KING]);
@@ -538,7 +555,6 @@ perftCounts Position::PERFT(int depth, bool tree){
     definitions::moveList movelist;
 
     uint64_t totalMoves = 0, captureMoves = 0, normalMoves = 0;
-    uint64_t temp;
 
 
     GenerateMoves(movelist);
@@ -584,4 +600,4 @@ perftCounts Position::PERFT(int depth, bool tree){
     pfcount.captures = captureMoves;
 
     return pfcount;
-};
+}

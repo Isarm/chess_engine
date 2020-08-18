@@ -59,7 +59,6 @@ uint64_t kingAttacks(uint64_t king){
     kingAttacks |= (king >> N) | (king << S);
 
     return kingAttacks;
-
 }
 
 static unsigned debruijnSerialization(uint64_t pieces) {

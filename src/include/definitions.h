@@ -9,7 +9,7 @@ using namespace std;
 namespace definitions {
 
     enum bitboards2d{
-        PAWNS, KNIGHTS, BISHOPS, ROOKS, QUEENS, KING, PIECES
+        PAWNS, KNIGHTS, BISHOPS, ROOKS, QUEENS, KING, PIECES, EN_PASSANT_SQUARES
     };
 
     enum turn{
@@ -94,6 +94,11 @@ namespace definitions {
         CAPTURED_PIECE_INDEX_MASK = 0x3F00000,
     };
 
+    enum specialMoves : unsigned{
+        PROMOTION = 1,
+        EN_PASSANT = 2,
+        CASTLING = 3,
+    };
 
     struct moveList{
         unsigned move[256] = {};

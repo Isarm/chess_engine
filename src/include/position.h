@@ -14,7 +14,7 @@ public:
 
     bool turn = WHITE;
     bool isIncheck = false;
-    uint64_t bitboards[2][7] = {0};
+    uint64_t bitboards[2][8] = {0};
     uint64_t helpBitboards[2] = {0};
 
     unsigned previousMoves[1024] = {0};
@@ -41,13 +41,15 @@ private:
     void GenerateKnightMoves(moveList &movelist);
     void GenerateSliderMoves(moveList &movelist);
 
-    void bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations, bool kingMoveFlag = false);
+    void bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations, bool kingMoveFlag = false, bool enPassantMoveFlag = false);
     bool squareAttacked(uint64_t square, bool colour);
     uint64_t pinnedPieces(uint64_t pinnedOrigin, bool colour);
 
     void MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour);
 
     void GenerateKingMoves(moveList &movelist);
+
+    void enPassantToMoveList(moveList &movelist, uint64_t pieceBB, uint64_t enPassantMove);
 };
 
 #endif
