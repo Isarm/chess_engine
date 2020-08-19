@@ -10,8 +10,8 @@
 using namespace std;
 
 
-void testmain(){
-    perftDebug();
+void testmain(int argc, char *argv[]){
+    perft(argc, argv);
 }
 
 
@@ -33,43 +33,59 @@ void testmain(){
 }
 
 
-void perft(){
+void perft(int argc, char *argv[]){
 
-    int DEPTH = 2;
-    int positionN = 3;
-
+    int DEPTH;
     string posString;
 
-    switch (positionN) {
-        case 1:
-            posString = "startpos";
-            break;
-        case 3:
-            posString = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1" ;
-            break;
-        default:
-            posString = "startpos";
-            break;
+
+    if(argc > 1){
+        DEPTH = stoi(argv[1]);
+        posString = argv[2];
+    }
+    else { // manual perft setup
+        DEPTH = 2;
+        int positionN = 1;
+
+        posString;
+
+        switch (positionN) {
+            case 1:
+                posString = "startpos";
+                break;
+            case 3:
+                posString = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1";
+                break;
+            default:
+                posString = "startpos";
+                break;
+        }
     }
 
-
-
     Position position = Position(posString);
+
+    for(int i = 3; i < argc; i++){ // do moves for perft debug tool
+        position.doMove(argv[i]);
+    }
 
     auto t1 = std::chrono::high_resolution_clock::now();
     perftCounts pfcount = position.PERFT(DEPTH);
     auto t2 = std::chrono::high_resolution_clock::now();
 
-    cout << "\n\nPerft " << DEPTH << "\n";
-    cout << "Nodes: " << pfcount.total << "\n";
-    cout << "Normal: " << pfcount.normal << "\n";
-    cout << "Capture: " << pfcount.captures << "\n";
+    cout << "\n" << pfcount.total << "\n";
 
-    int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count();
+    if(argc == 1) {
+        cout << "\n\nPerft " << DEPTH << "\n";
+        cout << "Nodes: " << pfcount.total << "\n";
+        cout << "Normal: " << pfcount.normal << "\n";
+        cout << "Capture: " << pfcount.captures << "\n";
 
-    cout << "Time: "
-         << milliseconds
-         << " milliseconds\n";
+        int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
-    cout << "Nodes/s: "  << pfcount.total / milliseconds * 1000 << "\n";
+        cout << "Time: "
+             << milliseconds
+             << " milliseconds\n";
+
+        cout << "Nodes/s: " << pfcount.total / milliseconds * 1000 << "\n";
+    }
 }

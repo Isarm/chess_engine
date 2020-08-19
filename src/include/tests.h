@@ -7,11 +7,11 @@
 
 #include "position.h"
 
-void testmain();
+void testmain(int argc, char *argv[]);
 
 [[noreturn]] void perftDebug();
 void perftrun();
-void perft();
+void perft(int argc, char *argv[]);
 
 
 #endif //ENGINE_TESTS_H

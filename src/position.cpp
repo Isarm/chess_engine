@@ -22,6 +22,9 @@ Position::Position(string FEN){
     unsigned BBindex = 0; // this gets incremented when the FEN contains numbers as well
     char pieceChar = FEN.at(0);
     int i; // initialize here as it is also needed outside of the scope of the for loop
+
+    if(FEN.at(i) == '"') i++; // skip possible leading quotation marks (in case of perft debug)
+
     for(i = 0; pieceChar != ' '; i++, BBindex++, pieceChar = FEN.at(i)){ // loop for first part of FEN until first space
         if(pieceChar == '/'){
             BBindex--; // account for (incorrect) increment, as it is simply a new row
@@ -81,7 +84,7 @@ Position::Position(string FEN){
 
     char fullMove[5];
     int fmi = 0;
-    while(++i < FEN.length()){
+    while(++i < FEN.length() && FEN.at(i) != '"'){
         fullMove[fmi] = FEN.at(i);
     }
 
@@ -163,7 +166,12 @@ void Position::prettyPrint() {
 void Position::GenerateMoves(moveList &movelist) {
 
     this->isIncheck = squareAttacked(bitboards[this->turn][KING], this->turn);
-    this->helpBitboards[PINNED_PIECES] = pinnedPieces(bitboards[this->turn][KING], this->turn);
+    if(!isIncheck) {
+        this->helpBitboards[PINNED_PIECES] = pinnedPieces(bitboards[this->turn][KING], this->turn);
+    }
+    else{
+        this->helpBitboards[PINNED_PIECES] = 0; // as pinnedPieces function only works when the king is not in check TODO:??
+    }
     GeneratePawnMoves(movelist);
     GenerateKnightMoves(movelist);
     GenerateSliderMoves(movelist);
@@ -472,6 +480,10 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
         move = originInt << ORIGIN_SQUARE_SHIFT;
         move |= destinationInt << DESTINATION_SQUARE_SHIFT;
 
+        if(enPassantMoveFlag){
+            move |= EN_PASSANT_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
+        }
+
         if(pinnedFlag){
             unsigned kingInt = debruijnSerialization(bitboards[this->turn][KING]);
             // if the piece does not move in the same line as the king, the move is illegal, thus continue with the next move
@@ -601,6 +613,10 @@ void Position::doMove(unsigned move){
 
 }
 
+void Position::doMove(char *move) {
+    doMove(strToMoveNotation(move));
+}
+
 // undo the last made move
 void Position::undoMove() {
     unsigned originInt, destinationInt;
@@ -702,3 +718,4 @@ perftCounts Position::PERFT(int depth, bool tree){
 
     return pfcount;
 }
+

@@ -119,6 +119,19 @@ inline string moveToStrNotation(unsigned move){
 
 };
 
+inline unsigned strToMoveNotation(char str[5]){
+    unsigned originInt = 0, destinationInt = 0, move;
+
+    originInt += str[0] - 'a';
+    originInt += 8 * (8 - (str[1] - '0'));
+    destinationInt += str[2] - 'a';
+    destinationInt += 8 * (8 - (str[3] - '0'));
+
+    move = originInt << ORIGIN_SQUARE_SHIFT;
+    move |= destinationInt << DESTINATION_SQUARE_SHIFT;
+
+    return move;
+}
 
 
 #endif //MOVEGENHELPFUNCTIONS_H

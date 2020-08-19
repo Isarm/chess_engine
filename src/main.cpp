@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
         UCI::mainLoop();
     }
     else{
-        testmain();
+        testmain(argc, argv);
     }
 
 }

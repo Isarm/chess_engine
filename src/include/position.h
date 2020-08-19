@@ -31,6 +31,7 @@ public:
     void GenerateMoves(moveList &movelist);
 
     void doMove(unsigned moveL);
+    void doMove(char *move);
     void undoMove();
 
     void prettyPrint();
