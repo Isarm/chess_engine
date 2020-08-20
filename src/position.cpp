@@ -64,8 +64,6 @@ Position::Position(string FEN){
         }
     }
 
-
-
     if(FEN.at(++i) != '-'){
         unsigned enPassantInt = FEN.at(i) - 'a';
         enPassantInt += (8 - (FEN.at(++i) - '0')) * 8;
@@ -336,8 +334,6 @@ void Position::GenerateKingMoves(moveList &movelist){
 
 
 void Position::GenerateCastlingMoves(moveList &movelist) {
-    unsigned move;
-
 
     if(this->turn == WHITE) {
         if (castlingRights & WHITE_KINGSIDE_CASTLING_RIGHTS) {
@@ -372,7 +368,7 @@ void Position::CastlingToMovelist(moveList &movelist, unsigned castlingType, uin
             uint64_t nonAttackedBB = 1uLL << nonAttackedInt;
             if(squareAttacked(nonAttackedBB, this->turn)){
                 illegalFlag = true;
-                break;
+                break; // TODO: change to return and remove illegalflag
             }
             nonattacked &= ~nonAttackedBB;
         }
@@ -516,8 +512,6 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
             undoMove();
         }
 
-
-
         movelist.move[movelist.moveLength++] = move;
 
     }
@@ -552,8 +546,6 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
             }
             undoMove();
         }
-
-
         movelist.captureMove[movelist.captureMoveLength++] = move;
     }
 }
@@ -580,6 +572,10 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
         }
     }
 
+    // TODO: move rook castling right removal to here, using if(rook == originBB | desitinationBB construction)
+
+    // remove castling rights if king is moved
+    // note that in case of moving the rook, the removal of castling rights is handled in the doMove function.
     if (pieceToMove == KING) {
         if (colour == WHITE) {
             castlingRights &= ~WHITE_CASTLING_RIGHTS;
@@ -620,15 +616,13 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
 
 void Position::doMove(unsigned move){
     unsigned originInt, destinationInt, enPassantInt;
+    uint64_t originBB, destinationBB;
 
     // as the previousmoves array uses uint64_t to store a move
     uint64_t moveL = move;
 
     originInt = (ORIGIN_SQUARE_MASK & moveL) >> ORIGIN_SQUARE_SHIFT;
     destinationInt = (DESTINATION_SQUARE_MASK & moveL) >> DESTINATION_SQUARE_SHIFT;
-
-    uint64_t originBB, destinationBB;
-
     originBB = 1uLL << originInt;
     destinationBB = 1uLL << destinationInt;
 
@@ -663,6 +657,7 @@ void Position::doMove(unsigned move){
             break;
         default:
             MovePiece(originBB, destinationBB, this->turn);
+
             // switch to opponent bitboards and remove possible destination piece in case of capture
             // also save this piece in the previousMoves array as it needs to be restored in case of undoMove
             uint64_t capturedPiece;
@@ -782,7 +777,7 @@ void Position::undoMove() {
             if(((ORIGIN_SQUARE_MASK & move) >> ORIGIN_SQUARE_SHIFT) & KINGSIDE_CASTLING){ // kingside castling
                 undoCastlingMove(true); // true is kingside
             }
-            else{
+            else{ // queenside castling
                 undoCastlingMove(false); // false is queenside
             }
             break;
@@ -791,7 +786,6 @@ void Position::undoMove() {
             MovePiece(destinationBB, originBB, !this->turn);
             break;
     }
-
 
     // put the captured piece back
     if(move & CAPTURE_MOVE_FLAG_MASK){
@@ -817,9 +811,7 @@ perftCounts Position::PERFT(int depth, bool tree){
 
     uint64_t totalMoves = 0, captureMoves = 0, normalMoves = 0;
 
-
     GenerateMoves(movelist);
-
 
     if(depth == 1){
 

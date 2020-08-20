@@ -78,7 +78,7 @@ static unsigned debruijnSerialization(uint64_t pieces) {
             25, 14, 19, 9, 13, 8, 7, 6
     };
     uint64_t LS1B = pieces & -pieces; // only keeps the 1st LSB bit so that the DeBruijn bitscan can be used
-    return index64[(LS1B * debruijn64) >> 58u]; //index64 defined in definitions.h
+    return index64[(LS1B * debruijn64) >> 58u];
 }
 
 // lookup table for direction from square a to square b
@@ -125,7 +125,6 @@ inline string moveToStrNotation(unsigned move){
     unsigned destinationInt =  (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
 
 
-
     char str[5];
     str[0] = originInt%8 + 'a';
     str[1] = 8 - int(originInt/8) + '0';
@@ -133,7 +132,6 @@ inline string moveToStrNotation(unsigned move){
     str[3] = 8 - int(destinationInt/8) + '0';
 
     return string(str);
-
 
 };
 
