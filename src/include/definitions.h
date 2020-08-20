@@ -81,9 +81,10 @@ namespace definitions {
         CAPTURED_PIECE_TYPE_SHIFT = 17,
         CAPTURED_PIECE_INDEX_SHIFT = 20,
         EN_PASSANT_DESTINATION_SQUARE_SHIFT = 26,
+        CASTLING_RIGHTS_BEFORE_MOVE_SHIFT = 32,
     };
 
-    enum moveListMask : unsigned{
+    enum moveListMask : uint64_t {
         ORIGIN_SQUARE_MASK = 0x3F,
         DESTINATION_SQUARE_MASK = 0xFC0,
         PROMOTION_TYPE_MASK = 0x3000,
@@ -92,6 +93,7 @@ namespace definitions {
         CAPTURED_PIECE_TYPE_MASK = 0xE0000,
         CAPTURED_PIECE_INDEX_MASK = 0x3F00000,
         EN_PASSANT_DESTINATION_SQUARE_MASK = 0xFC000000,
+        CASTLING_RIGHTS_BEFORE_MOVE_MASK =0xF00000000,
     };
 
     enum specialMoves : unsigned{
@@ -125,7 +127,6 @@ namespace definitions {
     const uint64_t BLACK_QUEENSIDE_CASTLING_NONATTACKED = 0xC;
 
 
-
     struct moveList{
         unsigned move[256] = {};
         unsigned moveLength = 0;
@@ -134,7 +135,7 @@ namespace definitions {
     };
 
 
-    enum Square : int {
+    enum Square : unsigned {
         SQ_A8, SQ_B8, SQ_C8, SQ_D8, SQ_E8, SQ_F8, SQ_G8, SQ_H8,
         SQ_A7, SQ_B7, SQ_C7, SQ_D7, SQ_E7, SQ_F7, SQ_G7, SQ_H7,
         SQ_A6, SQ_B6, SQ_C6, SQ_D6, SQ_E6, SQ_F6, SQ_G6, SQ_H6,

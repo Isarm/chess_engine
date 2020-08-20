@@ -564,30 +564,38 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
 /*
  * This method checks which piece occupies originInt, and moves that piece to destinationInt. It does NOT check captures.
  * It DOES set the en passant bit in case of double pawn move
+ * It also sets removes castling rights in case of king move
  * @param originInt origin bitboard
  * @param destinationInt destination bitboard
  * @param colour specify which colour moves (speeds up the search for the piece)
  */
-void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour){
+void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour) {
 
     // find the piece that is moved.
     int pieceToMove = -1;
-    for(int i = 0; i < 6; i++) {
-        if(bitboards[colour][i] & originBB) {
+    for (int i = 0; i < 6; i++) {
+        if (bitboards[colour][i] & originBB) {
             pieceToMove = i;
             break;
         }
     }
 
+    if (pieceToMove == KING) {
+        if (colour == WHITE) {
+            castlingRights &= ~WHITE_CASTLING_RIGHTS;
+        } else {
+            castlingRights &= ~BLACK_CASTLING_RIGHTS;
+        }
+    }
+
     // set en passant square in case of double pawn move
-    if(pieceToMove == PAWNS){
-        if(colour == WHITE){
-            if((originBB >> NN) & destinationBB){
+    if (pieceToMove == PAWNS) {
+        if (colour == WHITE) {
+            if ((originBB >> NN) & destinationBB) {
                 bitboards[WHITE][EN_PASSANT_SQUARES] = originBB >> N;
             }
-        }
-        else{
-            if((originBB << SS) & destinationBB){
+        } else {
+            if ((originBB << SS) & destinationBB) {
                 bitboards[BLACK][EN_PASSANT_SQUARES] = originBB << S;
             }
         }
@@ -598,8 +606,8 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
 
     // add destination piece
     bitboards[colour][pieceToMove] |= destinationBB;
-}
 
+}
 
 // doMove does the move and stores move information in the previesMoves array
 // other than the 15 bits used in the bitboardsToMoveList convention the following bits are used:
@@ -607,7 +615,9 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
 // bit 17-19 captured piece
 // bit 20-25 captured piece index
 // bit 26-31 en passant square index
+// bit 32-35 castling rights before this move
 // in definitions.h the enum can be found for the shifts and the masks
+
 void Position::doMove(unsigned move){
     unsigned originInt, destinationInt, enPassantInt;
 
@@ -621,6 +631,10 @@ void Position::doMove(unsigned move){
 
     originBB = 1uLL << originInt;
     destinationBB = 1uLL << destinationInt;
+
+
+    // store the castling rights of before the move
+    moveL |= uint64_t(castlingRights) << CASTLING_RIGHTS_BEFORE_MOVE_SHIFT;
 
     switch((SPECIAL_MOVE_FLAG_MASK & moveL) >> SPECIAL_MOVE_FLAG_SHIFT){
         case EN_PASSANT_FLAG:
@@ -667,6 +681,19 @@ void Position::doMove(unsigned move){
             break;
     }
 
+    // reset castling rights in case the rook has moved or has been captured.
+    if(!(bitboards[WHITE][ROOKS] & (1uLL << SQ_H1))){
+        castlingRights &= ~WHITE_KINGSIDE_CASTLING_RIGHTS;
+    }
+    else if(!(bitboards[WHITE][ROOKS] & (1uLL << SQ_A1))){
+        castlingRights &= ~WHITE_QUEENSIDE_CASTLING_RIGHTS;
+    }
+    else if(!(bitboards[BLACK][ROOKS] & (1uLL << SQ_H8))){
+        castlingRights &= ~BLACK_KINGSIDE_CASTLING_RIGHTS;
+    }
+    else if(!(bitboards[BLACK][ROOKS] & (1uLL << SQ_A8))){
+        castlingRights &= ~BLACK_QUEENSIDE_CASTLING_RIGHTS;
+    }
 
     // put into previous moves list
     this->previousMoves[this->halfMoveNumberTotal++] = moveL;
@@ -701,18 +728,18 @@ void Position::doCastlingMove(bool side){
 
 void Position::undoCastlingMove(bool side) {
     unsigned shift = 0;
-    if (this->turn == WHITE) {
+    if (!this->turn == WHITE) {
         shift = 56; //
     }
 
     if (side) { // kingside
         bitboards[!this->turn][ROOKS] |= (1uLL << (7u + shift)); // add rook
-        bitboards[!this->turn][ROOKS] &= (1uLL << (5u + shift)); // remove rook
-        bitboards[!this->turn][KING] = bitboards[this->turn][KING] >> 2u; // move king
+        bitboards[!this->turn][ROOKS] &= ~(1uLL << (5u + shift)); // remove rook
+        bitboards[!this->turn][KING] = bitboards[!this->turn][KING] >> 2u; // move king
     } else { // queenside
         bitboards[!this->turn][ROOKS] |= (1uLL << (0u + shift)); // add rook
-        bitboards[!this->turn][ROOKS] &= (1uLL << (3u + shift)); // remove rook
-        bitboards[!this->turn][KING] = bitboards[this->turn][KING] >> 2u; // move king
+        bitboards[!this->turn][ROOKS] &= ~(1uLL << (3u + shift)); // remove rook
+        bitboards[!this->turn][KING] = bitboards[!this->turn][KING] >> 2u; // move king
     }
 }
 
@@ -773,6 +800,9 @@ void Position::undoMove() {
         bitboards[this->turn][pieceType] |= 1uLL << pieceIndex;
     }
 
+    // restore castling rights
+    castlingRights = (move & CASTLING_RIGHTS_BEFORE_MOVE_MASK) >> CASTLING_RIGHTS_BEFORE_MOVE_SHIFT;
+
     this->turn = !this->turn;
     generateHelpBitboards();
 
@@ -799,6 +829,16 @@ perftCounts Position::PERFT(int depth, bool tree){
         pfcount.captures = captureMoves;
         pfcount.normal = normalMoves;
         pfcount.total = normalMoves + captureMoves;
+
+        if(tree){
+            for(int i = 0; i < movelist.moveLength; i++){
+                cout << moveToStrNotation(movelist.move[i]) << " " << 1 << "\n";
+            }
+            for(int i = 0; i < movelist.captureMoveLength; i++){
+                cout << moveToStrNotation(movelist.captureMove[i]) << " " << 1 << "\n";
+            }
+        }
+
         return pfcount;
     }
 

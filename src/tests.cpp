@@ -44,7 +44,7 @@ void perft(int argc, char *argv[]){
         posString = argv[2];
     }
     else { // manual perft setup
-        DEPTH = 2;
+        DEPTH = 1;
         int positionN = 7;
 
         switch (positionN) {

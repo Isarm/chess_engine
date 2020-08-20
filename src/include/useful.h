@@ -105,8 +105,26 @@ inline int rayDirectionLookup(unsigned a, unsigned b) {
 }
 
 inline string moveToStrNotation(unsigned move){
+
+    switch ((move & SPECIAL_MOVE_FLAG_MASK) >> SPECIAL_MOVE_FLAG_SHIFT) {
+        case CASTLING_FLAG:
+           switch ((move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT) {
+               case WHITE_KINGSIDE_CASTLING_RIGHTS:
+                   return "e1g1";
+               case WHITE_QUEENSIDE_CASTLING_RIGHTS:
+                   return "e1c1";
+               case BLACK_KINGSIDE_CASTLING_RIGHTS:
+                   return "e8g8";
+               case BLACK_QUEENSIDE_CASTLING_RIGHTS:
+                   return "e8c8";
+           }
+    }
+
+
     unsigned originInt = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
     unsigned destinationInt =  (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
+
+
 
     char str[5];
     str[0] = originInt%8 + 'a';
@@ -132,6 +150,7 @@ inline unsigned strToMoveNotation(char str[5]){
 
     return move;
 }
+
 
 
 #endif //MOVEGENHELPFUNCTIONS_H
