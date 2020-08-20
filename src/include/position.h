@@ -54,6 +54,14 @@ private:
     void GenerateKingMoves(moveList &movelist);
 
     void enPassantToMoveList(moveList &movelist, uint64_t pieceBB, uint64_t enPassantMove);
+
+    void GenerateCastlingMoves(moveList &movelist);
+
+    void CastlingToMovelist(moveList &movelist, unsigned int castlingType, uint64_t empty, uint64_t nonattacked);
+
+    void doCastlingMove(bool side);
+
+    void undoCastlingMove(bool side);
 };
 
 #endif

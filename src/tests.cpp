@@ -45,9 +45,7 @@ void perft(int argc, char *argv[]){
     }
     else { // manual perft setup
         DEPTH = 2;
-        int positionN = 1;
-
-        posString;
+        int positionN = 7;
 
         switch (positionN) {
             case 1:
@@ -55,6 +53,9 @@ void perft(int argc, char *argv[]){
                 break;
             case 3:
                 posString = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1";
+                break;
+            case 7:
+                posString = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
                 break;
             default:
                 posString = "startpos";
