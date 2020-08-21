@@ -641,7 +641,7 @@ void Position::doMove(unsigned move){
             MovePiece(originBB, destinationBB, this->turn);
 
 
-            // remove en passant destination square and store it in the previousMoveList
+            // store destination square in the previousMoveList
             enPassantInt = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
             moveL |= enPassantInt << EN_PASSANT_DESTINATION_SQUARE_SHIFT;
             bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
@@ -653,6 +653,12 @@ void Position::doMove(unsigned move){
             }
             else{
                 doCastlingMove(false); // false is queenside
+            }
+            if(this->turn == WHITE){
+                castlingRights &= ~WHITE_CASTLING_RIGHTS;
+            }
+            else{
+                castlingRights &= ~BLACK_CASTLING_RIGHTS;
             }
             break;
         default:
@@ -690,6 +696,10 @@ void Position::doMove(unsigned move){
         castlingRights &= ~BLACK_QUEENSIDE_CASTLING_RIGHTS;
     }
 
+
+    // remove en passant destination square
+    bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
+
     // put into previous moves list
     this->previousMoves[this->halfMoveNumberTotal++] = moveL;
 
@@ -699,7 +709,36 @@ void Position::doMove(unsigned move){
 }
 
 void Position::doMove(char *move) {
-    doMove(strToMoveNotation(move));
+    unsigned moveUnsigned = strToMoveNotation(move);
+
+    // in case of castling
+    if(this->turn == WHITE){
+        if(bitboards[WHITE][KING] & (1uLL << SQ_E1)){
+            if(string(move) == "e1g1"){
+                moveUnsigned = CASTLING_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
+                moveUnsigned |= KINGSIDE_CASTLING << ORIGIN_SQUARE_SHIFT;
+            }
+            else if(string(move) == "e1c1"){
+                moveUnsigned = CASTLING_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
+                moveUnsigned |= QUEENSIDE_CASTLING << ORIGIN_SQUARE_SHIFT;
+            }
+        }
+    }
+    else{
+
+        if(bitboards[BLACK][KING] & (1uLL << SQ_E8)){
+            if(string(move) == "e8g8"){
+                moveUnsigned = CASTLING_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
+                moveUnsigned |= KINGSIDE_CASTLING << ORIGIN_SQUARE_SHIFT;
+            }
+            else if(string(move) == "e8c8"){
+                moveUnsigned = CASTLING_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
+                moveUnsigned |= QUEENSIDE_CASTLING << ORIGIN_SQUARE_SHIFT;
+            }
+        }
+    }
+
+    doMove(moveUnsigned);
 }
 
 
@@ -716,7 +755,7 @@ void Position::doCastlingMove(bool side){
     }
     else{ // queenside
         bitboards[this->turn][ROOKS] &= ~(1uLL << (0u + shift)); // remove rook
-        bitboards[this->turn][ROOKS] |-  (1uLL << (3u + shift)); // add rook
+        bitboards[this->turn][ROOKS] |=  (1uLL << (3u + shift)); // add rook
         bitboards[this->turn][KING] = bitboards[this->turn][KING] >> 2u; // move king
     }
 }
@@ -734,7 +773,7 @@ void Position::undoCastlingMove(bool side) {
     } else { // queenside
         bitboards[!this->turn][ROOKS] |= (1uLL << (0u + shift)); // add rook
         bitboards[!this->turn][ROOKS] &= ~(1uLL << (3u + shift)); // remove rook
-        bitboards[!this->turn][KING] = bitboards[!this->turn][KING] >> 2u; // move king
+        bitboards[!this->turn][KING] = bitboards[!this->turn][KING] << 2u; // move king
     }
 }
 
@@ -772,6 +811,7 @@ void Position::undoMove() {
 
             // reset en passant destination square of other side
             bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
+            break;
 
         case CASTLING_FLAG:
             if(((ORIGIN_SQUARE_MASK & move) >> ORIGIN_SQUARE_SHIFT) & KINGSIDE_CASTLING){ // kingside castling

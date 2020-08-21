@@ -12,11 +12,12 @@ using namespace std;
 
 void testmain(int argc, char *argv[]){
     perft(argc, argv);
+//    perftDebug();
 }
 
 
 [[noreturn]] void perftDebug(){
-    Position position = Position("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1");
+    Position position = Position("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 0");
 
     while(true){
         position.prettyPrint();
@@ -25,10 +26,11 @@ void testmain(int argc, char *argv[]){
         position.prettyPrint();
         position.GenerateMoves(movelist);
 
-        int movenr;
-        std::cin >> movenr;
+        string move;
+        std::cin >> move;
 
-        position.doMove(movelist.move[movenr]);
+        char * moveC = const_cast<char *>(move.c_str());
+        position.doMove(moveC);
     }
 }
 
@@ -44,12 +46,15 @@ void perft(int argc, char *argv[]){
         posString = argv[2];
     }
     else { // manual perft setup
-        DEPTH = 1;
-        int positionN = 7;
+        DEPTH = 4;
+        int positionN = 1;
 
         switch (positionN) {
             case 1:
                 posString = "startpos";
+                break;
+            case 2:
+                posString = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 0";
                 break;
             case 3:
                 posString = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1";
