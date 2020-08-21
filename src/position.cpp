@@ -872,6 +872,7 @@ perftCounts Position::PERFT(int depth, bool tree){
         }
 
         return pfcount;
+
     }
 
     for(int i = 0; i < movelist.moveLength; i++){

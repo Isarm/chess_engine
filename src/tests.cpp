@@ -72,6 +72,7 @@ void perft(int argc, char *argv[]){
                 posString = "startpos";
                 break;
         }
+
     }
 
     Position position = Position(posString);
