@@ -84,6 +84,7 @@ Position::Position(string FEN){
     int fmi = 0;
     while(++i < FEN.length() && FEN.at(i) != '"'){
         fullMove[fmi] = FEN.at(i);
+        fmi++;
     }
 
     this->fullMoveNumber = stoi(fullMove);
@@ -639,13 +640,6 @@ void Position::doMove(unsigned move){
                 bitboards[WHITE][PAWNS] &= ~(destinationBB >> N);
             }
             MovePiece(originBB, destinationBB, this->turn);
-
-
-            // store destination square in the previousMoveList
-            enPassantInt = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
-            moveL |= enPassantInt << EN_PASSANT_DESTINATION_SQUARE_SHIFT;
-            bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
-
             break;
         case CASTLING_FLAG:
             if(((ORIGIN_SQUARE_MASK & moveL) >> ORIGIN_SQUARE_SHIFT) & KINGSIDE_CASTLING){ // kingside castling
@@ -697,8 +691,12 @@ void Position::doMove(unsigned move){
     }
 
 
-    // remove en passant destination square
+    // store possible en passant destination information in the previousMoveList
+    enPassantInt = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
+    moveL |= enPassantInt << EN_PASSANT_DESTINATION_SQUARE_SHIFT;
+    // reset possible en passant destination
     bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
+
 
     // put into previous moves list
     this->previousMoves[this->halfMoveNumberTotal++] = moveL;
@@ -793,7 +791,6 @@ void Position::undoMove() {
     uint64_t destinationBB = 1uLL << destinationInt;
 
 
-
     switch((SPECIAL_MOVE_FLAG_MASK & move) >> SPECIAL_MOVE_FLAG_SHIFT){
         case EN_PASSANT_FLAG:
             if(this->turn == BLACK){ // add pawn south of destination square, so left shift (as we undo whites move if it is blacks turn)
@@ -804,13 +801,6 @@ void Position::undoMove() {
             }
             // move the piece from destination to origin (so a possible wrong order warning is expected)
             MovePiece(destinationBB, originBB, !this->turn);
-
-            // restore en passant destination square
-            enPassantInt = (EN_PASSANT_DESTINATION_SQUARE_MASK & move) >> EN_PASSANT_DESTINATION_SQUARE_SHIFT;
-            bitboards[this->turn][EN_PASSANT_SQUARES] = 1uLL << enPassantInt;
-
-            // reset en passant destination square of other side
-            bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
             break;
 
         case CASTLING_FLAG:
@@ -820,19 +810,29 @@ void Position::undoMove() {
             else{ // queenside castling
                 undoCastlingMove(false); // false is queenside
             }
+
             break;
         default:
             // move the piece from destination to origin (so a possible wrong order warning is expected)
             MovePiece(destinationBB, originBB, !this->turn);
+
+            // put the captured piece back
+            if(move & CAPTURE_MOVE_FLAG_MASK){
+                unsigned pieceIndex = (move & CAPTURED_PIECE_INDEX_MASK) >> CAPTURED_PIECE_INDEX_SHIFT;
+                unsigned pieceType = (move & CAPTURED_PIECE_TYPE_MASK) >> CAPTURED_PIECE_TYPE_SHIFT;
+                bitboards[this->turn][pieceType] |= 1uLL << pieceIndex;
+            }
+
             break;
     }
 
-    // put the captured piece back
-    if(move & CAPTURE_MOVE_FLAG_MASK){
-        unsigned pieceIndex = (move & CAPTURED_PIECE_INDEX_MASK) >> CAPTURED_PIECE_INDEX_SHIFT;
-        unsigned pieceType = (move & CAPTURED_PIECE_TYPE_MASK) >> CAPTURED_PIECE_TYPE_SHIFT;
-        bitboards[this->turn][pieceType] |= 1uLL << pieceIndex;
-    }
+
+    // restore en passant destination square
+    enPassantInt = (EN_PASSANT_DESTINATION_SQUARE_MASK & move) >> EN_PASSANT_DESTINATION_SQUARE_SHIFT;
+    bitboards[this->turn][EN_PASSANT_SQUARES] = 1uLL << enPassantInt;
+
+    // reset en passant destination square of other side
+    bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
 
     // restore castling rights
     castlingRights = (move & CASTLING_RIGHTS_BEFORE_MOVE_MASK) >> CASTLING_RIGHTS_BEFORE_MOVE_SHIFT;
