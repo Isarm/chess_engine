@@ -17,7 +17,10 @@ The useful.h file contains some useful short helper functions that the position 
 
 The UCI protocol will later be further implemented in the UCI class.
 
-Currently the tests.cpp file is used to test the implementation.
+Currently the tests.cpp file is used to test the implementation using PERFT. Either common perft positions can be used from the chessprogramming wiki, 
+or the perft debugging tool from:
+https://github.com/agausmann/perftree
+
 
 ## TODO
 * Implement promotion
