@@ -21,6 +21,7 @@ Currently the tests.cpp file is used to test the implementation using PERFT. Eit
 or the perft debugging tool from:
 https://github.com/agausmann/perftree
 
+Currently around 14 million positions are found per second, on an Intel® Core™ i7-9750H CPU @ 2.60GHz × 12.
 
 ## TODO
 * Implement promotion
