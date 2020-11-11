@@ -181,7 +181,6 @@ void Position::GenerateMoves(moveList &movelist) {
 }
 
 void Position::GeneratePawnMoves(moveList &movelist) {
-    //TODO: en passant, pins
     uint64_t pawns;
 
     pawns = bitboards[this->turn][PAWNS];

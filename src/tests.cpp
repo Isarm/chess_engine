@@ -15,7 +15,7 @@ void testmain(int argc, char *argv[]){
 //    perftDebug();
 }
 
-
+// function that keeps printing moves and waits for move as input, such that you can manually traverse the search tree
 [[noreturn]] void perftDebug(){
     Position position = Position("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 0");
 
@@ -34,7 +34,7 @@ void testmain(int argc, char *argv[]){
     }
 }
 
-
+// common perft test positions function
 void perft(int argc, char *argv[]){
 
     int DEPTH;
@@ -46,9 +46,9 @@ void perft(int argc, char *argv[]){
         posString = argv[2];
     }
     else { // manual perft setup
-        DEPTH = 5;
-        int positionN = 6;
-
+        DEPTH = 6;
+        int positionN = 1;
+        // choose type of position (these are common PERFT test positions)
         switch (positionN) {
             case 1:
                 posString = "startpos";
@@ -89,6 +89,7 @@ void perft(int argc, char *argv[]){
 
     if(argc == 1) {
         cout << "\n\nPerft " << DEPTH << "\n";
+        cout << "Perft String:" << posString << "\n";
         cout << "Nodes: " << pfcount.total << "\n";
         cout << "Normal: " << pfcount.normal << "\n";
         cout << "Capture: " << pfcount.captures << "\n";
