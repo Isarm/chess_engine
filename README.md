@@ -12,7 +12,7 @@ The position class is responsible for the chess game logic. It handles everythin
 The most important member function is the generateMoves function, which generates a list of possible legal moves in the current position. 
 This, combined with the doMove and undoMove functions, can then be used to traverse the search tree.
 
-The definitions.h file contains usefuls enums, to improve readability of the code.
+The definitions.h file contains enums, to improve readability of the code.
 The useful.h file contains some useful short helper functions that the position class uses. 
 
 The UCI protocol will later be further implemented in the UCI class.
