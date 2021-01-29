@@ -46,8 +46,8 @@ void perft(int argc, char *argv[]){
         posString = argv[2];
     }
     else { // manual perft setup
-        DEPTH = 6;
-        int positionN = 1;
+        DEPTH = 3;
+        int positionN = 2;
         // choose type of position (these are common PERFT test positions)
         switch (positionN) {
             case 1:

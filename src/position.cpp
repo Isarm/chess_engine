@@ -99,9 +99,6 @@ Position::Position(string FEN){
 //    for(unsigned long bitboard : bitboards){
 //        Bitboard::print(bitboard);
 //    }
-
-
-
 }
 
 void Position::generateHelpBitboards() {
@@ -307,7 +304,7 @@ void Position::GenerateSliderMoves(moveList &movelist){
                     break;
             }
 
-            // remove same side blockers
+            // remove moves blocked by same side pieces
             currentPieceMoves &= ~bitboards[this->turn][PIECES];
 
             // divide in capture and normal moves
@@ -367,17 +364,16 @@ void Position::CastlingToMovelist(moveList &movelist, unsigned castlingType, uin
             nonAttackedInt = debruijnSerialization(nonattacked);
             uint64_t nonAttackedBB = 1uLL << nonAttackedInt;
             if(squareAttacked(nonAttackedBB, this->turn)){
-                illegalFlag = true;
-                break; // TODO: change to return and remove illegalflag
+                return;
             }
             nonattacked &= ~nonAttackedBB;
         }
 
-        if(!illegalFlag) {
-            move = CASTLING_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
-            move |= castlingType << ORIGIN_SQUARE_SHIFT; // put castling type into origin square bits as they are not used
-            movelist.move[movelist.moveLength++] = move;
-        }
+
+        move = CASTLING_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
+        move |= castlingType << ORIGIN_SQUARE_SHIFT; // put castling type into origin square bits as they are not used
+        movelist.move[movelist.moveLength++] = move;
+
     }
 };
 
