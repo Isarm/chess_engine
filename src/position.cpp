@@ -186,6 +186,7 @@ void Position::GeneratePawnMoves(moveList &movelist) {
     uint64_t pieceBB;
     while(pawns != 0){
         uint64_t currentPawnMoves, currentPawnCaptureMoves = 0, enPassantMove;
+        bool promotionMoveFlag = false;
 
         pieceIndex = debruijnSerialization(pawns);
 
@@ -207,13 +208,18 @@ void Position::GeneratePawnMoves(moveList &movelist) {
             enPassantMove = currentPawnCaptureMoves & bitboards[BLACK][EN_PASSANT_SQUARES];
             currentPawnCaptureMoves &= bitboards[BLACK][PIECES];
 
+            // check if the pawn is on the 7th rank, meaning that any move is a promotion move
+            if(is7thRank(pieceBB)){ //
+                promotionMoveFlag = true;
+            }
+
 
         }
         else{ //black's turn, pawns going south so left shift
             currentPawnMoves = pieceBB << S;
             currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // make sure destination square is empty
 
-            if(currentPawnMoves && is7thRank(pieceBB)){ //check for double pawn move, if single pawn move exists and pawn is on 2nd rank
+            if(currentPawnMoves && is7thRank(pieceBB)){ //check for double pawn move, if single pawn move exists and pawn is on 7th rank
                 currentPawnMoves |= pieceBB << SS;
                 currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // again make sure destination square is empty
             }
@@ -223,6 +229,11 @@ void Position::GeneratePawnMoves(moveList &movelist) {
             if(notHFile(pieceBB)) currentPawnCaptureMoves |= pieceBB << SE;
             enPassantMove = currentPawnCaptureMoves & bitboards[WHITE][EN_PASSANT_SQUARES];
             currentPawnCaptureMoves &= bitboards[WHITE][PIECES];
+
+            // check if the pawn is on the 2nd rank, meaning that any move is a promotion move
+            if(is2ndRank(pieceBB)){ //
+                promotionMoveFlag = true;
+            }
         }
 
         // en passant moves
@@ -231,7 +242,7 @@ void Position::GeneratePawnMoves(moveList &movelist) {
         }
 
         // update movelist
-        bitboardsToLegalMovelist(movelist, pieceBB, currentPawnMoves, currentPawnCaptureMoves);
+        bitboardsToLegalMovelist(movelist, pieceBB, currentPawnMoves, currentPawnCaptureMoves, false, false, promotionMoveFlag);
     }
 }
 
@@ -452,7 +463,7 @@ bool Position::squareAttacked(uint64_t square, bool colour){
 
 }
 
-/* This function converts a origin bitboard and destination bitboard into a movelist.
+/* This function converts a origin bitboard and destinations bitboard into a movelist (appends to the variable movelist).
  * The function assumes the moves are pseudo legal, and performs a legality check to make sure that the king is not
  * left in check after the move has been made.
  *
@@ -465,7 +476,7 @@ bool Position::squareAttacked(uint64_t square, bool colour){
  *
  */
 
-void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations, bool kingMoveFlag, bool enPassantMoveFlag) {
+void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations, bool kingMoveFlag, bool enPassantMoveFlag, bool promotionMoveFlag) {
     unsigned originInt, destinationInt, move;
     uint64_t destinationBB;
     originInt = debruijnSerialization(origin);
@@ -475,14 +486,14 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
     bool pinnedFlag = false;
     if(origin & helpBitboards[PINNED_PIECES]) pinnedFlag = true;
 
-    while(destinations != 0){
+    // combine destinations and loop over them (check can be made later to see if it is a capture move)
+    uint64_t allDestinations = destinations | captureDestinations;
+    while(allDestinations != 0){
         // get integer of destination position
-        destinationInt = debruijnSerialization(destinations);
-
-
+        destinationInt = debruijnSerialization(allDestinations);
         destinationBB = 1uLL << destinationInt;
 
-        destinations &= ~destinationBB;
+        allDestinations &= ~destinationBB;
 
         // generate the move
         move = originInt << ORIGIN_SQUARE_SHIFT;
@@ -492,12 +503,15 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
             move |= EN_PASSANT_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
         }
 
+        // check if piece is pinned and check legality of move.
         if(pinnedFlag){
             unsigned kingInt = debruijnSerialization(bitboards[this->turn][KING]);
             // if the piece does not move in the same line as the king, the move is illegal, thus continue with the next move
             if(rayDirectionLookup(kingInt, originInt) != rayDirectionLookup(originInt, destinationInt)) continue;
         }
 
+        // for these types of moves, simply checking if the piece is pinned does not work, so the move has to be done and
+        // subsequently checked if the king is not in check.
         if(isIncheck || enPassantMoveFlag || kingMoveFlag){
             doMove(move);
             // check if the king is attacked after this move
@@ -508,41 +522,26 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
             undoMove();
         }
 
-        movelist.move[movelist.moveLength++] = move;
+        if(promotionMoveFlag){
+            // cycle over different promotion pieces (N B R Q)
+            for(int promotionType = 0; promotionType < 4; promotionType++){
+//                move |= promotionType << PROMOTION_TYPE_SHIFT;
 
-    }
+//                if(destinationBB & captureDestinations){
+//                    movelist.captureMove[movelist.captureMoveLength++] = move;
+//                }
+//                else {
+//                    movelist.move[movelist.moveLength++] = move;
+//                }
 
-    // capture moves
-    while(captureDestinations != 0){
-        destinationInt = debruijnSerialization(captureDestinations);
-
-        captureDestinations &= ~(1uLL << destinationInt);
-
-        // generate the move
-        move = originInt << ORIGIN_SQUARE_SHIFT;
-        move |= destinationInt << DESTINATION_SQUARE_SHIFT;
-
-        if(enPassantMoveFlag){
-            move |= EN_PASSANT_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
-        }
-
-        if(pinnedFlag){
-            unsigned kingInt = debruijnSerialization(bitboards[this->turn][KING]);
-            // if the piece does not move in the same line as the king, the move is illegal, thus continue with the next move
-            if(rayDirectionLookup(kingInt, originInt) != rayDirectionLookup(originInt, destinationInt)) continue;
-        }
-
-
-        if(isIncheck || enPassantMoveFlag || kingMoveFlag){
-            doMove(move);
-            // check if the king is attacked after this move
-            if(squareAttacked(bitboards[!this->turn][KING], !this->turn)){
-                undoMove();
-                continue;
             }
-            undoMove();
         }
-        movelist.captureMove[movelist.captureMoveLength++] = move;
+        if(destinationBB & captureDestinations){
+            movelist.captureMove[movelist.captureMoveLength++] = move;
+        }
+        else {
+            movelist.move[movelist.moveLength++] = move;
+        }
     }
 }
 

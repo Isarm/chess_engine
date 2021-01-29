@@ -22,6 +22,10 @@ inline static bool notGHFile(uint64_t bb) {
     return uint64_t(0x3F3F3F3F3F3F3F3F) & bb;
 }
 
+inline static bool is1stRank(uint64_t bb) {
+    return uint64_t(0xFF00000000000000) & bb;
+}
+
 inline static bool is2ndRank(uint64_t bb) {
     return uint64_t(0x00FF000000000000) & bb;
 }
@@ -29,6 +33,11 @@ inline static bool is2ndRank(uint64_t bb) {
 inline static bool is7thRank(uint64_t bb) {
     return uint64_t(0x000000000000FF00) & bb;
 }
+
+inline static bool is8thRank(uint64_t bb) {
+    return uint64_t(0x00000000000000FF) & bb;
+}
+
 
 
 uint64_t knightAttacks(uint64_t knight) {

@@ -102,6 +102,13 @@ namespace definitions {
         CASTLING_FLAG = 3,
     };
 
+    enum promotionPieces : unsigned{
+        KNIGHTPROMOTION = 0,
+        BISHOPPROMOTION = 1,
+        ROOKPROMOTION = 2,
+        QUEENPROMOTION = 3
+    };
+
     enum castlingRights : unsigned{
         NO_CASTLING_RIGHTS = 0x0,
         WHITE_KINGSIDE_CASTLING_RIGHTS = 0x1,

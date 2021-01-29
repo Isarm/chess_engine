@@ -30,6 +30,7 @@ public:
     void generateHelpBitboards();
     void GenerateMoves(moveList &movelist);
 
+
     void doMove(unsigned moveL);
     void doMove(char *move);
     void undoMove();
@@ -45,7 +46,10 @@ private:
     void GenerateKnightMoves(moveList &movelist);
     void GenerateSliderMoves(moveList &movelist);
 
-    void bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations, bool kingMoveFlag = false, bool enPassantMoveFlag = false);
+    void bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations,
+                                  bool kingMoveFlag = false, bool enPassantMoveFlag = false, bool promotionMoveFlag = false); // flags
+
+
     bool squareAttacked(uint64_t square, bool colour);
     uint64_t pinnedPieces(uint64_t pinnedOrigin, bool colour);
 
