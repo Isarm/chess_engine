@@ -770,6 +770,12 @@ void Position::doMove(string move) {
         }
     }
 
+    // check for en passant move (as in case of do_move from external source this is not known)
+    unsigned destinationInt = (moveUnsigned & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
+    if(bitboards[!this->turn][EN_PASSANT_SQUARES] & (1ull << destinationInt )){
+        moveUnsigned |= EN_PASSANT_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
+    }
+
     doMove(moveUnsigned);
 }
 

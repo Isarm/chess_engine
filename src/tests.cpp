@@ -17,7 +17,7 @@ void testmain(int argc, char *argv[]){
 
 // function that keeps printing moves and waits for move as input, such that you can manually traverse the search tree
 [[noreturn]] void perftDebug(){
-    Position position = Position("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 0");
+    Position position = Position("8/8/7k/1Pp5/8/8/1K6/8 w - c6 0 1");
 
     while(true){
         position.prettyPrint();
@@ -29,8 +29,7 @@ void testmain(int argc, char *argv[]){
         string move;
         std::cin >> move;
 
-        char * moveC = const_cast<char *>(move.c_str());
-        position.doMove(moveC);
+        position.doMove(move);
     }
 }
 
