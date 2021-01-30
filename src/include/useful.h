@@ -160,6 +160,28 @@ inline unsigned strToMoveNotation(const char str[5]){
     move = originInt << ORIGIN_SQUARE_SHIFT;
     move |= destinationInt << DESTINATION_SQUARE_SHIFT;
 
+    // check for promotion type
+    switch (tolower(str[4])) {
+        case 'n':
+            move |= KNIGHTPROMOTION << PROMOTION_TYPE_SHIFT;
+            move |= PROMOTION_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
+            break;
+        case 'b':
+            move |= BISHOPPROMOTION << PROMOTION_TYPE_SHIFT;
+            move |= PROMOTION_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
+            break;
+        case 'r':
+            move |= ROOKPROMOTION << PROMOTION_TYPE_SHIFT;
+            move |= PROMOTION_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
+            break;
+        case 'q':
+            move |= QUEENPROMOTION << PROMOTION_TYPE_SHIFT;
+            move |= PROMOTION_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
+            break;
+        default:
+            break;
+    }
+
     return move;
 }
 

@@ -618,7 +618,7 @@ void Position::doMove(unsigned move){
     unsigned originInt, destinationInt, enPassantInt;
     uint64_t originBB, destinationBB;
 
-    // as the previousmoves array uses uint64_t to store a move
+    // as the previousmoves array uses uint64_t to store a move. So moveL(arge) is the variable for previousmoves list
     uint64_t moveL = move;
 
     originInt = (ORIGIN_SQUARE_MASK & moveL) >> ORIGIN_SQUARE_SHIFT;
@@ -629,6 +629,10 @@ void Position::doMove(unsigned move){
 
     // store the castling rights of before the move
     moveL |= uint64_t(castlingRights) << CASTLING_RIGHTS_BEFORE_MOVE_SHIFT;
+
+    // used for the promotion special move case
+    unsigned promotionType;
+    unsigned promotionIndices[] = {KNIGHTS, BISHOPS, ROOKS, QUEENS};
 
     switch((SPECIAL_MOVE_FLAG_MASK & moveL) >> SPECIAL_MOVE_FLAG_SHIFT){
         case EN_PASSANT_FLAG:
@@ -653,6 +657,15 @@ void Position::doMove(unsigned move){
             else{
                 castlingRights &= ~BLACK_CASTLING_RIGHTS;
             }
+            break;
+        case PROMOTION_FLAG:
+            // remove the pawn
+            bitboards[this->turn][PAWNS] &= ~originBB;
+
+            // place promoted piece
+            promotionType = promotionIndices[(move & PROMOTION_TYPE_MASK) >> PROMOTION_TYPE_SHIFT];
+
+            bitboards[this->turn][promotionType] |= destinationBB;
             break;
         default:
             MovePiece(originBB, destinationBB, this->turn);
@@ -706,10 +719,11 @@ void Position::doMove(unsigned move){
 }
 
 void Position::doMove(char *move) {
+    // do a move where the move is formatted as for example e2e4, with promotion type appended if necessary.
     unsigned moveUnsigned = strToMoveNotation(move);
 
     // in case of castling
-    if(this->turn == WHITE){
+    if(this->turn == WHITE){ // TODO: REMOVE THESE IF STATEMENTS
         if(bitboards[WHITE][KING] & (1uLL << SQ_E1)){
             if(string(move) == "e1g1"){
                 moveUnsigned = CASTLING_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
@@ -722,7 +736,6 @@ void Position::doMove(char *move) {
         }
     }
     else{
-
         if(bitboards[BLACK][KING] & (1uLL << SQ_E8)){
             if(string(move) == "e8g8"){
                 moveUnsigned = CASTLING_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
