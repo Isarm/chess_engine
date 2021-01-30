@@ -459,6 +459,9 @@ bool Position::squareAttacked(uint64_t square, bool colour){
         if(notHFile(square) && (square << SE & bitboards[WHITE][PAWNS])) return true;
     }
 
+    // check opposing king attacks
+    if(kingAttacks(square) & bitboards[!colour][KING]) return true;
+
     return false;
 
 }
@@ -523,24 +526,26 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
         }
 
         if(promotionMoveFlag){
+            unsigned baseMove = move | (PROMOTION_FLAG << SPECIAL_MOVE_FLAG_SHIFT);
             // cycle over different promotion pieces (N B R Q)
             for(int promotionType = 0; promotionType < 4; promotionType++){
-//                move |= promotionType << PROMOTION_TYPE_SHIFT;
+                move = baseMove | promotionType << PROMOTION_TYPE_SHIFT;
 
-//                if(destinationBB & captureDestinations){
-//                    movelist.captureMove[movelist.captureMoveLength++] = move;
-//                }
-//                else {
-//                    movelist.move[movelist.moveLength++] = move;
-//                }
+                if(destinationBB & captureDestinations){
+                    movelist.captureMove[movelist.captureMoveLength++] = move;
+                }
+                else {
+                    movelist.move[movelist.moveLength++] = move;
+                }
 
             }
         }
-        if(destinationBB & captureDestinations){
-            movelist.captureMove[movelist.captureMoveLength++] = move;
-        }
         else {
-            movelist.move[movelist.moveLength++] = move;
+            if (destinationBB & captureDestinations) {
+                movelist.captureMove[movelist.captureMoveLength++] = move;
+            } else {
+                movelist.move[movelist.moveLength++] = move;
+            }
         }
     }
 }

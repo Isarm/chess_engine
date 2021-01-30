@@ -114,6 +114,15 @@ inline int rayDirectionLookup(unsigned a, unsigned b) {
 }
 
 inline string moveToStrNotation(unsigned move){
+    unsigned originInt = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
+    unsigned destinationInt =  (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
+
+
+    char str[5];
+    str[0] = originInt%8 + 'a';
+    str[1] = 8 - int(originInt/8) + '0';
+    str[2] = destinationInt%8 + 'a';
+    str[3] = 8 - int(destinationInt/8) + '0';
 
     switch ((move & SPECIAL_MOVE_FLAG_MASK) >> SPECIAL_MOVE_FLAG_SHIFT) {
         case CASTLING_FLAG:
@@ -127,24 +136,20 @@ inline string moveToStrNotation(unsigned move){
                case BLACK_QUEENSIDE_CASTLING_RIGHTS:
                    return "e8c8";
            }
+           break;
+        case PROMOTION_FLAG:
+           char types[] = {'n', 'b', 'r', 'q'};
+           unsigned promotionType = (move & PROMOTION_TYPE_MASK) >> PROMOTION_TYPE_SHIFT;
+           str[4] = types[promotionType];
+
     }
 
-
-    unsigned originInt = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
-    unsigned destinationInt =  (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
-
-
-    char str[5];
-    str[0] = originInt%8 + 'a';
-    str[1] = 8 - int(originInt/8) + '0';
-    str[2] = destinationInt%8 + 'a';
-    str[3] = 8 - int(destinationInt/8) + '0';
 
     return string(str);
 
 };
 
-inline unsigned strToMoveNotation(char str[5]){
+inline unsigned strToMoveNotation(const char str[5]){
     unsigned originInt = 0, destinationInt = 0, move;
 
     originInt += str[0] - 'a';
