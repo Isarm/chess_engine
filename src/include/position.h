@@ -32,7 +32,7 @@ public:
 
 
     void doMove(unsigned moveL);
-    void doMove(char *move);
+    void doMove(string);
     void undoMove();
 
     void prettyPrint();

@@ -74,21 +74,27 @@ Position::Position(string FEN){
 
     char halfMove50[3];
     int hmi = 0;
-    while(FEN.at(++i) != ' '){
-        halfMove50[hmi] = FEN.at(i);
+    try {
+        while (FEN.at(++i) != ' ') {
+            halfMove50[hmi] = FEN.at(i);
+        }
+
+        this->halfMoveNumber50 = stoi(halfMove50);
+
+        char fullMove[5];
+        int fmi = 0;
+        while (++i < FEN.length() && FEN.at(i) != '"') {
+            fullMove[fmi] = FEN.at(i);
+            fmi++;
+        }
+
+        this->fullMoveNumber = stoi(fullMove);
+
     }
-
-    this->halfMoveNumber50 = stoi(halfMove50);
-
-    char fullMove[5];
-    int fmi = 0;
-    while(++i < FEN.length() && FEN.at(i) != '"'){
-        fullMove[fmi] = FEN.at(i);
-        fmi++;
+    catch (out_of_range) {
+        this->halfMoveNumber50 = 0;
+        this->fullMoveNumber = 0;
     }
-
-    this->fullMoveNumber = stoi(fullMove);
-
     generateHelpBitboards();
 
     sliderAttacks = SliderAttacks();
@@ -510,7 +516,9 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
         if(pinnedFlag){
             unsigned kingInt = debruijnSerialization(bitboards[this->turn][KING]);
             // if the piece does not move in the same line as the king, the move is illegal, thus continue with the next move
-            if(rayDirectionLookup(kingInt, originInt) != rayDirectionLookup(originInt, destinationInt)) continue;
+            if(rayDirectionLookup(kingInt, originInt) != rayDirectionLookup(originInt, destinationInt)) {
+                continue;
+            }
         }
 
         // for these types of moves, simply checking if the piece is pinned does not work, so the move has to be done and
@@ -634,6 +642,7 @@ void Position::doMove(unsigned move){
     unsigned promotionType;
     unsigned promotionIndices[] = {KNIGHTS, BISHOPS, ROOKS, QUEENS};
 
+    uint64_t capturedPiece;
     switch((SPECIAL_MOVE_FLAG_MASK & moveL) >> SPECIAL_MOVE_FLAG_SHIFT){
         case EN_PASSANT_FLAG:
             if(this->turn == WHITE){ // remove pawn south of destination square, so left shift
@@ -664,15 +673,28 @@ void Position::doMove(unsigned move){
 
             // place promoted piece
             promotionType = promotionIndices[(move & PROMOTION_TYPE_MASK) >> PROMOTION_TYPE_SHIFT];
-
             bitboards[this->turn][promotionType] |= destinationBB;
+
+            // switch to opponent bitboards and remove possible destination piece in case of capture
+            // also save this piece in the previousMoves array as it needs to be restored in case of undoMove
+            for(unsigned i = 0; i < 6; i++){
+                capturedPiece = bitboards[!this->turn][i] & destinationBB;
+                if(capturedPiece) {
+                    bitboards[!this->turn][i] &= ~capturedPiece;
+
+                    // store the capture move specifications
+                    moveL |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
+                    moveL |= i << CAPTURED_PIECE_TYPE_SHIFT;
+                    moveL |= debruijnSerialization(capturedPiece) << CAPTURED_PIECE_INDEX_SHIFT;
+                    break;
+                }
+            }
             break;
         default:
             MovePiece(originBB, destinationBB, this->turn);
 
             // switch to opponent bitboards and remove possible destination piece in case of capture
             // also save this piece in the previousMoves array as it needs to be restored in case of undoMove
-            uint64_t capturedPiece;
             for(unsigned i = 0; i < 6; i++){
                 capturedPiece = bitboards[!this->turn][i] & destinationBB;
                 if(capturedPiece) {
@@ -692,13 +714,13 @@ void Position::doMove(unsigned move){
     if(!(bitboards[WHITE][ROOKS] & (1uLL << SQ_H1))){
         castlingRights &= ~WHITE_KINGSIDE_CASTLING_RIGHTS;
     }
-    else if(!(bitboards[WHITE][ROOKS] & (1uLL << SQ_A1))){
+    if(!(bitboards[WHITE][ROOKS] & (1uLL << SQ_A1))){
         castlingRights &= ~WHITE_QUEENSIDE_CASTLING_RIGHTS;
     }
-    else if(!(bitboards[BLACK][ROOKS] & (1uLL << SQ_H8))){
+    if(!(bitboards[BLACK][ROOKS] & (1uLL << SQ_H8))){
         castlingRights &= ~BLACK_KINGSIDE_CASTLING_RIGHTS;
     }
-    else if(!(bitboards[BLACK][ROOKS] & (1uLL << SQ_A8))){
+    if(!(bitboards[BLACK][ROOKS] & (1uLL << SQ_A8))){
         castlingRights &= ~BLACK_QUEENSIDE_CASTLING_RIGHTS;
     }
 
@@ -718,12 +740,12 @@ void Position::doMove(unsigned move){
 
 }
 
-void Position::doMove(char *move) {
+void Position::doMove(string move) {
     // do a move where the move is formatted as for example e2e4, with promotion type appended if necessary.
     unsigned moveUnsigned = strToMoveNotation(move);
 
     // in case of castling
-    if(this->turn == WHITE){ // TODO: REMOVE THESE IF STATEMENTS
+    if(this->turn == WHITE){ //
         if(bitboards[WHITE][KING] & (1uLL << SQ_E1)){
             if(string(move) == "e1g1"){
                 moveUnsigned = CASTLING_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
@@ -803,6 +825,10 @@ void Position::undoMove() {
     uint64_t destinationBB = 1uLL << destinationInt;
 
 
+    // used for the promotion special move case
+    unsigned promotionType;
+    unsigned promotionIndices[] = {KNIGHTS, BISHOPS, ROOKS, QUEENS};
+
     switch((SPECIAL_MOVE_FLAG_MASK & move) >> SPECIAL_MOVE_FLAG_SHIFT){
         case EN_PASSANT_FLAG:
             if(this->turn == BLACK){ // add pawn south of destination square, so left shift (as we undo whites move if it is blacks turn)
@@ -822,8 +848,21 @@ void Position::undoMove() {
             else{ // queenside castling
                 undoCastlingMove(false); // false is queenside
             }
-
             break;
+        case PROMOTION_FLAG:
+            // find out promoted piece type
+            promotionType = promotionIndices[(move & PROMOTION_TYPE_MASK) >> PROMOTION_TYPE_SHIFT];
+            // remove promoted piece
+            bitboards[!this->turn][promotionType] &= ~destinationBB;
+            // add pawn
+            bitboards[!this->turn][PAWNS] |= originBB;
+            // put the captured piece back in case of capture
+            if(move & CAPTURE_MOVE_FLAG_MASK){
+                unsigned pieceIndex = (move & CAPTURED_PIECE_INDEX_MASK) >> CAPTURED_PIECE_INDEX_SHIFT;
+                unsigned pieceType = (move & CAPTURED_PIECE_TYPE_MASK) >> CAPTURED_PIECE_TYPE_SHIFT;
+                bitboards[this->turn][pieceType] |= 1uLL << pieceIndex;
+            }
+
         default:
             // move the piece from destination to origin (so a possible wrong order warning is expected)
             MovePiece(destinationBB, originBB, !this->turn);

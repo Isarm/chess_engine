@@ -46,8 +46,8 @@ void perft(int argc, char *argv[]){
         posString = argv[2];
     }
     else { // manual perft setup
-        DEPTH = 2;
-        int positionN = 4;
+        DEPTH = 5;
+        int positionN = 8;
         // choose type of position (these are common PERFT test positions)
         switch (positionN) {
             case 1:
@@ -62,11 +62,17 @@ void perft(int argc, char *argv[]){
             case 4:
                 posString = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
                 break;
+            case 5:
+                posString = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8  ";
+                break;
             case 6 :
                 posString = "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10 ";
                 break;
             case 7:
                 posString = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+                break;
+            case 8:
+                posString = "3r3q/q7/8/2BRB3/r1RKR1rk/2BRB3/8/q5q1 w - - 0 1";
                 break;
             default:
                 posString = "startpos";
@@ -77,9 +83,20 @@ void perft(int argc, char *argv[]){
 
     Position position = Position(posString);
 
-    for(int i = 3; i < argc; i++){ // do moves for perft debug tool
-        position.doMove(argv[i]);
+    if(argc >= 4) {
+        std::string moveList = argv[3];
+        std::string singleMove;
+        for (char i : moveList) {
+            if (i != ' ') {
+                singleMove.push_back(i);
+            } else {
+                position.doMove(singleMove);
+                singleMove = "";
+            }
+        }
+        position.doMove(singleMove);
     }
+
 
     auto t1 = std::chrono::high_resolution_clock::now();
     perftCounts pfcount = position.PERFT(DEPTH);

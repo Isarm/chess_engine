@@ -99,7 +99,7 @@ void rayDirectionLookupInitialize() {
         for(int j = i - 1; (j%8 != 7 && j%8 != -1); j--) rayDirectionsTable[i][j] = HORIZONTAL_RAY;
 
         for(int j = i + 8; j < 64; j += 8) rayDirectionsTable[i][j] = VERTICAL_RAY;
-        for(int j = i - 8; j > 0 ; j -= 8) rayDirectionsTable[i][j] = VERTICAL_RAY;
+        for(int j = i - 8; j >= 0 ; j -= 8) rayDirectionsTable[i][j] = VERTICAL_RAY;
 
         for(int j = i + 9; j%8 != 0 && j < 64; j += 9) rayDirectionsTable[i][j] = NORTHWEST_RAY;
         for(int j = i - 9; (j%8 != 7 && j%8 != -1) && j > 0;  j -= 9) rayDirectionsTable[i][j] = NORTHWEST_RAY;
@@ -149,7 +149,7 @@ inline string moveToStrNotation(unsigned move){
 
 };
 
-inline unsigned strToMoveNotation(const char str[5]){
+inline unsigned strToMoveNotation(string str){
     unsigned originInt = 0, destinationInt = 0, move;
 
     originInt += str[0] - 'a';
