@@ -2,9 +2,7 @@
 
 This is a chess engine that I am writing. It uses bitboards to efficiently calculate positions.
 
-Currently, I am in the final stages of implementing the chess game logic. The last thing that has to be implemented is pawn promotion.
-Everything else has been tested using the PERFT debugging method:
-
+Game logic has been implemented and tested with the PERFT debugging method:
 https://www.chessprogramming.org/Perft
 
 ## Structure
