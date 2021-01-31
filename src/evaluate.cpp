@@ -20,7 +20,7 @@ Evaluate::Evaluate(string fen, vector<string> moves, Settings settings) {
 
 Results Evaluate::Start(){
     Results results;
-    results.bestMove = "e2e4";
+    results.bestMove = "e2e4\n";
 
     return results;
 }

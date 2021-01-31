@@ -7,7 +7,9 @@
 #include <chrono>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include "evaluate.h"
+
 
 void UCI::start() {
 
@@ -38,6 +40,8 @@ void UCI::mainLoop(){
 
     std::thread evaluation;
 
+    bool threadStarted = false;
+
     Results results;
     while(true){
 
@@ -52,6 +56,9 @@ void UCI::mainLoop(){
         }
 
         if(input == "stop"){
+            if(threadStarted){
+                evaluation.join();
+            }
             // stop the analysis thread
         }
 
@@ -94,18 +101,21 @@ void UCI::mainLoop(){
         if(input.substr(0, ' ') == "go"){
             Settings settings;
             settings.depth = 4;
+            if(threadStarted){
+                evaluation.join();
+            }
+            threadStarted = true;
             evaluation = std::thread{UCI::go, fen, moves, settings, std::ref(results)};
         }
     }
-
     evaluation.join();
-    cout << results.bestMove;
-
 }
 
 
 void UCI::go(std::string fen, std::vector<std::string> moves, Settings settings, Results &results) {
     Evaluate evaluate = Evaluate(fen, moves, settings);
     results = evaluate.Start();
+    std::cout << results.bestMove;
+    std::cout.flush();
 }
 
