@@ -159,6 +159,14 @@ namespace definitions {
         uint64_t captures = 0;
     };
 
+    struct Settings{
+        unsigned depth = 1;
+    };
+
+    struct Results{
+        string bestMove;
+    };
+
 
 
 

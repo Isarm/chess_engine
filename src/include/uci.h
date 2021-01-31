@@ -1,6 +1,8 @@
 #ifndef UCI_H
 #define UCI_H
 
+#include <vector>
+#include "definitions.h"
 
 namespace UCI {
 
@@ -10,8 +12,9 @@ namespace UCI {
 
     void perft();
 
+    void go(string fen, vector<string> moves, definitions::Settings settings, definitions::Results &results);
+}// namespace UCI
 
-}//namespace UCI
 
 #endif
 

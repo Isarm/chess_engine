@@ -21,11 +21,11 @@ Position::Position(string FEN){
     // loop through the FEN string until first space
     unsigned BBindex = 0; // this gets incremented when the FEN contains numbers as well
     char pieceChar = FEN.at(0);
-    int i; // initialize here as it is also needed outside of the scope of the for loop
+    int i = 0; // initialize here as it is also needed outside of the scope of the for loop
 
     if(FEN.at(i) == '"') i++; // skip possible leading quotation marks (in case of perft debug)
 
-    for(i = 0; pieceChar != ' '; i++, BBindex++, pieceChar = FEN.at(i)){ // loop for first part of FEN until first space
+    for(i; pieceChar != ' '; i++, BBindex++, pieceChar = FEN.at(i)){ // loop for first part of FEN until first space
         if(pieceChar == '/'){
             BBindex--; // account for (incorrect) increment, as it is simply a new row
             continue;
@@ -102,9 +102,6 @@ Position::Position(string FEN){
 
     rayDirectionLookupInitialize(); // initialize ray lookup table;
 
-//    for(unsigned long bitboard : bitboards){
-//        Bitboard::print(bitboard);
-//    }
 }
 
 void Position::generateHelpBitboards() {

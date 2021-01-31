@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.17)
 project(engine)
 
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_FLAGS -pthread)
 
 include_directories(src/include
                 magic-bits/src)
@@ -18,5 +19,5 @@ add_executable(engine
         src/include/useful.h
         #magic-bits
         magic-bits/src/slider_attacks.h
-        magic-bits/src/slider_attacks.cpp src/tests.cpp src/include/tests.h)
+        magic-bits/src/slider_attacks.cpp src/tests.cpp src/include/tests.h src/evaluate.cpp src/evaluate.h)
 
