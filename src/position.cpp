@@ -172,12 +172,12 @@ void Position::GenerateMoves(moveList &movelist) {
         this->helpBitboards[PINNED_PIECES] = 0; // as pinnedPieces function only works when the king is not in check TODO:??
     }
     GeneratePawnMoves(movelist);
-    GenerateKnightMoves(movelist);
-    GenerateSliderMoves(movelist);
-    GenerateKingMoves(movelist);
     if(!isIncheck) {
         GenerateCastlingMoves(movelist);
     }
+    GenerateKnightMoves(movelist);
+    GenerateSliderMoves(movelist);
+    GenerateKingMoves(movelist);
 }
 
 void Position::GeneratePawnMoves(moveList &movelist) {
@@ -958,6 +958,173 @@ perftCounts Position::PERFT(int depth, bool tree){
     pfcount.captures = captureMoves;
 
     return pfcount;
+}
+
+
+
+
+const int PIECEWEIGHTS[6] = {
+        // pawn, knight, bishop, rook, queen, king
+        100, 320, 330, 500, 900, 20000
+};
+
+int PAWNPST[64] = {
+        0,  0,  0,  0,  0,  0,  0,  0,
+        50, 50, 50, 50, 50, 50, 50, 50,
+        10, 10, 20, 30, 30, 20, 10, 10,
+        5,  5, 10, 25, 25, 10,  5,  5,
+        0,  0,  0, 22, 22,  0,  0,  0,
+        5, -5,-10,  0,  0,-10, -5,  5,
+        5, 10, 10,-20,-20, 10, 10,  5,
+        0,  0,  0,  0,  0,  0,  0,  0
+};
+
+int KNIGHTPST[64] = {
+        -50,-40,-30,-30,-30,-30,-40,-50,
+        -40,-20,  0,  0,  0,  0,-20,-40,
+        -30,  0, 10, 15, 15, 10,  0,-30,
+        -30,  5, 15, 20, 20, 15,  5,-30,
+        -30,  0, 15, 20, 20, 15,  0,-30,
+        -30,  5, 10, 15, 15, 10,  5,-30,
+        -40,-20,  0,  5,  5,  0,-20,-40,
+        -50,-30,-30,-30,-30,-30,-30,-50,
+};
+
+
+int BISHOPPST[64] = {
+        -20,-10,-10,-10,-10,-10,-10,-20,
+        -10,  0,  0,  0,  0,  0,  0,-10,
+        -10,  0,  5, 10, 10,  5,  0,-10,
+        -10,  5,  5, 10, 10,  5,  5,-10,
+        -10,  0, 10, 10, 10, 10,  0,-10,
+        -10, 10, 10, 10, 10, 10, 10,-10,
+        -10,  5,  0,  0,  0,  0,  5,-10,
+        -20,-10,-10,-10,-10,-10,-10,-20,
+};
+
+int ROOKPST[64] = {
+        0,  0,  0,  0,  0,  0,  0,  0,
+        5, 10, 10, 10, 10, 10, 10,  5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        0,  0,  0,  5,  5,  0,  0,  0
+
+};
+
+int QUEENSPST[64] = {
+        -20,-10,-10, -5, -5,-10,-10,-20,
+        -10,  0,  0,  0,  0,  0,  0,-10,
+        -10,  0,  5,  5,  5,  5,  0,-10,
+        -5,  0,  5,  5,  5,  5,  0, -5,
+        0,  0,  5,  5,  5,  5,  0, -5,
+        -10,  5,  5,  5,  5,  5,  0,-10,
+        -10,  0,  5,  0,  0,  0,  0,-10,
+        -20,-10,-10, -5, -5,-10,-10,-20
+};
+
+int KINGPSTMIDGAME[64] = {
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -20,-30,-30,-40,-40,-30,-30,-20,
+        -10,-20,-20,-20,-20,-20,-20,-10,
+        20, 20,  0,  0,  0,  0, 20, 20,
+        20, 30, 10,  0,  0, 10, 30, 20
+};
+
+
+int KINGPSTENDGAME[64] = {
+        -50,-40,-30,-20,-20,-30,-40,-50,
+        -30,-20,-10,  0,  0,-10,-20,-30,
+        -30,-10, 20, 30, 30, 20,-10,-30,
+        -30,-10, 30, 40, 40, 30,-10,-30,
+        -30,-10, 30, 40, 40, 30,-10,-30,
+        -30,-10, 20, 30, 30, 20,-10,-30,
+        -30,-30,  0,  0,  0,  0,-30,-30,
+        -50,-30,-30,-30,-30,-30,-30,-50
+};
+
+
+constexpr int *PSTsMID[6] = {PAWNPST, KNIGHTPST, BISHOPPST, ROOKPST, QUEENSPST, KINGPSTMIDGAME};
+constexpr int *PSTsEND[6] = {PAWNPST, KNIGHTPST, BISHOPPST, ROOKPST, QUEENSPST, KINGPSTENDGAME};
+
+constexpr int INVERT[64] = {
+        56, 57, 58, 59, 60, 61, 62, 63,
+        48, 49, 50, 51, 52, 53, 54, 55,
+        40, 41, 42, 43, 44, 45, 46, 47,
+        32, 33, 34, 35, 36, 37, 38, 39,
+        24, 25, 26, 27, 28, 29, 30, 31,
+        16, 17, 18, 19, 20, 21, 22, 23,
+        8,  9,  10, 11, 12, 13, 14, 15,
+        0,  1,  2,  3,  4,  5,  6,  7
+};
+
+int Position::Evaluate() {
+    // score in centipawns (positive is good for white, negative good for black)
+    int score = 0;
+
+    //start with white
+    for(int pieceIndex = 0; pieceIndex < 6; pieceIndex++){
+        uint64_t piece = bitboards[WHITE][pieceIndex];
+        // calculate score for all pieces of pieceIndex type
+        while(piece){
+            // get index of first piece
+            int pieceInt = debruijnSerialization(piece);
+
+            // remove piece from remaining pieces
+            piece &= ~(1uLL << pieceInt);
+
+            // calculate score
+            score += PIECEWEIGHTS[pieceIndex];
+
+            if(isEndGame){
+                score += PSTsEND[pieceIndex][pieceInt];
+            }
+            else{
+                score += PSTsMID[pieceIndex][pieceInt];
+            }
+        }
+    }
+
+    // for black
+    for(int pieceIndex = 0; pieceIndex < 6; pieceIndex++){
+        uint64_t piece = bitboards[BLACK][pieceIndex];
+        // calculate score for all pieces of pieceIndex type
+        while(piece){
+            // get index of first piece
+            int pieceInt = debruijnSerialization(piece);
+
+            // remove piece from remaining pieces
+            piece &= ~(1uLL << pieceInt);
+
+            pieceInt = INVERT[pieceInt]; // invert for black
+
+            // calculate score
+            score -= PIECEWEIGHTS[pieceIndex];
+
+            if(isEndGame){
+                score -= PSTsEND[pieceIndex][pieceInt];
+            }
+            else{
+                score -= PSTsMID[pieceIndex][pieceInt];
+            }
+        }
+
+        // for negamax, the score should always be maximizing for whomevers turn it is
+    }
+
+    if(this->turn){
+        return score;
+    }
+    else{
+        return -score;
+    }
+
+    return 0;
 }
 
 

@@ -38,9 +38,7 @@ inline static bool is8thRank(uint64_t bb) {
     return uint64_t(0x00000000000000FF) & bb;
 }
 
-
-
-uint64_t knightAttacks(uint64_t knight) {
+inline uint64_t knightAttacks(uint64_t knight) {
     uint64_t currentKnightMoves = 0;
     if (notAFile(knight)) {
         currentKnightMoves |= ((knight >> NNW) | (knight << SSW));
@@ -57,7 +55,7 @@ uint64_t knightAttacks(uint64_t knight) {
     return currentKnightMoves;
 }
 
-uint64_t kingAttacks(uint64_t king){
+inline uint64_t kingAttacks(uint64_t king){
     uint64_t kingAttacks = 0;
     if(notAFile(king)){
         kingAttacks |= (king >> NW) | (king >> W) | (king << SW);
@@ -91,9 +89,9 @@ static unsigned debruijnSerialization(uint64_t pieces) {
 }
 
 // lookup table for direction from square a to square b
-int rayDirectionsTable[64][64] = {0};
+inline int rayDirectionsTable[64][64];
 
-void rayDirectionLookupInitialize() {
+inline void rayDirectionLookupInitialize() {
     for (int i = 0; i < 64; i++) {
         for(int j = i + 1; j%8 != 0; j++) rayDirectionsTable[i][j] = HORIZONTAL_RAY;
         for(int j = i - 1; (j%8 != 7 && j%8 != -1); j--) rayDirectionsTable[i][j] = HORIZONTAL_RAY;

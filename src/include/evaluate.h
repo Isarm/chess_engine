@@ -13,9 +13,16 @@ public:
 
     Evaluate(string fen, vector<string> moves, Settings settings);
 
-    unsigned depth;
+    int depth;
 
-    Results Start();
+    Results StartSearch();
+
+private:
+
+    int AlphaBeta(int depth, int alpha, int beta, LINE *pline);
+
+    int Quiescence();
+
 };
 
 

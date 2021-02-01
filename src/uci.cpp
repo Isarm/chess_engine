@@ -114,8 +114,8 @@ void UCI::mainLoop(){
 
 void UCI::go(std::string fen, std::vector<std::string> moves, Settings settings, Results &results) {
     Evaluate evaluate = Evaluate(fen, moves, settings);
-    results = evaluate.Start();
-    std::cout << results.bestMove;
+    results = evaluate.StartSearch();
+    std::cout << "bestmove " << results.bestMove << "\n";
     std::cout.flush();
 }
 

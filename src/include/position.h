@@ -13,6 +13,7 @@ class Position{
 public:
 
     bool turn = WHITE;
+    bool isEndGame = false;
     bool isIncheck = false;
     unsigned castlingRights = 0;
     uint64_t bitboards[2][8] = {0};
@@ -38,6 +39,9 @@ public:
     void prettyPrint();
 
     perftCounts PERFT(int depth, bool tree = true);
+
+    int Evaluate();
+
 private:
 
 

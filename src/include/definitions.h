@@ -135,9 +135,9 @@ namespace definitions {
 
 
     struct moveList{
-        unsigned move[256] = {};
+        unsigned move[218] = {};
         unsigned moveLength = 0;
-        unsigned captureMove[128] = {};
+        unsigned captureMove[218] = {};
         unsigned captureMoveLength = 0;
     };
 
@@ -160,16 +160,17 @@ namespace definitions {
     };
 
     struct Settings{
-        unsigned depth = 1;
+        int depth = 1;
     };
 
     struct Results{
         string bestMove;
     };
 
-
-
-
+    struct LINE{
+        int nmoves;
+        unsigned principalVariation[100];
+    };
 }
 
 #endif
