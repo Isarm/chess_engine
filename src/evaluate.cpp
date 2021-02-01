@@ -9,6 +9,7 @@
 #include "definitions.h"
 #include <cstring>
 #include <limits>
+#include <chrono>
 #include "useful.h"
 
 
@@ -29,28 +30,45 @@ Results Evaluate::StartSearch(){
     Results results;
 
     LINE line{};
-    // add min+1 and max-1 because otherwise overflow occurs when inverting
-    AlphaBeta(depth, std::numeric_limits<int>::min() + 1, std::numeric_limits<int>::max() - 1, &line);
+    STATS stats{};
 
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    // add min+1 and max-1 because otherwise overflow occurs when inverting
+    int score = AlphaBeta(depth, std::numeric_limits<int>::min() + 1, std::numeric_limits<int>::max() - 1, &line, &stats);
+    auto t2 = std::chrono::high_resolution_clock::now();
 
     string pv[100];
-
+    std::cout << "info score cp " << score << " pv ";
     for(int i = 0; i < line.nmoves; i++){
         pv[i] = moveToStrNotation(line.principalVariation[i]);
-        std::cout << pv[i] << "\n";
-        std::cout.flush();
+        std::cout << pv[i] << " ";
     }
+    std::cout << "\n";
+    std::cout.flush();
+
+    int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    std::cout << "info time " << milliseconds;
+
+    std::cout << " nodes " << stats.totalNodes;
+
+    if(milliseconds !=0) {
+        std::cout << " nps " << int(1000 * float(stats.totalNodes) / float(milliseconds));
+    }
+    std::cout << "\n";
+    std::cout.flush();
+
 
     results.bestMove = pv[0];
     return results;
 }
 
-int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline){
+int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stats){
     LINE line;
     if(depth == 0){
         pline->nmoves = 0;
         // do a quiescent search for the leaf nodes, to try and reduce the horizon effect (TODO)
-        return Quiescence();
+        return Quiescence(alpha, beta);
     }
 
     // generate list of moves
@@ -59,11 +77,13 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline){
 
     // first do the capture moves
     for(int i = 0; i < movelist.captureMoveLength; i++){
+        stats->totalNodes += 1;
         position.doMove(movelist.captureMove[i]);
-        int score = -AlphaBeta(depth - 1, -beta, -alpha, &line);
+        int score = -AlphaBeta(depth - 1, -beta, -alpha, &line, stats);
         position.undoMove();
 
         if(score >= beta){
+            stats->betaCutoffs += 1;
             return beta; // beta cutoff
         }
 
@@ -77,11 +97,13 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline){
 
     // then normal
     for(int i = 0; i < movelist.moveLength; i++){
+        stats->totalNodes += 1;
         position.doMove(movelist.move[i]);
-        int score = -AlphaBeta(depth - 1, -beta, -alpha, &line);
+        int score = -AlphaBeta(depth - 1, -beta, -alpha, &line, stats);
         position.undoMove();
 
         if(score >= beta){
+            stats->betaCutoffs += 1;
             return beta; // beta cutoff
         }
 
@@ -95,6 +117,6 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline){
     return alpha;
 }
 
-int Evaluate::Quiescence(){
+int Evaluate::Quiescence(int alpha, int beta){
     return this->position.Evaluate();
 }

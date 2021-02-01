@@ -48,16 +48,19 @@ void UCI::mainLoop(){
         std::getline(std::cin, input);
 
         if(input == "quit"){
+            input.clear();
             break;
         }
 
         if(input == "ucinewgame"){
+            input.clear();
             // nothing for now
         }
 
         if(input == "stop"){
             if(threadStarted){
                 evaluation.join();
+                threadStarted = false;
             }
             // stop the analysis thread
         }
@@ -94,13 +97,15 @@ void UCI::mainLoop(){
                 }
                 moves.push_back(input);
             }
+            input.clear();
             std::cout << fen << "\n";
         }
 
 
-        if(input.substr(0, ' ') == "go"){
+        if(input.substr(0, input.find(' ')) == "go"){
+            input.clear();
             Settings settings;
-            settings.depth = 4;
+            settings.depth = 7;
             if(threadStarted){
                 evaluation.join();
             }

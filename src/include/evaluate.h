@@ -19,10 +19,9 @@ public:
 
 private:
 
-    int AlphaBeta(int depth, int alpha, int beta, LINE *pline);
+    int Quiescence(int alpha, int beta);
 
-    int Quiescence();
-
+    int AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stats);
 };
 
 

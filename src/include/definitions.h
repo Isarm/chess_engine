@@ -171,6 +171,11 @@ namespace definitions {
         int nmoves;
         unsigned principalVariation[100];
     };
+
+    struct STATS{
+        int totalNodes = 0;
+        int betaCutoffs = 0;
+    };
 }
 
 #endif
