@@ -105,7 +105,7 @@ void UCI::mainLoop(){
         if(input.substr(0, input.find(' ')) == "go"){
             input.clear();
             Settings settings;
-            settings.depth = 6;
+            settings.depth = 8 ;
             if(threadStarted){
                 evaluation.join();
             }

@@ -116,8 +116,10 @@ Position::Position(string FEN) {
     if(this->turn == BLACK){
         positionHashes[halfMoveNumber] ^= zobristBlackToMove;
     }
-    int enPassantSquare = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
-    positionHashes[halfMoveNumber] ^= zobristEnPassantFile[enPassantSquare % 8];
+    if(bitboards[!this->turn][EN_PASSANT_SQUARES]){
+        int enPassantSquare = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
+        positionHashes[halfMoveNumber] ^= zobristEnPassantFile[enPassantSquare % 8];
+    }
 }
 
 void Position::generateHelpBitboards() {
@@ -673,6 +675,8 @@ void Position::doMove(unsigned move){
     halfMoveNumber++;
     halfMovesSinceIrrepr++;
 
+    positionHashes[halfMoveNumber] = positionHashes[halfMoveNumber - 1];
+
     originInt = (ORIGIN_SQUARE_MASK & moveL) >> ORIGIN_SQUARE_SHIFT;
     destinationInt = (DESTINATION_SQUARE_MASK & moveL) >> DESTINATION_SQUARE_SHIFT;
     originBB = 1uLL << originInt;
@@ -807,11 +811,14 @@ void Position::doMove(unsigned move){
     // store possible en passant destination information in the previousMoveList
     enPassantInt = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
     moveL |= enPassantInt << EN_PASSANT_DESTINATION_SQUARE_SHIFT;
+
+    // update hash if there was an en passant square
+    if(bitboards[!this->turn][EN_PASSANT_SQUARES]) {
+        positionHashes[halfMoveNumber] ^= zobristEnPassantFile[enPassantInt % 8];
+    }
+
     // reset possible en passant destination
     bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
-    // update hash
-    positionHashes[halfMoveNumber] ^= zobristEnPassantFile[enPassantInt % 8];
-
 
     // put into previous moves list
     this->previousMoves[this->halfMoveNumber - 1] = moveL;
@@ -918,12 +925,10 @@ void Position::undoMove() {
     // ______
     unsigned originInt, destinationInt, enPassantInt;
 
-    halfMoveNumber--;
-
     // get the move
-    uint64_t move = this->previousMoves[this->halfMoveNumber];
+    uint64_t move = this->previousMoves[this->halfMoveNumber - 1];
     // revert back to 0
-    this->previousMoves[this->halfMoveNumber] = 0;
+    this->previousMoves[this->halfMoveNumber - 1] = 0;
 
     originInt = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
     destinationInt = (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
@@ -980,14 +985,15 @@ void Position::undoMove() {
                 unsigned pieceType = (move & CAPTURED_PIECE_TYPE_MASK) >> CAPTURED_PIECE_TYPE_SHIFT;
                 bitboards[this->turn][pieceType] |= 1uLL << pieceIndex;
             }
-
             break;
     }
 
 
     // restore en passant destination square
     enPassantInt = (EN_PASSANT_DESTINATION_SQUARE_MASK & move) >> EN_PASSANT_DESTINATION_SQUARE_SHIFT;
-    bitboards[this->turn][EN_PASSANT_SQUARES] = 1uLL << enPassantInt;
+    if(enPassantInt) {
+        bitboards[this->turn][EN_PASSANT_SQUARES] = 1uLL << enPassantInt;
+    }
 
     // reset en passant destination square of other side
     bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
@@ -1000,6 +1006,8 @@ void Position::undoMove() {
 
     // restore halfmove halfmoves since last time irreversible move (for 3fold repetion checks)
     halfMovesSinceIrrepr = (move & HALFMOVENUMBER_SINCE_IRREVERSIBLE_MOVE_MASK) >> HALFMOVENUMBER_SINCE_IRREVERSIBLE_MOVE_SHIFT;
+
+    halfMoveNumber--;
 
     this->turn = !this->turn;
     generateHelpBitboards();
@@ -1243,7 +1251,7 @@ bool Position::isDraw() {
     }
 
     // check three fold repetition rule
-    if(halfMovesSinceIrrepr >= 4){
+    if(halfMovesSinceIrrepr >= 8){
         int threefoldRepetitionCount = 0;
         for(int halfmove = 2; halfmove <= halfMovesSinceIrrepr; halfmove += 2){
             // check same colour positions (so 2 halfmoves per check).
