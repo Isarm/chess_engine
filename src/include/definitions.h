@@ -82,6 +82,7 @@ namespace definitions {
         CAPTURED_PIECE_INDEX_SHIFT = 20,
         EN_PASSANT_DESTINATION_SQUARE_SHIFT = 26,
         CASTLING_RIGHTS_BEFORE_MOVE_SHIFT = 32,
+        HALFMOVENUMBER_BEFORE_MOVE_SHIFT = 36,
     };
 
     enum moveListMask : uint64_t {
@@ -94,6 +95,7 @@ namespace definitions {
         CAPTURED_PIECE_INDEX_MASK = 0x3F00000,
         EN_PASSANT_DESTINATION_SQUARE_MASK = 0xFC000000,
         CASTLING_RIGHTS_BEFORE_MOVE_MASK =0xF00000000,
+        HALFMOVENUMBER_BEFORE_MOVE_MASK = 0x7F000000000
     };
 
     enum specialMoves : unsigned{

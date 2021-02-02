@@ -15,13 +15,16 @@ public:
     bool turn = WHITE;
     bool isEndGame = false;
     bool isIncheck = false;
+
     unsigned castlingRights = 0;
     uint64_t bitboards[2][8] = {0};
     uint64_t helpBitboards[2] = {0};
 
+    uint64_t hash;
+
     uint64_t previousMoves[1024] = {0};
-    unsigned halfMoveNumberTotal = 0;
     unsigned halfMoveNumber50 = 0;
+    unsigned halfMoveNumber = 0;
     unsigned fullMoveNumber;
 
     SliderAttacks sliderAttacks;

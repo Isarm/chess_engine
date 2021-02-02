@@ -12,10 +12,10 @@
 using namespace std;
 using namespace definitions;
 
-Position::Position(string FEN){
+Position::Position(string FEN) {
 
     string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    if(FEN == "startpos") FEN = startFEN;
+    if (FEN == "startpos") FEN = startFEN;
 
 
     // loop through the FEN string until first space
@@ -23,48 +23,49 @@ Position::Position(string FEN){
     char pieceChar = FEN.at(0);
     int i = 0; // initialize here as it is also needed outside of the scope of the for loop
 
-    if(FEN.at(i) == '"') i++; // skip possible leading quotation marks (in case of perft debug)
+    if (FEN.at(i) == '"') i++; // skip possible leading quotation marks (in case of perft debug)
 
-    for(i; pieceChar != ' '; i++, BBindex++, pieceChar = FEN.at(i)){ // loop for first part of FEN until first space
-        if(pieceChar == '/'){
+    for (i; pieceChar != ' '; i++, BBindex++, pieceChar = FEN.at(i)) { // loop for first part of FEN until first space
+        if (pieceChar == '/') {
             BBindex--; // account for (incorrect) increment, as it is simply a new row
             continue;
         }
-        if(pieceChar <= '9' && pieceChar > '0') {
+        if (pieceChar <= '9' && pieceChar > '0') {
             BBindex += pieceChar - '1';
             continue;
         }
 
-        bitboards[isupper(pieceChar) != 0][FENpieces.at(tolower(pieceChar))] |= 1uLL << BBindex; // shift the bits into place
+        bitboards[isupper(pieceChar) != 0][FENpieces.at(tolower(pieceChar))] |=
+                1uLL << BBindex; // shift the bits into place
     }
 
-    if(FEN.at(++i) == 'b'){
+    if (FEN.at(++i) == 'b') {
         this->turn = BLACK;
     } // turn gets initialized as white's turn by default
 
     //move on to castling rights
     ++i;
 
-    while(FEN.at(++i) != ' '){
-        switch (FEN.at(i)){
+    while (FEN.at(++i) != ' ') {
+        switch (FEN.at(i)) {
             case 'K':
                 this->castlingRights |= WHITE_KINGSIDE_CASTLING_RIGHTS;
                 break;
             case 'Q':
-                this-> castlingRights |= WHITE_QUEENSIDE_CASTLING_RIGHTS;
+                this->castlingRights |= WHITE_QUEENSIDE_CASTLING_RIGHTS;
                 break;
             case 'k':
                 this->castlingRights |= BLACK_KINGSIDE_CASTLING_RIGHTS;
                 break;
             case 'q':
-                this-> castlingRights |= BLACK_QUEENSIDE_CASTLING_RIGHTS;
+                this->castlingRights |= BLACK_QUEENSIDE_CASTLING_RIGHTS;
                 break;
             default:
                 break;
         }
     }
 
-    if(FEN.at(++i) != '-'){
+    if (FEN.at(++i) != '-') {
         unsigned enPassantInt = FEN.at(i) - 'a';
         enPassantInt += (8 - (FEN.at(++i) - '0')) * 8;
         bitboards[!this->turn][EN_PASSANT_SQUARES] = 1uLL << enPassantInt;
@@ -78,7 +79,7 @@ Position::Position(string FEN){
         while (FEN.at(++i) != ' ') {
             halfMove50[hmi] = FEN.at(i);
         }
-
+        // used to check 50 move rule
         this->halfMoveNumber50 = stoi(halfMove50);
 
         char fullMove[5];
@@ -102,6 +103,22 @@ Position::Position(string FEN){
 
     rayDirectionLookupInitialize(); // initialize ray lookup table;
 
+    zobristPieceTableInitialize(); // initialize zobrist hash table
+
+    // calculate the hash of the current position;
+    hash = 0ll;
+    for (int colour = 0; colour < 2; colour++) {
+        for (int piece = 0; piece < 6; piece++) {
+            int pieceIndex = debruijnSerialization(bitboards[colour][piece]);
+            hash ^= zobristPieceTable[colour][piece][pieceIndex];
+        }
+    }
+    hash ^= zobristCastlingRightsTable[castlingRights];
+    if(this->turn == BLACK){
+        hash ^= zobristBlackToMove;
+    }
+    int enPassantSquare = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
+    hash ^= zobristenPassantFile[enPassantSquare % 8];
 }
 
 void Position::generateHelpBitboards() {
@@ -113,6 +130,7 @@ void Position::generateHelpBitboards() {
         bitboards[WHITE][PIECES] |= bitboards[WHITE][i];
     }
     helpBitboards[OCCUPIED_SQUARES] = bitboards[BLACK][PIECES] | bitboards[WHITE][PIECES];
+
 }
 
 void Position::prettyPrint() {
@@ -617,6 +635,7 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
 // bit 20-25 captured piece index
 // bit 26-31 en passant square index
 // bit 32-35 castling rights before this move
+// bit 36-42 halfmove number for the 50 move rule (gets reset in case of pawn or capture move)
 // in definitions.h the enum can be found for the shifts and the masks
 
 void Position::doMove(unsigned move){
@@ -642,6 +661,7 @@ void Position::doMove(unsigned move){
     uint64_t capturedPiece;
     switch((SPECIAL_MOVE_FLAG_MASK & moveL) >> SPECIAL_MOVE_FLAG_SHIFT){
         case EN_PASSANT_FLAG:
+            halfMoveNumber50 = 0; // reset for 50 move rule
             if(this->turn == WHITE){ // remove pawn south of destination square, so left shift
                 bitboards[BLACK][PAWNS] &= ~(destinationBB << S);
             }
@@ -665,6 +685,7 @@ void Position::doMove(unsigned move){
             }
             break;
         case PROMOTION_FLAG:
+            halfMoveNumber50 = 0; // reset for 50 move rule
             // remove the pawn
             bitboards[this->turn][PAWNS] &= ~originBB;
 
@@ -695,6 +716,7 @@ void Position::doMove(unsigned move){
             for(unsigned i = 0; i < 6; i++){
                 capturedPiece = bitboards[!this->turn][i] & destinationBB;
                 if(capturedPiece) {
+                    halfMoveNumber50 = 0; // reset for 50 move rule
                     bitboards[!this->turn][i] &= ~capturedPiece;
 
                     // store the capture move specifications
@@ -728,9 +750,11 @@ void Position::doMove(unsigned move){
     // reset possible en passant destination
     bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
 
+    // store halfmovenumbers for 50 move repetition rule
+    moveL |= halfMoveNumber50 << HALFMOVENUMBER_BEFORE_MOVE_SHIFT;
 
     // put into previous moves list
-    this->previousMoves[this->halfMoveNumberTotal++] = moveL;
+    this->previousMoves[this->halfMoveNumber++] = moveL;
 
     this->turn = !this->turn;
     generateHelpBitboards();
@@ -817,9 +841,9 @@ void Position::undoMove() {
     unsigned originInt, destinationInt, enPassantInt;
 
     // get the move
-    uint64_t move = this->previousMoves[this->halfMoveNumberTotal - 1];
+    uint64_t move = this->previousMoves[this->halfMoveNumber - 1];
     // revert back to 0
-    this->previousMoves[--this->halfMoveNumberTotal] = 0;
+    this->previousMoves[--this->halfMoveNumber] = 0;
 
     originInt = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
     destinationInt = (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
@@ -890,6 +914,10 @@ void Position::undoMove() {
 
     // restore castling rights
     castlingRights = (move & CASTLING_RIGHTS_BEFORE_MOVE_MASK) >> CASTLING_RIGHTS_BEFORE_MOVE_SHIFT;
+
+    // restore halfmove number for 50 move rule;
+    halfMoveNumber50 = (move & HALFMOVENUMBER_BEFORE_MOVE_MASK) >> HALFMOVENUMBER_BEFORE_MOVE_SHIFT;
+
 
     this->turn = !this->turn;
     generateHelpBitboards();

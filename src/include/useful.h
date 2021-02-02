@@ -6,6 +6,8 @@
 #define MOVEGENHELPFUNCTIONS_H
 
 
+#include <random>
+
 inline static bool notAFile(uint64_t bb) {
     return uint64_t(0xFEFEFEFEFEFEFEFE) & bb;
 }
@@ -110,6 +112,38 @@ inline void rayDirectionLookupInitialize() {
 inline int rayDirectionLookup(unsigned a, unsigned b) {
     return rayDirectionsTable[a][b];
 }
+
+// piece table for [colour][piece][index]
+inline uint64_t zobristPieceTable[2][6][64];
+inline uint64_t zobristCastlingRightsTable[16];
+inline uint64_t zobristBlackToMove;
+inline uint64_t zobristEnPassantFile[8];
+inline void zobristPieceTableInitialize(){
+    /* Seed */
+    std::random_device rd;
+
+    /* Random number generator */
+    std::default_random_engine generator(rd());
+
+    /* Distribution on which to apply the generator */
+    std::uniform_int_distribution<unsigned long long> distribution(0, 0xFFFFFFFFFFFFFFFF);
+    for(int i = 0; i < 2; i++){
+        for(int j = 0; j < 6; j++){
+            for(int k = 0; k < 64; k++) {
+                zobristPieceTable[i][j][k] = distribution(generator);
+            }
+        }
+    }
+    for(int i = 0; i < 16; i++){
+        zobristCastlingRightsTable[i] = distribution(generator);
+    }
+    zobristBlackToMove = distribution(generator);
+    for(int i = 0; i < 8; i++){
+        enPassantFile[i] = distribution(generator);
+    }
+
+}
+
 
 inline string moveToStrNotation(unsigned move){
     unsigned originInt = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
