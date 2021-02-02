@@ -58,7 +58,7 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
     moveList movelist;
     position.GenerateMoves(movelist);
 
-    // check for stalemate of checkmate:
+    // check for stalemate of checkmate in case of no moves left:
     if(movelist.moveLength + movelist.captureMoveLength == 0){
         if(position.isIncheck){
             pline->nmoves = 0;
@@ -76,6 +76,8 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
     for(int i = 0; i < movelist.captureMoveLength; i++){
         stats->totalNodes += 1;
         position.doMove(movelist.captureMove[i]);
+
+        // no draw can occur after a capture move due to 3fold rep/50move rule
         //  invert all values for other colour
         int score = -AlphaBeta(depth - 1, -beta, -alpha, &line, stats);
         position.undoMove();
@@ -97,8 +99,17 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
     for(int i = 0; i < movelist.moveLength; i++){
         stats->totalNodes += 1;
         position.doMove(movelist.move[i]);
-        int score = -AlphaBeta(depth - 1, -beta, -alpha, &line, stats);
-        position.undoMove();
+
+        //check if this move has lead to a draw (3fold rep/50move rule); as then the search can be stopped
+        int score;
+        if(position.isDraw()){
+            position.undoMove();
+            score = 0;
+        }
+        else {
+            score = -AlphaBeta(depth - 1, -beta, -alpha, &line, stats);
+            position.undoMove();
+        }
 
         if(score >= beta){
             stats->betaCutoffs += 1;

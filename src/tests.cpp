@@ -7,12 +7,28 @@
 #include "definitions.h"
 #include <chrono>
 
+void hashTest();
+
 using namespace std;
 
 
 void testmain(int argc, char *argv[]){
-    perft(argc, argv);
+//    perft(argc, argv);
 //    perftDebug();
+    hashTest();
+}
+
+void hashTest() {
+    Position position = Position("pppppppp/pppppppp/pppppppp/pppppp2/pppppp2/2ppp3/2p3pk/K3Q3 w - - 0 1");
+    string moves[] = {"e1h4", "h2g1", "h4e1", "g1h2", "e1h4", "h2g1", "h4e1", "g1h2", "e1h4", "h2g1", "h4e1", "g1h2", "e1h4", "h2g1", "h4e1", "g1h2"};
+    for(string move : moves){
+        position.doMove(move);
+    }
+    position.undoMove();
+    position.undoMove();
+    position.doMove("h4f4");
+    position.undoMove();
+    position.doMove("h4e1");
 }
 
 // function that keeps printing moves and waits for move as input, such that you can manually traverse the search tree

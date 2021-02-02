@@ -22,8 +22,8 @@ https://github.com/agausmann/perftree
 Currently around 14 million positions are found per second, on an Intel® Core™ i7-9750H CPU @ 2.60GHz × 12.
 
 ## TODO
-* Create a simple evaluation function
-* Implement the minimax algorithm 
-* Implement the UCI protocol such that a GUI can be used to improve testing
-* Implement Alpha Beta pruning
+* ~~Create a simple evaluation function~~
+* ~~Implement the minimax algorithm~~
+* ~~Implement the UCI protocol such that a GUI can be used to improve testing~~
+* ~~Implement Alpha Beta pruning~~
 * Implement Iterative Deepening using a transposition table
