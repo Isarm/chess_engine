@@ -595,10 +595,6 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
         }
     }
 
-    if(pieceToMove == -1){
-        cout << "stop\n";
-    }
-
     // TODO: move rook castling right removal to here, using if(rook == originBB | desitinationBB construction)
 
     // remove castling rights if king is moved and update hash
