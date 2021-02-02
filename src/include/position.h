@@ -21,7 +21,7 @@ public:
     uint64_t helpBitboards[2] = {0};
 
     uint64_t hash;
-    uint64_t previousHashes[1024];
+    uint64_t positionHashes[1024] = {0};
     int halfMovesSinceIrrepr = 0;
 
     uint64_t previousMoves[1024] = {0};

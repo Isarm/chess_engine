@@ -78,12 +78,9 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
         position.doMove(movelist.captureMove[i]);
 
         // no draw can occur after a capture move due to 3fold rep/50move rule
-
         //  invert all values for other colour
         int score = -AlphaBeta(depth - 1, -beta, -alpha, &line, stats);
         position.undoMove();
-
-
 
         if(score >= beta){
             stats->betaCutoffs += 1;
@@ -104,12 +101,15 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
         position.doMove(movelist.move[i]);
 
         //check if this move has lead to a draw (3fold rep/50move rule); as then the search can be stopped
+        int score;
         if(position.isDraw()){
-            return 0;
+            position.undoMove();
+            score = 0;
         }
-
-        int score = -AlphaBeta(depth - 1, -beta, -alpha, &line, stats);
-        position.undoMove();
+        else {
+            score = -AlphaBeta(depth - 1, -beta, -alpha, &line, stats);
+            position.undoMove();
+        }
 
         if(score >= beta){
             stats->betaCutoffs += 1;
