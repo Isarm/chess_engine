@@ -966,7 +966,7 @@ void Position::undoMove() {
                 unsigned pieceType = (move & CAPTURED_PIECE_TYPE_MASK) >> CAPTURED_PIECE_TYPE_SHIFT;
                 bitboards[this->turn][pieceType] |= 1uLL << pieceIndex;
             }
-
+            break;
         default:
             // move the piece from destination to origin (so a possible wrong order warning is expected)
             MovePiece(destinationBB, originBB, !this->turn);
