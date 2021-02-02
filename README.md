@@ -23,7 +23,7 @@ Currently around 14 million positions are found per second, on an IntelÂ® Coreâ„
 
 ## TODO
 * ~~Create a simple evaluation function~~
-* ~~Implement the minimax algorithm ~~
+* ~~Implement the minimax algorithm~~
 * ~~Implement the UCI protocol such that a GUI can be used to improve testing~~
-* ~~ Implement Alpha Beta pruning ~~
+* ~~Implement Alpha Beta pruning~~
 * Implement Iterative Deepening using a transposition table
