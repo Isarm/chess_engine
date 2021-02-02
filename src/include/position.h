@@ -22,7 +22,7 @@ public:
 
     uint64_t hash;
     uint64_t positionHashes[1024] = {0};
-    int halfMovesSinceIrrepr = 0;
+    unsigned halfMovesSinceIrrepr = 0;
 
     uint64_t previousMoves[1024] = {0};
     unsigned halfMoveNumber50 = 0;

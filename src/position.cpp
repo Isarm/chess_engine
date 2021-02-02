@@ -657,19 +657,26 @@ void Position::doMove(unsigned move){
     unsigned originInt, destinationInt, enPassantInt;
     uint64_t originBB, destinationBB;
 
-    // increment movenumber for 50 move rule
-    halfMoveNumber50++;
-    // increment general halfmovenumber counter
-    halfMoveNumber++;
-
     // as the previousmoves array uses uint64_t to store a move. So moveL(arge) is the variable for previousmoves list
     uint64_t moveL = move;
+
+    // store halfmovenumbers for 50 move repetition rule
+    uint64_t temp = halfMoveNumber50;
+    moveL |= temp << HALFMOVENUMBER_BEFORE_MOVE_SHIFT;
+
+    // store halfmovenumbers since the last irreversible move (for 3fold repetion check)
+    temp = halfMovesSinceIrrepr;
+    moveL |= temp << HALFMOVENUMBER_SINCE_IRREVERSIBLE_MOVE_SHIFT;
+
+    // increment halfmovenumber counters
+    halfMoveNumber50++;
+    halfMoveNumber++;
+    halfMovesSinceIrrepr++;
 
     originInt = (ORIGIN_SQUARE_MASK & moveL) >> ORIGIN_SQUARE_SHIFT;
     destinationInt = (DESTINATION_SQUARE_MASK & moveL) >> DESTINATION_SQUARE_SHIFT;
     originBB = 1uLL << originInt;
     destinationBB = 1uLL << destinationInt;
-
 
     // store the castling rights of before the move
     moveL |= uint64_t(castlingRights) << CASTLING_RIGHTS_BEFORE_MOVE_SHIFT;
@@ -687,15 +694,15 @@ void Position::doMove(unsigned move){
                 bitboards[BLACK][PAWNS] &= ~(destinationBB << S);
 
                 // remove pawn from zobrist hash
-                int destinationEP = debruijnSerialization(destinationBB << S);
-                positionHashes[halfMoveNumber] ^= zobristPieceTable[BLACK][PAWNS][destinationEP];
+                unsigned EPcapture = debruijnSerialization(destinationBB << S);
+                positionHashes[halfMoveNumber] ^= zobristPieceTable[BLACK][PAWNS][EPcapture];
             }
             else{
                 bitboards[WHITE][PAWNS] &= ~(destinationBB >> N);
 
                 // remove pawn from zobrist hash
-                int destinationEP = debruijnSerialization(destinationBB >> N);
-                positionHashes[halfMoveNumber] ^= zobristPieceTable[WHITE][PAWNS][destinationEP];
+                unsigned EPcapture = debruijnSerialization(destinationBB >> N);
+                positionHashes[halfMoveNumber] ^= zobristPieceTable[WHITE][PAWNS][EPcapture];
             }
             MovePiece(originBB, destinationBB, this->turn);
             break;
@@ -805,9 +812,6 @@ void Position::doMove(unsigned move){
     // update hash
     positionHashes[halfMoveNumber] ^= zobristEnPassantFile[enPassantInt % 8];
 
-    // store halfmovenumbers for 50 move repetition rule
-    uint64_t temp = halfMoveNumber50;
-    moveL |= temp << HALFMOVENUMBER_BEFORE_MOVE_SHIFT;
 
     // put into previous moves list
     this->previousMoves[this->halfMoveNumber - 1] = moveL;
@@ -914,10 +918,12 @@ void Position::undoMove() {
     // ______
     unsigned originInt, destinationInt, enPassantInt;
 
+    halfMoveNumber--;
+
     // get the move
-    uint64_t move = this->previousMoves[this->halfMoveNumber - 1];
+    uint64_t move = this->previousMoves[this->halfMoveNumber];
     // revert back to 0
-    this->previousMoves[--this->halfMoveNumber] = 0;
+    this->previousMoves[this->halfMoveNumber] = 0;
 
     originInt = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
     destinationInt = (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
@@ -992,10 +998,13 @@ void Position::undoMove() {
     // restore halfmove number for 50 move rule;
     halfMoveNumber50 = (move & HALFMOVENUMBER_BEFORE_MOVE_MASK) >> HALFMOVENUMBER_BEFORE_MOVE_SHIFT;
 
+    // restore halfmove halfmoves since last time irreversible move (for 3fold repetion checks)
+    halfMovesSinceIrrepr = (move & HALFMOVENUMBER_SINCE_IRREVERSIBLE_MOVE_MASK) >> HALFMOVENUMBER_SINCE_IRREVERSIBLE_MOVE_SHIFT;
+
     this->turn = !this->turn;
     generateHelpBitboards();
 
-    // reset hash
+    // reset hash of undone position
     positionHashes[halfMoveNumber + 1] = 0;
 }
 
@@ -1242,8 +1251,8 @@ bool Position::isDraw() {
                 threefoldRepetitionCount++;
             }
         }
-        if(threefoldRepetitionCount >= 3){
-            return false;
+        if(threefoldRepetitionCount >= 2){
+            return true;
         }
     }
     return false;
