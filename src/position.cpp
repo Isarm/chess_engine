@@ -595,7 +595,7 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
         }
     }
 
-    // TODO: move rook castling right removal to here, using if(rook == originBB | desitinationBB construction)
+    // TODO: move rook castling right removal to here, using if(rook == originBB | destinationBB construction)
 
     // remove castling rights if king is moved and update hash
     // note that in case of moving the rook, the removal of castling rights is handled in the doMove function.
