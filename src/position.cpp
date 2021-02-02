@@ -595,6 +595,10 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
         }
     }
 
+    if(pieceToMove == -1){
+        cout << "stop\n";
+    }
+
     // TODO: move rook castling right removal to here, using if(rook == originBB | desitinationBB construction)
 
     // remove castling rights if king is moved and update hash
@@ -953,7 +957,7 @@ void Position::undoMove() {
                 unsigned pieceType = (move & CAPTURED_PIECE_TYPE_MASK) >> CAPTURED_PIECE_TYPE_SHIFT;
                 bitboards[this->turn][pieceType] |= 1uLL << pieceIndex;
             }
-
+            break;
         default:
             // move the piece from destination to origin (so a possible wrong order warning is expected)
             MovePiece(destinationBB, originBB, !this->turn);
