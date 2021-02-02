@@ -175,6 +175,7 @@ namespace definitions {
     struct STATS{
         int totalNodes = 0;
         int betaCutoffs = 0;
+        int quiescentNodes = 0;
     };
 }
 

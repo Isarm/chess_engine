@@ -51,7 +51,7 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
     if(depth == 0){
         pline->nmoves = 0;
         // do a quiescent search for the leaf nodes, to try and reduce the horizon effect (TODO)
-        return Quiescence(alpha, beta);
+        return Quiescence(alpha, beta, stats);
     }
 
     // generate list of moves
@@ -76,6 +76,7 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
     for(int i = 0; i < movelist.captureMoveLength; i++){
         stats->totalNodes += 1;
         position.doMove(movelist.captureMove[i]);
+        //  invert all values for other colour
         int score = -AlphaBeta(depth - 1, -beta, -alpha, &line, stats);
         position.undoMove();
 
@@ -114,8 +115,35 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
     return alpha;
 }
 
-int Evaluate::Quiescence(int alpha, int beta){
-    return this->position.Evaluate();
+int Evaluate::Quiescence(int alpha, int beta, STATS *stats) {
+    // define stand_pat (adapted from chessprogramming wiki quiescence search)
+    int stand_pat = position.Evaluate();
+    if(stand_pat >= beta){
+        return beta; // fail hard
+    }
+    if(alpha < stand_pat){
+        alpha = stand_pat; // raise alpha to establish lower bound on postion
+    }
+
+    moveList movelist;
+    position.GenerateMoves(movelist);
+
+    // go over all capture moves to avoid horizon effect on tactical moves.
+    for(int i = 0; i < movelist.captureMoveLength; i++){
+        stats->quiescentNodes += 1;
+        stats->totalNodes += 1;
+        position.doMove(movelist.captureMove[i]);
+        int score = -Quiescence(-beta, -alpha, stats);
+        position.undoMove();
+
+        if(score >= beta){
+            return beta; // fail hard
+        }
+        if(score > alpha){
+            alpha = score;
+        }
+    }
+    return alpha;
 }
 
 void Evaluate::printinformation(int milliseconds, int score, LINE line, STATS stats) {
@@ -146,6 +174,10 @@ void Evaluate::printinformation(int milliseconds, int score, LINE line, STATS st
         std::cout << " nps " << int(1000 * float(stats.totalNodes) / float(milliseconds));
     }
     std::cout << "\n";
+    std::cout.flush();
+
+    std::cout << "quiescent nodes " << stats.quiescentNodes << "/" << stats.totalNodes << " total nodes\n";
+    std::cout << float(stats.quiescentNodes)/stats.totalNodes << "\n";
     std::cout.flush();
 }
 
