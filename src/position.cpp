@@ -118,7 +118,7 @@ Position::Position(string FEN) {
         hash ^= zobristBlackToMove;
     }
     int enPassantSquare = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
-    hash ^= zobristenPassantFile[enPassantSquare % 8];
+    hash ^= zobristEnPassantFile[enPassantSquare % 8];
 }
 
 void Position::generateHelpBitboards() {
@@ -597,34 +597,46 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
 
     // TODO: move rook castling right removal to here, using if(rook == originBB | desitinationBB construction)
 
-    // remove castling rights if king is moved
+    // remove castling rights if king is moved and update hash
     // note that in case of moving the rook, the removal of castling rights is handled in the doMove function.
     if (pieceToMove == KING) {
         if (colour == WHITE) {
+            hash ^= zobristCastlingRightsTable[castlingRights];
             castlingRights &= ~WHITE_CASTLING_RIGHTS;
+            hash ^= zobristCastlingRightsTable[castlingRights];
         } else {
+            hash ^= zobristCastlingRightsTable[castlingRights];
             castlingRights &= ~BLACK_CASTLING_RIGHTS;
+            hash ^= zobristCastlingRightsTable[castlingRights];
         }
     }
 
-    // set en passant square in case of double pawn move
+    // set en passant square in case of double pawn move and update hash
     if (pieceToMove == PAWNS) {
         if (colour == WHITE) {
             if ((originBB >> NN) & destinationBB) {
                 bitboards[WHITE][EN_PASSANT_SQUARES] = originBB >> N;
+                // update hash
+                zobristEnPassantFile[debruijnSerialization(originBB >> N) % 8];
             }
         } else {
             if ((originBB << SS) & destinationBB) {
                 bitboards[BLACK][EN_PASSANT_SQUARES] = originBB << S;
+                // update hash
+                zobristEnPassantFile[debruijnSerialization(originBB << S) % 8];
             }
         }
     }
 
     // remove origin piece
     bitboards[colour][pieceToMove] &= ~originBB;
+    // update hash by removing origin piece
+    hash ^= zobristPieceTable[colour][pieceToMove][debruijnSerialization(originBB)];
 
     // add destination piece
     bitboards[colour][pieceToMove] |= destinationBB;
+    // update hash by adding destination piece
+    hash ^= zobristPieceTable[colour][pieceToMove][debruijnSerialization(destinationBB)];
 
 }
 
@@ -641,6 +653,9 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
 void Position::doMove(unsigned move){
     unsigned originInt, destinationInt, enPassantInt;
     uint64_t originBB, destinationBB;
+
+    // first store the hash of the current position
+    previousHashes[halfMoveNumber] = hash;
 
     // as the previousmoves array uses uint64_t to store a move. So moveL(arge) is the variable for previousmoves list
     uint64_t moveL = move;
@@ -664,9 +679,17 @@ void Position::doMove(unsigned move){
             halfMoveNumber50 = 0; // reset for 50 move rule
             if(this->turn == WHITE){ // remove pawn south of destination square, so left shift
                 bitboards[BLACK][PAWNS] &= ~(destinationBB << S);
+
+                // remove pawn from zobrist hash
+                int destinationEP = debruijnSerialization(destinationBB << S);
+                hash ^= zobristPieceTable[BLACK][PAWNS][destinationEP];
             }
             else{
                 bitboards[WHITE][PAWNS] &= ~(destinationBB >> N);
+
+                // remove pawn from zobrist hash
+                int destinationEP = debruijnSerialization(destinationBB >> N);
+                hash ^= zobristPieceTable[WHITE][PAWNS][destinationEP];
             }
             MovePiece(originBB, destinationBB, this->turn);
             break;
@@ -678,20 +701,27 @@ void Position::doMove(unsigned move){
                 doCastlingMove(false); // false is queenside
             }
             if(this->turn == WHITE){
+                // update hash and castling rights
+                hash ^= zobristCastlingRightsTable[castlingRights];
                 castlingRights &= ~WHITE_CASTLING_RIGHTS;
+                hash ^= zobristCastlingRightsTable[castlingRights];
             }
             else{
+                hash ^= zobristCastlingRightsTable[castlingRights];
                 castlingRights &= ~BLACK_CASTLING_RIGHTS;
+                hash ^= zobristCastlingRightsTable[castlingRights];
             }
             break;
         case PROMOTION_FLAG:
             halfMoveNumber50 = 0; // reset for 50 move rule
-            // remove the pawn
+            // remove the pawn and update hash
             bitboards[this->turn][PAWNS] &= ~originBB;
+            hash ^= zobristPieceTable[this->turn][PAWNS][originInt];
 
-            // place promoted piece
+            // place promoted piece and update hash
             promotionType = promotionIndices[(move & PROMOTION_TYPE_MASK) >> PROMOTION_TYPE_SHIFT];
             bitboards[this->turn][promotionType] |= destinationBB;
+            hash ^= zobristPieceTable[this->turn][promotionType][destinationInt];
 
             // switch to opponent bitboards and remove possible destination piece in case of capture
             // also save this piece in the previousMoves array as it needs to be restored in case of undoMove
@@ -699,6 +729,9 @@ void Position::doMove(unsigned move){
                 capturedPiece = bitboards[!this->turn][i] & destinationBB;
                 if(capturedPiece) {
                     bitboards[!this->turn][i] &= ~capturedPiece;
+
+                    //update hash
+                    hash ^= zobristPieceTable[!this->turn][i][destinationInt];
 
                     // store the capture move specifications
                     moveL |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
@@ -719,6 +752,9 @@ void Position::doMove(unsigned move){
                     halfMoveNumber50 = 0; // reset for 50 move rule
                     bitboards[!this->turn][i] &= ~capturedPiece;
 
+                    //update hash
+                    hash ^= zobristPieceTable[!this->turn][i][destinationInt];
+
                     // store the capture move specifications
                     moveL |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
                     moveL |= i << CAPTURED_PIECE_TYPE_SHIFT;
@@ -729,18 +765,26 @@ void Position::doMove(unsigned move){
             break;
     }
 
-    // reset castling rights in case the rook has moved or has been captured.
+    // reset castling rights in case the rook has moved or has been captured. (and update hash)
     if(!(bitboards[WHITE][ROOKS] & (1uLL << SQ_H1))){
+        hash ^= zobristCastlingRightsTable[castlingRights];
         castlingRights &= ~WHITE_KINGSIDE_CASTLING_RIGHTS;
+        hash ^= zobristCastlingRightsTable[castlingRights];
     }
     if(!(bitboards[WHITE][ROOKS] & (1uLL << SQ_A1))){
+        hash ^= zobristCastlingRightsTable[castlingRights];
         castlingRights &= ~WHITE_QUEENSIDE_CASTLING_RIGHTS;
+        hash ^= zobristCastlingRightsTable[castlingRights];
     }
     if(!(bitboards[BLACK][ROOKS] & (1uLL << SQ_H8))){
+        hash ^= zobristCastlingRightsTable[castlingRights];
         castlingRights &= ~BLACK_KINGSIDE_CASTLING_RIGHTS;
+        hash ^= zobristCastlingRightsTable[castlingRights];
     }
     if(!(bitboards[BLACK][ROOKS] & (1uLL << SQ_A8))){
+        hash ^= zobristCastlingRightsTable[castlingRights];
         castlingRights &= ~BLACK_QUEENSIDE_CASTLING_RIGHTS;
+        hash ^= zobristCastlingRightsTable[castlingRights];
     }
 
 
@@ -749,6 +793,8 @@ void Position::doMove(unsigned move){
     moveL |= enPassantInt << EN_PASSANT_DESTINATION_SQUARE_SHIFT;
     // reset possible en passant destination
     bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
+    // update hash
+    hash ^= zobristEnPassantFile[enPassantInt % 8];
 
     // store halfmovenumbers for 50 move repetition rule
     moveL |= halfMoveNumber50 << HALFMOVENUMBER_BEFORE_MOVE_SHIFT;
@@ -756,9 +802,11 @@ void Position::doMove(unsigned move){
     // put into previous moves list
     this->previousMoves[this->halfMoveNumber++] = moveL;
 
+    // change turn and update hash
     this->turn = !this->turn;
-    generateHelpBitboards();
+    hash ^= zobristBlackToMove;
 
+    generateHelpBitboards();
 }
 
 void Position::doMove(string move) {
@@ -809,13 +857,26 @@ void Position::doCastlingMove(bool side){
 
     if(side){ // kingside
         bitboards[this->turn][ROOKS] &= ~(1uLL << (7u + shift)); // remove rook
+        hash ^= zobristPieceTable[this->turn][ROOKS][7u + shift];
+
         bitboards[this->turn][ROOKS] |=  (1uLL << (5u + shift)); // add rook
+        hash ^= zobristPieceTable[this->turn][ROOKS][5u + shift];
+
+        hash ^= zobristPieceTable[this->turn][KING][debruijnSerialization(bitboards[this->turn][KING])]; // remove king from hash
         bitboards[this->turn][KING] = bitboards[this->turn][KING] << 2u; // move king
+        hash ^= zobristPieceTable[this->turn][KING][debruijnSerialization(bitboards[this->turn][KING] << 2u)]; // add king to hash
+
     }
     else{ // queenside
         bitboards[this->turn][ROOKS] &= ~(1uLL << (0u + shift)); // remove rook
+        hash ^= zobristPieceTable[this->turn][ROOKS][0u + shift];
+
         bitboards[this->turn][ROOKS] |=  (1uLL << (3u + shift)); // add rook
+        hash ^= zobristPieceTable[this->turn][ROOKS][3u + shift];
+
+        hash ^= zobristPieceTable[this->turn][KING][debruijnSerialization(bitboards[this->turn][KING])]; // remove king from hash
         bitboards[this->turn][KING] = bitboards[this->turn][KING] >> 2u; // move king
+        hash ^= zobristPieceTable[this->turn][KING][debruijnSerialization(bitboards[this->turn][KING]) >> 2u]; // add king to hash
     }
 }
 
@@ -838,6 +899,9 @@ void Position::undoCastlingMove(bool side) {
 
 // undo the last made move
 void Position::undoMove() {
+    // hash does not have to be updated manually, as it is stored for previous positions. But, as the
+    // movePiece function changes the current hash, the final hash update has to be done at the end of this function
+    // ______
     unsigned originInt, destinationInt, enPassantInt;
 
     // get the move
@@ -918,9 +982,12 @@ void Position::undoMove() {
     // restore halfmove number for 50 move rule;
     halfMoveNumber50 = (move & HALFMOVENUMBER_BEFORE_MOVE_MASK) >> HALFMOVENUMBER_BEFORE_MOVE_SHIFT;
 
-
     this->turn = !this->turn;
     generateHelpBitboards();
+
+    // reset hash
+    previousHashes[halfMoveNumber + 1] = 0;
+    hash = previousHashes[halfMoveNumber];
 
 }
 

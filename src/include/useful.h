@@ -139,7 +139,7 @@ inline void zobristPieceTableInitialize(){
     }
     zobristBlackToMove = distribution(generator);
     for(int i = 0; i < 8; i++){
-        enPassantFile[i] = distribution(generator);
+        zobristEnPassantFile[i] = distribution(generator);
     }
 
 }
