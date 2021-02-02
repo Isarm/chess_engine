@@ -8,15 +8,15 @@ using namespace std;
 
 namespace definitions {
 
-    enum bitboards2d{
+    enum bitboards2d {
         PAWNS, KNIGHTS, BISHOPS, ROOKS, QUEENS, KING, PIECES, EN_PASSANT_SQUARES
     };
 
-    enum turn{
+    enum turn {
         BLACK, WHITE
     };
 
-    enum helpBitboards{
+    enum helpBitboards {
         OCCUPIED_SQUARES, PINNED_PIECES
     };
 
@@ -36,43 +36,43 @@ namespace definitions {
     };
 
     static const map<int, char> FENpiecesReverse = {
-            {PAWNS, 'p'},
+            {PAWNS,   'p'},
             {KNIGHTS, 'n'},
             {BISHOPS, 'b'},
-            {ROOKS, 'r'},
-            {QUEENS, 'q'},
-            {KING, 'k'}
+            {ROOKS,   'r'},
+            {QUEENS,  'q'},
+            {KING,    'k'}
     };
 
 
     enum directionsShifting : unsigned {
-        NNW  = 17, // right shift
-        NN   = 16, // right shift
-        NNE  = 15, // right shift
-        NWW  = 10, // right shift
-        NW   = 9,  // right shift
-        N    = 8,  // right shift
-        NE   = 7,  // right shift
-        NEE  = 6,  // right shift
-        W    = 1,  // right shift
+        NNW = 17, // right shift
+        NN = 16, // right shift
+        NNE = 15, // right shift
+        NWW = 10, // right shift
+        NW = 9,  // right shift
+        N = 8,  // right shift
+        NE = 7,  // right shift
+        NEE = 6,  // right shift
+        W = 1,  // right shift
 
-        E    = 1,  // left shift
-        SWW  = 6,  // left shift
-        SW   = 7,  // left shift
-        S    = 8,  // left shift
-        SE   = 9,  // left shift
-        SEE  = 10, // left shift
-        SSW  = 15, // left shift
-        SS   = 16, // left shift
-        SSE  = 17  // left shift
+        E = 1,  // left shift
+        SWW = 6,  // left shift
+        SW = 7,  // left shift
+        S = 8,  // left shift
+        SE = 9,  // left shift
+        SEE = 10, // left shift
+        SSW = 15, // left shift
+        SS = 16, // left shift
+        SSE = 17  // left shift
     };
 
-    enum rayDirections : int{
+    enum rayDirections : int {
         VERTICAL_RAY = 1, HORIZONTAL_RAY, NORTHWEST_RAY, SOUTHWEST_RAY
     };
 
 
-    enum moveListShift : unsigned{
+    enum moveListShift : unsigned {
         ORIGIN_SQUARE_SHIFT = 0,
         DESTINATION_SQUARE_SHIFT = 6,
         PROMOTION_TYPE_SHIFT = 12,
@@ -94,24 +94,24 @@ namespace definitions {
         CAPTURED_PIECE_TYPE_MASK = 0xE0000,
         CAPTURED_PIECE_INDEX_MASK = 0x3F00000,
         EN_PASSANT_DESTINATION_SQUARE_MASK = 0xFC000000,
-        CASTLING_RIGHTS_BEFORE_MOVE_MASK =0xF00000000,
+        CASTLING_RIGHTS_BEFORE_MOVE_MASK =  0xF00000000,
         HALFMOVENUMBER_BEFORE_MOVE_MASK = 0x7F000000000
     };
 
-    enum specialMoves : unsigned{
+    enum specialMoves : unsigned {
         PROMOTION_FLAG = 1,
         EN_PASSANT_FLAG = 2,
         CASTLING_FLAG = 3,
     };
 
-    enum promotionPieces : unsigned{
+    enum promotionPieces : unsigned {
         KNIGHTPROMOTION = 0,
         BISHOPPROMOTION = 1,
         ROOKPROMOTION = 2,
         QUEENPROMOTION = 3
     };
 
-    enum castlingRights : unsigned{
+    enum castlingRights : unsigned {
         NO_CASTLING_RIGHTS = 0x0,
         WHITE_KINGSIDE_CASTLING_RIGHTS = 0x1,
         WHITE_QUEENSIDE_CASTLING_RIGHTS = 0x2,
@@ -136,7 +136,7 @@ namespace definitions {
     const uint64_t BLACK_QUEENSIDE_CASTLING_NONATTACKED = 0xC;
 
 
-    struct moveList{
+    struct moveList {
         unsigned move[218] = {};
         unsigned moveLength = 0;
         unsigned captureMove[218] = {};
@@ -155,26 +155,26 @@ namespace definitions {
         SQ_A1, SQ_B1, SQ_C1, SQ_D1, SQ_E1, SQ_F1, SQ_G1, SQ_H1,
     };
 
-    struct perftCounts{
+    struct perftCounts {
         uint64_t total = 0;
         uint64_t normal = 0;
         uint64_t captures = 0;
     };
 
-    struct Settings{
+    struct Settings {
         int depth = 1;
     };
 
-    struct Results{
+    struct Results {
         string bestMove;
     };
 
-    struct LINE{
+    struct LINE {
         int nmoves;
         unsigned principalVariation[100];
     };
 
-    struct STATS{
+    struct STATS {
         int totalNodes = 0;
         int betaCutoffs = 0;
         int quiescentNodes = 0;

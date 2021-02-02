@@ -506,6 +506,10 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
     originInt = debruijnSerialization(origin);
     origin |= 1uLL << originInt; // restore origin as debruijnSerialization removes this bit by default
 
+    if(this->castlingRights == 4111){
+        cout << "stop";
+    }
+
     // check if the piece is pinned
     bool pinnedFlag = false;
     if(origin & helpBitboards[PINNED_PIECES]) pinnedFlag = true;
@@ -594,6 +598,9 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
             break;
         }
     }
+    if(pieceToMove == -1){
+        cout << "stop";
+    }
 
     // TODO: move rook castling right removal to here, using if(rook == originBB | desitinationBB construction)
 
@@ -637,7 +644,6 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
     bitboards[colour][pieceToMove] |= destinationBB;
     // update hash by adding destination piece
     hash ^= zobristPieceTable[colour][pieceToMove][debruijnSerialization(destinationBB)];
-
 }
 
 // doMove does the move and stores move information in the previesMoves array
@@ -653,6 +659,9 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
 void Position::doMove(unsigned move){
     unsigned originInt, destinationInt, enPassantInt;
     uint64_t originBB, destinationBB;
+
+    // increment movenumber for 50 move rule
+    halfMoveNumber50++;
 
     // first store the hash of the current position
     previousHashes[halfMoveNumber] = hash;
@@ -797,7 +806,8 @@ void Position::doMove(unsigned move){
     hash ^= zobristEnPassantFile[enPassantInt % 8];
 
     // store halfmovenumbers for 50 move repetition rule
-    moveL |= halfMoveNumber50 << HALFMOVENUMBER_BEFORE_MOVE_SHIFT;
+    uint64_t temp = halfMoveNumber50;
+    moveL |= temp << HALFMOVENUMBER_BEFORE_MOVE_SHIFT;
 
     // put into previous moves list
     this->previousMoves[this->halfMoveNumber++] = moveL;
@@ -807,6 +817,9 @@ void Position::doMove(unsigned move){
     hash ^= zobristBlackToMove;
 
     generateHelpBitboards();
+    if(this->castlingRights == 4111){
+        cout << "stop";
+    }
 }
 
 void Position::doMove(string move) {
@@ -988,6 +1001,9 @@ void Position::undoMove() {
     // reset hash
     previousHashes[halfMoveNumber + 1] = 0;
     hash = previousHashes[halfMoveNumber];
+    if(this->castlingRights == 4111){
+        cout << "stop";
+    }
 
 }
 
@@ -1162,6 +1178,7 @@ int Position::Evaluate() {
     // score in centipawns (positive is good for white, negative good for black)
     int score = 0;
 
+
     //start with white
     for(int pieceIndex = 0; pieceIndex < 6; pieceIndex++){
         uint64_t piece = bitboards[WHITE][pieceIndex];
@@ -1218,8 +1235,27 @@ int Position::Evaluate() {
     else{
         return -score;
     }
+}
 
-    return 0;
+bool Position::isDraw() {
+    if(halfMoveNumber50 >= 100){
+        return true;
+    }
+
+    // check three fold repetition rule
+    if(halfMovesSinceIrrepr >= 4){
+        int threefoldRepetitionCount = 0;
+        for(int halfmove = 2; halfmove <= halfMovesSinceIrrepr; halfmove += 2){
+            // check same colour positions (so 2 halfmoves per check).
+            if(hash == previousHashes[halfMoveNumber - halfmove]){
+                threefoldRepetitionCount++;
+            }
+        }
+        if(threefoldRepetitionCount >= 3){
+            return false;
+        }
+    }
+    return false;
 }
 
 

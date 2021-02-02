@@ -22,6 +22,7 @@ public:
 
     uint64_t hash;
     uint64_t previousHashes[1024];
+    int halfMovesSinceIrrepr = 0;
 
     uint64_t previousMoves[1024] = {0};
     unsigned halfMoveNumber50 = 0;
@@ -45,6 +46,8 @@ public:
     perftCounts PERFT(int depth, bool tree = true);
 
     int Evaluate();
+
+    bool isDraw();
 
 private:
 
