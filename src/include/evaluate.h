@@ -6,6 +6,8 @@
 #define ENGINE_EVALUATE_H
 
 
+#include <chrono>
+
 class Evaluate {
 
 public:
@@ -22,6 +24,8 @@ private:
     int Quiescence(int alpha, int beta);
 
     int AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stats);
+
+    void printinformation(int milliseconds, int score, LINE line, STATS stats);
 };
 
 

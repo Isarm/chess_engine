@@ -37,29 +37,12 @@ Results Evaluate::StartSearch(){
     // add min+1 and max-1 because otherwise overflow occurs when inverting
     int score = AlphaBeta(depth, std::numeric_limits<int>::min() + 1, std::numeric_limits<int>::max() - 1, &line, &stats);
     auto t2 = std::chrono::high_resolution_clock::now();
-
-    string pv[100];
-    std::cout << "info score cp " << score << " pv ";
-    for(int i = 0; i < line.nmoves; i++){
-        pv[i] = moveToStrNotation(line.principalVariation[i]);
-        std::cout << pv[i] << " ";
-    }
-    std::cout << "\n";
-    std::cout.flush();
-
     int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    std::cout << "info time " << milliseconds;
-
-    std::cout << " nodes " << stats.totalNodes;
-
-    if(milliseconds !=0) {
-        std::cout << " nps " << int(1000 * float(stats.totalNodes) / float(milliseconds));
-    }
-    std::cout << "\n";
-    std::cout.flush();
 
 
-    results.bestMove = pv[0];
+    printinformation(milliseconds, score, line, stats);
+
+    results.bestMove = moveToStrNotation(line.principalVariation[0]);
     return results;
 }
 
@@ -74,6 +57,20 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
     // generate list of moves
     moveList movelist;
     position.GenerateMoves(movelist);
+
+    // check for stalemate of checkmate:
+    if(movelist.moveLength + movelist.captureMoveLength == 0){
+        if(position.isIncheck){
+            pline->nmoves = 0;
+            // high score that cant be reached by evaluation function, thus indicating mate.
+            // subtract detpth, indicating that higher depth (so faster mate) is better.
+            return -1000000 - depth;
+
+        }
+        else{
+            return 0; // stalemate
+        }
+    }
 
     // first do the capture moves
     for(int i = 0; i < movelist.captureMoveLength; i++){
@@ -120,3 +117,37 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
 int Evaluate::Quiescence(int alpha, int beta){
     return this->position.Evaluate();
 }
+
+void Evaluate::printinformation(int milliseconds, int score, LINE line, STATS stats) {
+    string pv[100];
+
+    std::cout << "info score ";
+    if(score >= 1000000){
+        // this indicates that mate is found
+        int mateIn = int((depth - score + 1000001)/2);
+        std::cout << "mate " << mateIn << " pv ";
+    }
+    else{
+        std::cout << "cp " << score << " pv ";
+    }
+
+    for(int i = 0; i < line.nmoves; i++){
+        pv[i] = moveToStrNotation(line.principalVariation[i]);
+        std::cout << pv[i] << " ";
+    }
+    std::cout << "\n";
+    std::cout.flush();
+
+    std::cout << "info time " << milliseconds;
+
+    std::cout << " nodes " << stats.totalNodes;
+
+    if(milliseconds !=0) {
+        std::cout << " nps " << int(1000 * float(stats.totalNodes) / float(milliseconds));
+    }
+    std::cout << "\n";
+    std::cout.flush();
+}
+
+
+
