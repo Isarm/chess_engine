@@ -11,6 +11,7 @@
 #include <limits>
 #include <chrono>
 #include "useful.h"
+#include "transpositionTable.h"
 
 
 Evaluate::Evaluate(string fen, vector<string> moves, Settings settings) {
@@ -47,6 +48,46 @@ Results Evaluate::StartSearch(){
 }
 
 int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stats){
+    int alphaStart = alpha; // to be able to check if alpha has increased with this position (for tr. table)
+
+    // check if the position has been evaluated before with the transposition table
+    uint64_t bestMove = 0;
+    Entry entry;
+    uint64_t currentPositionHash = position.positionHashes[position.halfMoveNumber];
+    if(TT.contains(currentPositionHash, entry)){
+        stats->transpositionHits++;
+        // this means that the values are useful for this search
+        if(entry.depth >= depth){
+            switch (entry.typeOfNode) {
+                case EXACT_PV:
+                    // TODO: figure out if the full PV has to be retrieved by doing the best move up to entry.depth
+                    // TODO: (probably not necessary?)
+                    pline->principalVariation[0] = entry.bestMove;
+                    pline->nmoves = 1;
+                    return entry.score; // return the exact score of this position
+                case UPPER_BOUND_ALPHA:
+                    if(alpha >= entry.score){
+                        return alpha; // we know for sure that the evaluation of this position will be lower than alpha,
+                    }
+                    break;
+                case LOWER_BOUND_BETA:
+                    if(beta <= entry.score){
+                        return beta; // we have a lower bound, which is higher than beta
+                    }
+                    break;
+                default:
+                    cout << "Incorrect entry in TT" << "\n";
+                    break;
+
+            }
+        }
+        // if the depth is not deep enough, or the bounds above are not strong enough, the best move can still be used
+        // to improve move ordering in the search below. Note that alpha nodes have no valid best move.
+        if(entry.typeOfNode != UPPER_BOUND_ALPHA) {
+            bestMove = entry.bestMove;
+        }
+    }
+
     LINE line;
     if(depth == 0){
         pline->nmoves = 0;
@@ -58,12 +99,12 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
     moveList movelist;
     position.GenerateMoves(movelist);
 
-    // check for stalemate of checkmate in case of no moves left:
+    // check for stalemate or checkmate in case of no moves left:
     if(movelist.moveLength + movelist.captureMoveLength == 0){
         if(position.isIncheck){
             pline->nmoves = 0;
             // high score that cant be reached by evaluation function, thus indicating mate.
-            // subtract detpth, indicating that higher depth (so faster mate) is better.
+            // subtract depth, indicating that higher depth (so faster mate) is better.
             return -1000000 - depth;
 
         }
@@ -72,18 +113,55 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
         }
     }
 
-    // first do the capture moves
+//    // if there was a transposition found, first evaluate that move.
+//    if(bestMove){
+//        stats->totalNodes += 1;
+//        position.doMove(bestMove);
+//
+//        //check if this move has lead to a draw (3fold rep/50move rule); as then the search can be stopped
+//        int score;
+//        if(position.isDraw()){
+//            position.undoMove();
+//            score = 0;
+//        }
+//        else {
+//            score = -AlphaBeta(depth - 1, -beta, -alpha, &line, stats);
+//            position.undoMove();
+//        }
+//
+//        if(score >= beta){
+//            stats->betaCutoffs += 1;
+//            return beta; // beta cutoff
+//        }
+//
+//        if(score > alpha){ // principal variation found
+//            alpha = score;
+//            pline->principalVariation[0] = bestMove;
+//            memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
+//            pline->nmoves = line.nmoves + 1;
+//            TT.addEntry(score, bestMove, depth, EXACT_PV, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
+//        }
+//    }
+
+
+    // next do the capture moves, as often the best move is a capture
     for(int i = 0; i < movelist.captureMoveLength; i++){
+//        if(movelist.captureMove[i] == bestMove){
+//            continue; // as this has already been evaluated above
+//        }
         stats->totalNodes += 1;
         position.doMove(movelist.captureMove[i]);
 
         // no draw can occur after a capture move due to 3fold rep/50move rule
+        // so no need to check for that here
+
         //  invert all values for other colour
         int score = -AlphaBeta(depth - 1, -beta, -alpha, &line, stats);
         position.undoMove();
 
         if(score >= beta){
             stats->betaCutoffs += 1;
+            TT.addEntry(score, movelist.captureMove[i], depth, LOWER_BOUND_BETA, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
             return beta; // beta cutoff
         }
 
@@ -92,11 +170,16 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
             pline->principalVariation[0] = movelist.captureMove[i];
             memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
             pline->nmoves = line.nmoves + 1;
+            // add to hash table. It is okay if this step occurs multiple times for the same position, as the transposition table will then overwrite the old entry
+            TT.addEntry(score, movelist.captureMove[i], depth, EXACT_PV, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
         }
     }
 
-    // then normal
+    // then finally the normal moves
     for(int i = 0; i < movelist.moveLength; i++){
+//        if(movelist.move[i] == bestMove){
+//            continue; // as this has already been evaluated above
+//        }
         stats->totalNodes += 1;
         position.doMove(movelist.move[i]);
 
@@ -113,6 +196,7 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
 
         if(score >= beta){
             stats->betaCutoffs += 1;
+            TT.addEntry(score, movelist.move[i], depth, LOWER_BOUND_BETA, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
             return beta; // beta cutoff
         }
 
@@ -121,8 +205,13 @@ int Evaluate::AlphaBeta(int depth, int alpha, int beta, LINE *pline, STATS *stat
             pline->principalVariation[0] = movelist.move[i];
             memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
             pline->nmoves = line.nmoves + 1;
+            // add to hash table. It is okay if this step occurs multiple times for the same position, as the transposition table will then overwrite the old entry
+            TT.addEntry(score, movelist.move[i], depth, EXACT_PV, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
         }
     }
+
+    // for an alpha cutoff, there is no known best move
+//    TT.addEntry(alpha, 0, depth, UPPER_BOUND_ALPHA, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
     return alpha;
 }
 
@@ -189,6 +278,8 @@ void Evaluate::printinformation(int milliseconds, int score, LINE line, STATS st
 
     std::cout << "quiescent nodes " << stats.quiescentNodes << "/" << stats.totalNodes << " total nodes\n";
     std::cout << float(stats.quiescentNodes)/stats.totalNodes << "\n";
+
+    std::cout << "table hits: " << stats.transpositionHits << "\n";
     std::cout.flush();
 }
 

@@ -7,34 +7,37 @@
 
 
 #include <cstdint>
-
+#include <vector>
 
 
 struct Entry{
     uint64_t key;
     unsigned bestMove;
-    unsigned depth;
+    unsigned short depth;
     int score;
-    int typeOfNode;
-    int age;
+    short typeOfNode;
+    unsigned short age;
 };
 
-enum typeOfNodes : int{
-    EXACT, UPPER_BOUND, LOWER_BOUND
+enum typeOfNodes : short{
+    EXACT_PV, UPPER_BOUND_ALPHA, LOWER_BOUND_BETA
 };
 
 class TranspositionTable {
 
 public:
-    // hash table and size
-    Entry *table{};
     unsigned size = 0;
 
-    TranspositionTable();
+    Entry * table = nullptr;
 
+    TranspositionTable();
+    ~TranspositionTable();
     void setSize(unsigned int size);
 
     bool contains(uint64_t hash, Entry &entry);
+
+    void addEntry(int score, unsigned int bestMove, unsigned short depth, typeOfNodes typeOfNode, uint64_t hash,
+                  unsigned short halfmoveNumber);
 };
 
 extern TranspositionTable TT;

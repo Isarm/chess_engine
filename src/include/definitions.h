@@ -180,6 +180,7 @@ namespace definitions {
         int totalNodes = 0;
         int betaCutoffs = 0;
         int quiescentNodes = 0;
+        int transpositionHits = 0;
     };
 }
 

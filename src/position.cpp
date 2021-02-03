@@ -600,6 +600,10 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
         }
     }
 
+    if(pieceToMove == -1){
+        std::cout << "DANGER IN MOVEPIECE\n";
+    }
+
     // TODO: move rook castling right removal to here, using if(rook == originBB | destinationBB construction)
 
     // remove castling rights if king is moved and update hash
