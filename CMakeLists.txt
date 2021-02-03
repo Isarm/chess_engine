@@ -19,5 +19,5 @@ add_executable(engine
         src/include/useful.h
         #magic-bits
         magic-bits/src/slider_attacks.h
-        magic-bits/src/slider_attacks.cpp src/tests.cpp src/include/tests.h src/evaluate.cpp src/include/evaluate.h)
+        magic-bits/src/slider_attacks.cpp src/tests.cpp src/include/tests.h src/evaluate.cpp src/include/evaluate.h src/transpositionTable.cpp src/include/transpositionTable.h)
 

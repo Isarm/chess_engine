@@ -9,6 +9,7 @@
 #include <mutex>
 #include <atomic>
 #include "evaluate.h"
+#include "transpositionTable.h"
 
 
 void UCI::start() {
@@ -17,14 +18,44 @@ void UCI::start() {
     std::cout << "id name Isar Engine\n";
     std::cout << "id author Isar Meijer\n";
 
+    // hash table size can vary between 1MB and 2GB
+    std::cout << "option name Hash type spin default 512 min 1 max 2048\n";
+
     // uci is ready
     std::cout << "uciok\n";
 
     // wait for the isready command (ignore options for now)
     std::string input;
-    do {
+    while(true) {
         std::getline(std::cin, input);
-    } while (input != "isready");
+
+        if(input == "isready"){
+            break;
+        }
+
+        if (input.substr(0, input.find(' ')) == "setoption") {
+            input.erase(0, input.find(' '));  // setoption
+            input.erase(0, input.find(' '));  // name
+            string optionType = input.substr(0, input.find(' '));
+            input.erase(0, input.find(' '));
+
+            if (optionType == "Hash") {
+                input.erase(0, input.find(' ')); // Hash
+                input.erase(0, input.find(' ')); // value
+                unsigned value;
+                try {
+                    value = stoi(input);
+                }
+                catch (invalid_argument &exc) {
+                    cout << "invalid hash table size: " << exc.what() << "\n";
+                }
+                // set size of transposition table
+                TT.setSize(value);
+            }
+
+        }
+
+    }
 
     // give the ready signal
     std::cout << "readyok\n";
@@ -65,6 +96,8 @@ void UCI::mainLoop(){
             // stop the analysis thread
         }
 
+
+
         // set up the position
         if(input.substr(0, input.find(' ')) == "position"){
             moves = {}; // reset moves
@@ -103,12 +136,19 @@ void UCI::mainLoop(){
 
 
         if(input.substr(0, input.find(' ')) == "go"){
+
             input.clear();
             Settings settings;
-            settings.depth = 8 ;
+            settings.depth = 6;
             if(threadStarted){
                 evaluation.join();
             }
+
+            // only now check if TT is initialized
+            if(!TT.size){
+                TT.setSize(512); // set default size of 512MB
+            }
+
             threadStarted = true;
             evaluation = std::thread{UCI::go, fen, moves, settings, std::ref(results)};
         }
