@@ -7,6 +7,8 @@
 #include "definitions.h"
 #include <chrono>
 
+void drawTest();
+
 void hashTest();
 
 using namespace std;
@@ -15,10 +17,18 @@ using namespace std;
 void testmain(int argc, char *argv[]){
 //    perft(argc, argv);
 //    perftDebug();
+//    drawTest();
     hashTest();
 }
 
 void hashTest() {
+    Position position = Position("rnbqkbnr/p1pppppp/8/Pp6/8/1P6/2PPPPPP/RNBQKBNR w KQkq b6 0 1");
+    moveList movelist;
+    position.GenerateMoves(movelist);
+}
+
+
+void drawTest() {
     Position position = Position("pppppppp/pppppppp/pppppppp/pppppp2/pppppp2/2ppp3/2p3pk/K3Q3 w - - 0 1");
     string moves[] = {"e1h4", "h2g1", "h4e1", "g1h2", "e1h4", "h2g1", "h4e1", "g1h2", "e1h4", "h2g1", "h4e1", "g1h2", "e1h4", "h2g1", "h4e1", "g1h2"};
     for(string move : moves){

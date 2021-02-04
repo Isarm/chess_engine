@@ -48,10 +48,9 @@ public:
     int Evaluate();
 
     bool isDraw();
+    uint64_t calculateHash();
 
 private:
-
-
 
     void GeneratePawnMoves(moveList &movelist);
     void GenerateKnightMoves(moveList &movelist);
@@ -77,6 +76,7 @@ private:
     void doCastlingMove(bool side);
 
     void undoCastlingMove(bool side);
+
 };
 
 #endif

@@ -105,21 +105,33 @@ Position::Position(string FEN) {
 
     zobristPieceTableInitialize(); // initialize zobrist hash table
 
-    // calculate the hash of the current position;
+    positionHashes[halfMoveNumber] = calculateHash();
+
+}
+
+uint64_t Position::calculateHash() {
+    uint64_t posHash = 0;
+// calculate the posHash of the current position;
     for (int colour = 0; colour < 2; colour++) {
         for (int piece = 0; piece < 6; piece++) {
-            int pieceIndex = debruijnSerialization(bitboards[colour][piece]);
-            positionHashes[halfMoveNumber] ^= zobristPieceTable[colour][piece][pieceIndex];
+            uint64_t bb = bitboards[colour][piece];
+            while (bb) {
+                unsigned int pieceIndex = debruijnSerialization(bb);
+                posHash ^= zobristPieceTable[colour][piece][pieceIndex];
+                uint64_t pieceBB = 1ull << pieceIndex;
+                bb &= ~pieceBB;
+            }
         }
     }
-    positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
-    if(this->turn == BLACK){
-        positionHashes[halfMoveNumber] ^= zobristBlackToMove;
+    posHash ^= zobristCastlingRightsTable[castlingRights];
+    if (this->turn == BLACK) {
+        posHash ^= zobristBlackToMove;
     }
-    if(bitboards[!this->turn][EN_PASSANT_SQUARES]){
-        int enPassantSquare = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
-        positionHashes[halfMoveNumber] ^= zobristEnPassantFile[enPassantSquare % 8];
+    if (bitboards[!this->turn][EN_PASSANT_SQUARES]) {
+        unsigned int enPassantSquare = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
+        posHash ^= zobristEnPassantFile[enPassantSquare % 8];
     }
+    return posHash;
 }
 
 void Position::generateHelpBitboards() {
@@ -507,10 +519,6 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
     originInt = debruijnSerialization(origin);
     origin |= 1uLL << originInt; // restore origin as debruijnSerialization removes this bit by default
 
-    if(this->castlingRights == 4111){
-        cout << "stop";
-    }
-
     // check if the piece is pinned
     bool pinnedFlag = false;
     if(origin & helpBitboards[PINNED_PIECES]) pinnedFlag = true;
@@ -600,9 +608,6 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
         }
     }
 
-    if(pieceToMove == -1){
-        std::cout << "DANGER IN MOVEPIECE\n";
-    }
 
     // TODO: move rook castling right removal to here, using if(rook == originBB | destinationBB construction)
 
@@ -632,7 +637,7 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
             if ((originBB << SS) & destinationBB) {
                 bitboards[BLACK][EN_PASSANT_SQUARES] = originBB << S;
                 // update hash
-                positionHashes[halfMoveNumber] = zobristEnPassantFile[debruijnSerialization(originBB << S) % 8];
+                positionHashes[halfMoveNumber] ^= zobristEnPassantFile[debruijnSerialization(originBB << S) % 8];
             }
         }
     }
@@ -812,17 +817,18 @@ void Position::doMove(unsigned move){
     }
 
 
-    // store possible en passant destination information in the previousMoveList
-    enPassantInt = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
-    moveL |= enPassantInt << EN_PASSANT_DESTINATION_SQUARE_SHIFT;
 
-    // update hash if there was an en passant square
+    // store en passant destination info and update hash if there was an en passant square
     if(bitboards[!this->turn][EN_PASSANT_SQUARES]) {
+        enPassantInt = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
+        moveL |= enPassantInt << EN_PASSANT_DESTINATION_SQUARE_SHIFT;
         positionHashes[halfMoveNumber] ^= zobristEnPassantFile[enPassantInt % 8];
+
+        // reset possible en passant destination
+        bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
     }
 
-    // reset possible en passant destination
-    bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
+
 
     // put into previous moves list
     this->previousMoves[this->halfMoveNumber - 1] = moveL;
@@ -1098,7 +1104,7 @@ int PAWNPST[64] = {
         10, 10, 20, 30, 30, 20, 10, 10,
         5,  5, 10, 25, 25, 10,  5,  5,
         0,  0,  0, 22, 22,  0,  0,  0,
-        5, -5,-10,  0,  0,-10, -5,  5,
+        0, -5,-10,  0,  0,-10, -5,  0,
         5, 10, 10,-20,-30, 10, 10,  5,
         0,  0,  0,  0,  0,  0,  0,  0
 };

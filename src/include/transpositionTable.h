@@ -11,16 +11,16 @@
 
 
 struct Entry{
-    uint64_t key;
-    unsigned bestMove;
-    unsigned short depth;
-    int score;
-    short typeOfNode;
-    unsigned short age;
+    uint64_t key = 0;
+    unsigned bestMove = 0;
+    unsigned short depth = 0;
+    int score = 0;
+    short typeOfNode = 0;
+    unsigned short age = 0;
 };
 
 enum typeOfNodes : short{
-    EXACT_PV, UPPER_BOUND_ALPHA, LOWER_BOUND_BETA
+    EXACT_PV = 1, UPPER_BOUND_ALPHA = 2, LOWER_BOUND_BETA = 3
 };
 
 class TranspositionTable {

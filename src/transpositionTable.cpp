@@ -31,7 +31,7 @@ void TranspositionTable::addEntry(int score, unsigned int bestMove, unsigned sho
     Entry newEntry{};
     newEntry = {hash, bestMove, depth, score, typeOfNode, halfmoveNumber};
 
-    if(table[hash % size].typeOfNode){ // check if there is already a node
+    if(table[hash % size].typeOfNode){ // check if there is already a node (as this is 0 for no node)
         // replacement scheme: check for depth (and if equal replace) and age
         if(table[hash % size].depth <= newEntry.depth){
             table[hash % size] = newEntry;

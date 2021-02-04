@@ -48,12 +48,20 @@ Results Evaluate::StartSearch(){
 }
 
 int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *stats){
+    LINE line;
+    if(depthLeft == 0){
+        pline->nmoves = 0;
+        // do a quiescent search for the leaf nodes, to try and reduce the horizon effect (TODO)
+        return Quiescence(alpha, beta, stats);
+    }
+
     int alphaStart = alpha; // to be able to check if alpha has increased with this position (for tr. table)
 
     // check if the position has been evaluated before with the transposition table
     uint64_t bestMove = 0;
     Entry entry;
     uint64_t currentPositionHash = position.positionHashes[position.halfMoveNumber];
+
     if(TT.contains(currentPositionHash, entry)){
         stats->transpositionHits++;
         // this means that the values are useful for this search
@@ -62,22 +70,23 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
                 case EXACT_PV:
                     // TODO: figure out if the full PV has to be retrieved by doing the best move up to entry.depthLeft
                     // TODO: (probably not necessary?)
-                    pline->principalVariation[0] = entry.bestMove;
-                    pline->nmoves = 1;
+
                     if(entry.score < alpha){
                         return alpha;
                     }
                     if(entry.score > beta){
                         return beta;
                     }
+                    pline->principalVariation[0] = entry.bestMove;
+                    pline->nmoves = 1;
                     return entry.score; // return the exact score of this position
                 case UPPER_BOUND_ALPHA:
-                    if(alpha >= entry.score){
+                    if(entry.score < alpha){
                         return alpha; // we know for sure that the evaluation of this position will be lower than alpha,
                     }
                     break;
                 case LOWER_BOUND_BETA:
-                    if(beta <= entry.score){
+                    if(entry.score >= beta){
                         return beta; // we have a lower bound, which is higher than beta
                     }
                     break;
@@ -94,12 +103,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
         }
     }
 
-    LINE line;
-    if(depthLeft == 0){
-        pline->nmoves = 0;
-        // do a quiescent search for the leaf nodes, to try and reduce the horizon effect (TODO)
-        return Quiescence(alpha, beta, stats);
-    }
+
 
     // generate list of moves
     moveList movelist;
@@ -119,42 +123,42 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
         }
     }
 
-//    // if there was a transposition found, first evaluate that move.
+    // if there was a transposition found, first evaluate that move.
     if(bestMove != 0){
-//        stats->totalNodes += 1;
-//        position.doMove(bestMove);
-//
-//        //check if this move has lead to a draw (3fold rep/50move rule); as then the search can be stopped
-//        int score;
-//        if(position.isDraw()){
-//            position.undoMove();
-//            score = 0;
-//        }
-//        else {
-//            score = -AlphaBeta(depthLeft - 1, -beta, -alpha, &line, stats);
-//            position.undoMove();
-//        }
-//
-//        if(score >= beta){
-//            stats->betaCutoffs += 1;
-//            return beta; // beta cutoff
-//        }
-//
-//        if(score > alpha){ // principal variation found
-//            alpha = score;
-//            pline->principalVariation[0] = bestMove;
-//            memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
-//            pline->nmoves = line.nmoves + 1;
-//            TT.addEntry(score, bestMove, depthLeft, EXACT_PV, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
-//        }
+        stats->totalNodes += 1;
+        position.doMove(bestMove);
+
+        //check if this move has lead to a draw (3fold rep/50move rule); as then the search can be stopped
+        int score;
+        if(position.isDraw()){
+            position.undoMove();
+            score = 0;
+        }
+        else {
+            score = -AlphaBeta(depthLeft - 1, -beta, -alpha, &line, stats);
+            position.undoMove();
+        }
+
+        if(score >= beta){
+            stats->betaCutoffs += 1;
+            return beta; // beta cutoff
+        }
+
+        if(score > alpha){ // principal variation found
+            alpha = score;
+            pline->principalVariation[0] = bestMove;
+            memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
+            pline->nmoves = line.nmoves + 1;
+            TT.addEntry(score, bestMove, depthLeft, EXACT_PV, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
+        }
     }
 
 
     // next do the capture moves, as often the best move is a capture
     for(int i = 0; i < movelist.captureMoveLength; i++){
-//        if(movelist.captureMove[i] == bestMove){
-//            continue; // as this has already been evaluated above
-//        }
+        if(movelist.captureMove[i] == bestMove){
+            continue; // as this has already been evaluated above
+        }
         stats->totalNodes += 1;
         position.doMove(movelist.captureMove[i]);
 
@@ -181,9 +185,9 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
 
     // then finally the normal moves
     for(int i = 0; i < movelist.moveLength; i++){
-//        if(movelist.move[i] == bestMove){
-//            continue; // as this has already been evaluated above
-//        }
+        if(movelist.move[i] == bestMove){
+            continue; // as this has already been evaluated above
+        }
         stats->totalNodes += 1;
         position.doMove(movelist.move[i]);
 

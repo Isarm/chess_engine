@@ -123,7 +123,7 @@ inline void zobristPieceTableInitialize(){
     std::random_device rd;
 
     /* Random number generator */
-    std::default_random_engine generator(rd());
+    std::default_random_engine generator{static_cast<long long unsigned>(0xc9558c91601b5d95)};
 
     /* Distribution on which to apply the generator */
     std::uniform_int_distribution<unsigned long long> distribution(0, 0xFFFFFFFFFFFFFFFF);
@@ -150,7 +150,7 @@ inline string moveToStrNotation(unsigned move){
     unsigned destinationInt =  (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
 
 
-    char str[5];
+    char str[5] = "";
     str[0] = originInt%8 + 'a';
     str[1] = 8 - int(originInt/8) + '0';
     str[2] = destinationInt%8 + 'a';
