@@ -608,6 +608,9 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
         }
     }
 
+    if(pieceToMove == -1){
+        cout << "DANGER IN POSITION::PIECETOMOVE";
+    }
 
     // TODO: move rook castling right removal to here, using if(rook == originBB | destinationBB construction)
 
