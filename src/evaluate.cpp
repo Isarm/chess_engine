@@ -205,7 +205,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
 
     // next do the capture moves, as often the best move is a capture
     for(int i = 0; i < movelist.captureMoveLength; i++){
-        if(movelist.captureMove[i] == bestMove){
+        if(movelist.captureMove[i] == bestMove || movelist.captureMove[i] == iterativeDeepeningMove){
             continue; // as this has already been evaluated above
         }
         stats->totalNodes += 1;
@@ -234,7 +234,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
 
     // then finally the normal moves
     for(int i = 0; i < movelist.moveLength; i++){
-        if(movelist.move[i] == bestMove){
+        if(movelist.move[i] == bestMove || movelist.move[i] == iterativeDeepeningMove){
             continue; // as this has already been evaluated above
         }
         stats->totalNodes += 1;
