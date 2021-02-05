@@ -8,6 +8,7 @@
 #include "bitboard.h"
 #include "useful.h"
 #include "slider_attacks.h"
+#include <algorithm>
 
 using namespace std;
 using namespace definitions;
@@ -192,7 +193,6 @@ void Position::prettyPrint() {
 }
 
 
-
 void Position::GenerateMoves(moveList &movelist) {
 
     this->isIncheck = squareAttacked(bitboards[this->turn][KING], this->turn);
@@ -210,6 +210,8 @@ void Position::GenerateMoves(moveList &movelist) {
     GenerateSliderMoves(movelist);
     GenerateKingMoves(movelist);
 }
+
+
 
 void Position::GeneratePawnMoves(moveList &movelist) {
     uint64_t pawns;
@@ -509,7 +511,7 @@ bool Position::squareAttacked(uint64_t square, bool colour){
  * bit 6-11 === destination square;
  * bit 12-13 === promotion piece type (N, B, R, Q)
  * bit 14-15 === special move flag, promotion, en passant, castling
- *
+ * bit 16-19 === score given to the move used in move-ordering
  *
  */
 
@@ -517,7 +519,6 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
     unsigned originInt, destinationInt, move;
     uint64_t destinationBB;
     originInt = debruijnSerialization(origin);
-    origin |= 1uLL << originInt; // restore origin as debruijnSerialization removes this bit by default
 
     // check if the piece is pinned
     bool pinnedFlag = false;
@@ -566,7 +567,6 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
             // cycle over different promotion pieces (N B R Q)
             for(int promotionType = 0; promotionType < 4; promotionType++){
                 move = baseMove | promotionType << PROMOTION_TYPE_SHIFT;
-
                 if(destinationBB & captureDestinations){
                     movelist.captureMove[movelist.captureMoveLength++] = move;
                 }
@@ -577,7 +577,32 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
             }
         }
         else {
-            if (destinationBB & captureDestinations) {
+            uint64_t captureBB = destinationBB & captureDestinations;
+            if (captureBB) { // capture move
+
+
+                // give a score to the capture move
+                /*
+                int pieceToMove = -1;
+                for (int i = 0; i < 6; i++) {
+                    if (bitboards[this->turn][i] & origin) {
+                        pieceToMove = i;
+                        break;
+                    }
+                }
+
+                int capturedPiece = -1;
+                for (int i = 0; i < 6; i++) {
+                    if (bitboards[this->turn][i] & captureBB) {
+                        capturedPiece = i;
+                        break;
+                    }
+                }
+
+                // add the score to the move
+                move |= (8 + capturedPiece - pieceToMove) << MOVE_SCORE_SHIFT;
+                */
+
                 movelist.captureMove[movelist.captureMoveLength++] = move;
             } else {
                 movelist.move[movelist.moveLength++] = move;

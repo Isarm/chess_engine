@@ -23,9 +23,9 @@ private:
 
     int Quiescence(int alpha, int beta, STATS *pStats);
 
-    int AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *stats);
+    int AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine = {});
 
-    void printinformation(int milliseconds, int score, LINE line, STATS stats);
+    void printinformation(int milliseconds, int score, LINE line, STATS stats, int i);
 };
 
 

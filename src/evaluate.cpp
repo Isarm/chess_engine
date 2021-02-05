@@ -12,6 +12,7 @@
 #include <chrono>
 #include "useful.h"
 #include "transpositionTable.h"
+#include <algorithm>
 
 
 Evaluate::Evaluate(string fen, vector<string> moves, Settings settings) {
@@ -31,23 +32,35 @@ Results Evaluate::StartSearch(){
     Results results;
 
     LINE line{};
+    LINE previousBestLine{};
     STATS stats{};
 
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    // add min+1 and max-1 because otherwise overflow occurs when inverting
-    int score = AlphaBeta(depth, std::numeric_limits<int>::min() + 1, std::numeric_limits<int>::max() - 1, &line, &stats);
-    auto t2 = std::chrono::high_resolution_clock::now();
-    int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
+    int score = 0;
+    for(int iterativeDepth = 1; iterativeDepth <= depth; iterativeDepth++) {
+        line = {};
+        // add min+1 and max-1 because otherwise overflow occurs when inverting
+        score = AlphaBeta(iterativeDepth, std::numeric_limits<int>::min() + 1, std::numeric_limits<int>::max() - 1, &line,
+                          &stats, previousBestLine);
+        previousBestLine = line;
 
-    printinformation(milliseconds, score, line, stats);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        printinformation(milliseconds, score, line, stats, iterativeDepth);
+        if(milliseconds > 5000){
+            break;
+        }
+    }
 
     results.bestMove = moveToStrNotation(line.principalVariation[0]);
     return results;
 }
 
-int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *stats){
+int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine) {
+    int alphaStart = alpha; // to be able to check if alpha has increased with this position (for tr. table)
+
     LINE line;
     if(depthLeft == 0){
         pline->nmoves = 0;
@@ -55,7 +68,47 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
         return Quiescence(alpha, beta, stats);
     }
 
-    int alphaStart = alpha; // to be able to check if alpha has increased with this position (for tr. table)
+    unsigned iterativeDeepeningMove = 0;
+    if(iterativeDeepeningLine.nmoves > 0){
+        // get the best iterativeDeepeningMove from the iterative deepening best line
+        iterativeDeepeningMove = iterativeDeepeningLine.principalVariation[0];
+
+        // remove this iterativeDeepeningMove from the iterative deepening line
+        iterativeDeepeningLine.nmoves--;
+        LINE newBestLine{};
+        if(iterativeDeepeningLine.nmoves > 0) { // continue further along this variation
+            // copy remaining moves to newbestline
+            memcpy(newBestLine.principalVariation, iterativeDeepeningLine.principalVariation + 1, iterativeDeepeningLine.nmoves * sizeof(unsigned));
+            newBestLine.nmoves = iterativeDeepeningLine.nmoves;
+        }
+        // if no further moves are left in the variation, newBestLine will be initialized with 0s, so the alphabeta
+        // that is called below will ignore this and continue along as normal.
+
+        position.doMove(iterativeDeepeningMove);
+
+        //check if this iterativeDeepeningMove has lead to a draw (3fold rep/50move rule); as then the search can be stopped
+        int score;
+        if(position.isDraw()){
+            position.undoMove();
+            score = 0;
+        }
+        else {
+            score = -AlphaBeta(depthLeft - 1, -beta, -alpha, &line, stats, newBestLine);
+            position.undoMove();
+        }
+
+        if(score >= beta){
+            stats->betaCutoffs += 1;
+            return beta; // beta cutoff
+        }
+
+        if(score > alpha){
+            alpha = score;
+            pline->principalVariation[0] = iterativeDeepeningMove;
+            memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
+            pline->nmoves = line.nmoves + 1;
+        }
+    }
 
     // check if the position has been evaluated before with the transposition table
     uint64_t bestMove = 0;
@@ -68,13 +121,10 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
         if(entry.depth >= depthLeft){
             switch (entry.typeOfNode) {
                 case EXACT_PV:
-                    // TODO: figure out if the full PV has to be retrieved by doing the best move up to entry.depthLeft
-                    // TODO: (probably not necessary?)
-
-                    if(entry.score < alpha){
+                    if(entry.score <= alpha){
                         return alpha;
                     }
-                    if(entry.score > beta){
+                    if(entry.score >= beta){
                         return beta;
                     }
                     pline->principalVariation[0] = entry.bestMove;
@@ -135,7 +185,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
             score = 0;
         }
         else {
-            score = -AlphaBeta(depthLeft - 1, -beta, -alpha, &line, stats);
+            score = -AlphaBeta(depthLeft - 1, -beta, -alpha, &line, stats, LINE());
             position.undoMove();
         }
 
@@ -149,7 +199,6 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
             pline->principalVariation[0] = bestMove;
             memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
             pline->nmoves = line.nmoves + 1;
-            TT.addEntry(score, bestMove, depthLeft, EXACT_PV, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
         }
     }
 
@@ -258,10 +307,17 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats) {
     return alpha;
 }
 
-void Evaluate::printinformation(int milliseconds, int score, LINE line, STATS stats) {
+void Evaluate::printinformation(int milliseconds, int score, LINE line, STATS stats, int depth) {
     string pv[100];
 
-    std::cout << "info score ";
+    std::cout << "info depth " << depth;
+    std::cout << " time " << milliseconds;
+    std::cout << " nodes " << stats.totalNodes;
+
+    if(milliseconds !=0) {
+        std::cout << " nps " << int(1000 * float(stats.totalNodes) / float(milliseconds));
+    }
+    std::cout << " score ";
     if(score >= 1000000){
         // this indicates that mate is found
         int mateIn = int((depth - score + 1000001)/2);
@@ -278,22 +334,18 @@ void Evaluate::printinformation(int milliseconds, int score, LINE line, STATS st
     std::cout << "\n";
     std::cout.flush();
 
-    std::cout << "info time " << milliseconds;
-
-    std::cout << " nodes " << stats.totalNodes;
-
-    if(milliseconds !=0) {
-        std::cout << " nps " << int(1000 * float(stats.totalNodes) / float(milliseconds));
-    }
-    std::cout << "\n";
-    std::cout.flush();
-
     std::cout << "quiescent nodes " << stats.quiescentNodes << "/" << stats.totalNodes << " total nodes\n";
     std::cout << float(stats.quiescentNodes)/stats.totalNodes << "\n";
 
-    std::cout << "table hits: " << stats.transpositionHits << "\n";
+//    std::cout << stats.totalNodes - stats.quiescentNodes << " normal nodes\n";
+//
+//    std::cout << "table hits: " << stats.transpositionHits << "\n";
+
+    std::cout <<'\n';
     std::cout.flush();
 }
+
+
 
 
 

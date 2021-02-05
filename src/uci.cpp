@@ -139,14 +139,14 @@ void UCI::mainLoop(){
 
             input.clear();
             Settings settings;
-            settings.depth = 7;
+            settings.depth = 12;
             if(threadStarted){
                 evaluation.join();
             }
 
             // only now check if TT is initialized
             if(!TT.size){
-                TT.setSize(512); // set default size
+                TT.setSize(2048); // set default size
             }
 
             threadStarted = true;
