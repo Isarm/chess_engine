@@ -827,6 +827,7 @@ void Position::doMove(unsigned move){
     halfMovesSinceIrrepr++;
 
     positionHashes[halfMoveNumber] = positionHashes[halfMoveNumber - 1];
+    positionEvaluations[halfMoveNumber] = positionEvaluations[halfMoveNumber - 1];
 
     originInt = (ORIGIN_SQUARE_MASK & moveL) >> ORIGIN_SQUARE_SHIFT;
     destinationInt = (DESTINATION_SQUARE_MASK & moveL) >> DESTINATION_SQUARE_SHIFT;
@@ -848,9 +849,11 @@ void Position::doMove(unsigned move){
             if(this->turn == WHITE){ // remove pawn south of destination square, so left shift
                 bitboards[BLACK][PAWNS] &= ~(destinationBB << S);
 
-                // remove pawn from zobrist hash
+                // remove pawn from zobrist hash and evaluation
                 unsigned EPcapture = debruijnSerialization(destinationBB << S);
                 positionHashes[halfMoveNumber] ^= zobristPieceTable[BLACK][PAWNS][EPcapture];
+                positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[PAWNS];
+                positionEvaluations[halfMoveNumber] += PSTsMID[PAWNS][INVERT[EPcapture]];
             }
             else{
                 bitboards[WHITE][PAWNS] &= ~(destinationBB >> N);
@@ -858,6 +861,8 @@ void Position::doMove(unsigned move){
                 // remove pawn from zobrist hash
                 unsigned EPcapture = debruijnSerialization(destinationBB >> N);
                 positionHashes[halfMoveNumber] ^= zobristPieceTable[WHITE][PAWNS][EPcapture];
+                positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[PAWNS];
+                positionEvaluations[halfMoveNumber] -= PSTsMID[PAWNS][EPcapture];
             }
             MovePiece(originBB, destinationBB, this->turn);
             break;
@@ -884,14 +889,30 @@ void Position::doMove(unsigned move){
         case PROMOTION_FLAG:
             halfMovesSinceIrrepr = 0; // reset for 3fold repetition
             halfMoveNumber50 = 0; // reset for 50 move rule
-            // remove the pawn and update hash
+            // remove the pawn and update hash and eval
             bitboards[this->turn][PAWNS] &= ~originBB;
             positionHashes[halfMoveNumber] ^= zobristPieceTable[this->turn][PAWNS][originInt];
+            if(turn) {
+                positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[PAWNS];
+                positionEvaluations[halfMoveNumber] -= PSTsMID[PAWNS][originInt];
+            }
+            else{
+                positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[PAWNS];
+                positionEvaluations[halfMoveNumber] += PSTsMID[PAWNS][INVERT[originInt]];
+            }
 
-            // place promoted piece and update positionHashes[halfMoveNumber]
+            // place promoted piece and update hash and eval
             promotionType = promotionIndices[(move & PROMOTION_TYPE_MASK) >> PROMOTION_TYPE_SHIFT];
             bitboards[this->turn][promotionType] |= destinationBB;
             positionHashes[halfMoveNumber] ^= zobristPieceTable[this->turn][promotionType][destinationInt];
+            if(turn) { // white
+                positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[promotionType];
+                positionEvaluations[halfMoveNumber] += PSTsMID[promotionType][destinationInt];
+            }
+            else{ // black
+                positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[promotionType];
+                positionEvaluations[halfMoveNumber] -= PSTsMID[promotionType][INVERT[destinationInt]];
+            }
 
             // switch to opponent bitboards and remove possible destination piece in case of capture
             // also save this piece in the previousMoves array as it needs to be restored in case of undoMove
@@ -900,8 +921,18 @@ void Position::doMove(unsigned move){
                 if(capturedPiece) {
                     bitboards[!this->turn][i] &= ~capturedPiece;
 
-                    //update hash
+                    //update hash and eval
                     positionHashes[halfMoveNumber] ^= zobristPieceTable[!this->turn][i][destinationInt];
+                    if(turn) { // white promoted, so remove black piece (so INVERT and + is used)
+                        positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[i];
+                        positionEvaluations[halfMoveNumber] += PSTsMID[i][INVERT[destinationInt]];
+                    }
+                    else{
+                        positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[i];
+                        positionEvaluations[halfMoveNumber] -= PSTsMID[i][destinationInt];
+
+                    }
+
 
                     // store the capture move specifications
                     moveL |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
@@ -923,9 +954,17 @@ void Position::doMove(unsigned move){
                     halfMoveNumber50 = 0; // reset for 50 move rule
                     bitboards[!this->turn][i] &= ~capturedPiece;
 
-                    //update hash
+                    //update hash and eval
                     positionHashes[halfMoveNumber] ^= zobristPieceTable[!this->turn][i][destinationInt];
+                    if(turn) { // white promoted, so remove black piece (so INVERT and + is used)
+                        positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[i];
+                        positionEvaluations[halfMoveNumber] += PSTsMID[i][INVERT[destinationInt]];
+                    }
+                    else{
+                        positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[i];
+                        positionEvaluations[halfMoveNumber] -= PSTsMID[i][destinationInt];
 
+                    }
                     // store the capture move specifications
                     moveL |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
                     moveL |= i << CAPTURED_PIECE_TYPE_SHIFT;
@@ -1035,9 +1074,20 @@ void Position::doCastlingMove(bool side){
         bitboards[this->turn][ROOKS] |=  (1uLL << (5u + shift)); // add rook
         positionHashes[halfMoveNumber] ^= zobristPieceTable[this->turn][ROOKS][5u + shift];
 
-        positionHashes[halfMoveNumber] ^= zobristPieceTable[this->turn][KING][debruijnSerialization(bitboards[this->turn][KING])]; // remove king from hash
+        unsigned kingInt = debruijnSerialization(bitboards[this->turn][KING]);
+        positionHashes[halfMoveNumber] ^= zobristPieceTable[this->turn][KING][kingInt]; // remove king from hash
         bitboards[this->turn][KING] = bitboards[this->turn][KING] << 2u; // move king
-        positionHashes[halfMoveNumber] ^= zobristPieceTable[this->turn][KING][debruijnSerialization(bitboards[this->turn][KING] << 2u)]; // add king to hash
+        positionHashes[halfMoveNumber] ^= zobristPieceTable[this->turn][KING][kingInt + 2]; // add king to hash
+
+        // update evaluation
+        if(turn){
+            positionEvaluations[halfMoveNumber] -= PSTsMID[KING][kingInt];
+            positionEvaluations[halfMoveNumber] += PSTsMID[KING][kingInt + 2];
+        }
+        else{
+            positionEvaluations[halfMoveNumber] += PSTsMID[KING][INVERT[kingInt]];
+            positionEvaluations[halfMoveNumber] -= PSTsMID[KING][INVERT[kingInt + 2]];
+        }
 
     }
     else{ // queenside
@@ -1047,9 +1097,20 @@ void Position::doCastlingMove(bool side){
         bitboards[this->turn][ROOKS] |=  (1uLL << (3u + shift)); // add rook
         positionHashes[halfMoveNumber] ^= zobristPieceTable[this->turn][ROOKS][3u + shift];
 
-        positionHashes[halfMoveNumber] ^= zobristPieceTable[this->turn][KING][debruijnSerialization(bitboards[this->turn][KING])]; // remove king from hash
+        unsigned kingInt = debruijnSerialization(bitboards[this->turn][KING]);
+        positionHashes[halfMoveNumber] ^= zobristPieceTable[this->turn][KING][kingInt]; // remove king from hash
         bitboards[this->turn][KING] = bitboards[this->turn][KING] >> 2u; // move king
-        positionHashes[halfMoveNumber] ^= zobristPieceTable[this->turn][KING][debruijnSerialization(bitboards[this->turn][KING]) >> 2u]; // add king to hash
+        positionHashes[halfMoveNumber] ^= zobristPieceTable[this->turn][KING][kingInt - 2]; // add king to hash
+
+        // update evaluation
+        if(turn){
+            positionEvaluations[halfMoveNumber] -= PSTsMID[KING][kingInt];
+            positionEvaluations[halfMoveNumber] += PSTsMID[KING][kingInt - 2];
+        }
+        else{
+            positionEvaluations[halfMoveNumber] += PSTsMID[KING][INVERT[kingInt]];
+            positionEvaluations[halfMoveNumber] -= PSTsMID[KING][INVERT[kingInt - 2]];
+        }
     }
 }
 
@@ -1164,8 +1225,9 @@ void Position::undoMove() {
     this->turn = !this->turn;
     generateHelpBitboards();
 
-    // reset hash of undone position
+    // reset hash and eval of undone position
     positionHashes[halfMoveNumber + 1] = 0;
+    positionEvaluations[halfMoveNumber + 1] = 0;
 }
 
 
@@ -1180,7 +1242,9 @@ perftCounts Position::PERFT(int depth, bool tree){
     GenerateMoves(movelist);
 
     if(depth == 0){
-        Evaluate();
+        if(Evaluate() != getEvaluation()){
+            cout << "eval error";
+        }
         perftCounts pfcount = {1};
         return pfcount;
     }
@@ -1299,6 +1363,15 @@ int Position::Evaluate() {
     }
     else{
         return -score;
+    }
+}
+
+int Position::getEvaluation(){
+    if(this->turn){
+        return positionEvaluations[halfMoveNumber];
+    }
+    else{
+        return -positionEvaluations[halfMoveNumber];
     }
 }
 

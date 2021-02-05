@@ -53,6 +53,8 @@ public:
     bool isDraw();
     uint64_t calculateHash();
 
+    int getEvaluation();
+
 private:
 
     void GeneratePawnMoves(moveList &movelist);

@@ -278,7 +278,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
 
 int Evaluate::Quiescence(int alpha, int beta, STATS *stats) {
     // define stand_pat (adapted from chessprogramming wiki quiescence search)
-    int stand_pat = position.Evaluate();
+    int stand_pat = position.getEvaluation();
     if(stand_pat >= beta){
         return beta; // fail hard
     }
