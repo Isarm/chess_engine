@@ -5,7 +5,7 @@ using namespace std;
 #include "uci.h"
 #include "tests.h"
 
-bool debug = 0;
+bool debug = 1;
 
 int main(int argc, char *argv[]) {
     if(!debug) {

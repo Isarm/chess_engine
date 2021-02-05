@@ -184,6 +184,9 @@ namespace definitions {
         int quiescentNodes = 0;
         int transpositionHits = 0;
     };
+
+
+
 }
 
 #endif

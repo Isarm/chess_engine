@@ -13,6 +13,107 @@
 using namespace std;
 using namespace definitions;
 
+
+const int PIECEWEIGHTS[6] = {
+        // pawn, knight, bishop, rook, queen, king
+        100, 320, 330, 500, 900, 20000
+};
+
+int PAWNPST[64] = {
+        0,  0,  0,  0,  0,  0,  0,  0,
+        50, 50, 50, 50, 50, 50, 50, 50,
+        10, 10, 20, 30, 30, 20, 10, 10,
+        5,  5, 10, 25, 25, 10,  5,  5,
+        0,  0,  0, 22, 22,  0,  0,  0,
+        0, -5,-10,  0,  0,-10, -5,  0,
+        5, 10, 10,-20,-30, 10, 10,  5,
+        0,  0,  0,  0,  0,  0,  0,  0
+};
+
+int KNIGHTPST[64] = {
+        -50,-40,-30,-30,-30,-30,-40,-50,
+        -40,-20,  0,  0,  0,  0,-20,-40,
+        -30,  0, 10, 15, 15, 10,  0,-30,
+        -30,  5, 15, 20, 20, 15,  5,-30,
+        -30,  0, 15, 20, 20, 15,  0,-30,
+        -30,  5, 10, 15, 15, 10,  5,-30,
+        -40,-20,  0,  5,  5,  0,-20,-40,
+        -50,-30,-30,-30,-30,-30,-30,-50,
+};
+
+
+int BISHOPPST[64] = {
+        -20,-10,-10,-10,-10,-10,-10,-20,
+        -10,  0,  0,  0,  0,  0,  0,-10,
+        -10,  0,  5, 10, 10,  5,  0,-10,
+        -10,  5,  5, 10, 10,  5,  5,-10,
+        -10,  0, 10, 10, 10, 10,  0,-10,
+        -10, 10, 10, 10, 10, 10, 10,-10,
+        -10,  5,  0,  0,  0,  0,  5,-10,
+        -20,-10,-10,-10,-10,-10,-10,-20,
+};
+
+int ROOKPST[64] = {
+        0,  0,  0,  0,  0,  0,  0,  0,
+        5, 10, 10, 10, 10, 10, 10,  5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        0,  0,  0,  5,  5,  0,  0,  0
+
+};
+
+int QUEENSPST[64] = {
+        -20,-10,-10, -5, -5,-10,-10,-20,
+        -10,  0,  0,  0,  0,  0,  0,-10,
+        -10,  0,  5,  5,  5,  5,  0,-10,
+        -5,  0,  5,  5,  5,  5,  0, -5,
+        0,  0,  5,  5,  5,  5,  0, -5,
+        -10,  5,  5,  5,  5,  5,  0,-10,
+        -10,  0,  5,  0,  0,  0,  0,-10,
+        -20,-10,-10, 5,  -10,-10,-10,-20
+};
+
+int KINGPSTMIDGAME[64] = {
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -20,-30,-30,-40,-40,-30,-30,-20,
+        -10,-20,-20,-20,-20,-20,-20,-10,
+        20, 20, -10,-20,-20,-20, 20, 20,
+        20, 30, -10,-20,  0,-20, 30, 20
+};
+
+
+int KINGPSTENDGAME[64] = {
+        -50,-40,-30,-20,-20,-30,-40,-50,
+        -30,-20,-10,  0,  0,-10,-20,-30,
+        -30,-10, 20, 30, 30, 20,-10,-30,
+        -30,-10, 30, 40, 40, 30,-10,-30,
+        -30,-10, 30, 40, 40, 30,-10,-30,
+        -30,-10, 20, 30, 30, 20,-10,-30,
+        -30,-30,  0,  0,  0,  0,-30,-30,
+        -50,-30,-30,-30,-30,-30,-30,-50
+};
+
+
+constexpr int *PSTsMID[6] = {PAWNPST, KNIGHTPST, BISHOPPST, ROOKPST, QUEENSPST, KINGPSTMIDGAME};
+constexpr int *PSTsEND[6] = {PAWNPST, KNIGHTPST, BISHOPPST, ROOKPST, QUEENSPST, KINGPSTENDGAME};
+
+constexpr int INVERT[64] = {
+        56, 57, 58, 59, 60, 61, 62, 63,
+        48, 49, 50, 51, 52, 53, 54, 55,
+        40, 41, 42, 43, 44, 45, 46, 47,
+        32, 33, 34, 35, 36, 37, 38, 39,
+        24, 25, 26, 27, 28, 29, 30, 31,
+        16, 17, 18, 19, 20, 21, 22, 23,
+        8,  9,  10, 11, 12, 13, 14, 15,
+        0,  1,  2,  3,  4,  5,  6,  7
+};
+
 Position::Position(string FEN) {
 
     string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -108,6 +209,7 @@ Position::Position(string FEN) {
 
     positionHashes[halfMoveNumber] = calculateHash();
 
+    positionEvaluations[halfMoveNumber] = Evaluate();
 }
 
 uint64_t Position::calculateHash() {
@@ -672,13 +774,25 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
 
     // remove origin piece
     bitboards[colour][pieceToMove] &= ~originBB;
+    unsigned originInt = debruijnSerialization(originBB);
     // update hash by removing origin piece
-    positionHashes[halfMoveNumber] ^= zobristPieceTable[colour][pieceToMove][debruijnSerialization(originBB)];
+    positionHashes[halfMoveNumber] ^= zobristPieceTable[colour][pieceToMove][originInt];
 
     // add destination piece
     bitboards[colour][pieceToMove] |= destinationBB;
+    unsigned destinationint = debruijnSerialization(destinationBB);
     // update hash by adding destination piece
-    positionHashes[halfMoveNumber] ^= zobristPieceTable[colour][pieceToMove][debruijnSerialization(destinationBB)];
+    positionHashes[halfMoveNumber] ^= zobristPieceTable[colour][pieceToMove][destinationint];
+
+    // update evaluation
+    if(turn){
+        positionEvaluations[halfMoveNumber] -= PSTsMID[pieceToMove][originInt];
+        positionEvaluations[halfMoveNumber] += PSTsMID[pieceToMove][destinationint];
+    }
+    else{
+        positionEvaluations[halfMoveNumber] += PSTsMID[pieceToMove][INVERT[originInt]];
+        positionEvaluations[halfMoveNumber] -= PSTsMID[pieceToMove][INVERT[destinationint]];
+    }
 }
 
 // doMove does the move and stores move information in the previesMoves array
@@ -1065,27 +1179,34 @@ perftCounts Position::PERFT(int depth, bool tree){
 
     GenerateMoves(movelist);
 
-    if(depth == 1){
-
-        captureMoves = movelist.captureMoveLength;
-        normalMoves = movelist.moveLength;
-
-        pfcount.captures = captureMoves;
-        pfcount.normal = normalMoves;
-        pfcount.total = normalMoves + captureMoves;
-
-        if(tree){
-            for(int i = 0; i < movelist.moveLength; i++){
-                cout << moveToStrNotation(movelist.move[i]) << " " << 1 << "\n";
-            }
-            for(int i = 0; i < movelist.captureMoveLength; i++){
-                cout << moveToStrNotation(movelist.captureMove[i]) << " " << 1 << "\n";
-            }
-        }
-
+    if(depth == 0){
+        Evaluate();
+        perftCounts pfcount = {1};
         return pfcount;
-
     }
+
+//    if(depth == 1){
+//        Evaluate();
+
+//        captureMoves = movelist.captureMoveLength;
+//        normalMoves = movelist.moveLength;
+
+//        pfcount.captures = captureMoves;
+//        pfcount.normal = normalMoves;
+//        pfcount.total = normalMoves + captureMoves;
+
+//        if(tree){
+//            for(int i = 0; i < movelist.moveLength; i++){
+//                cout << moveToStrNotation(movelist.move[i]) << " " << 1 << "\n";
+//            }
+//            for(int i = 0; i < movelist.captureMoveLength; i++){
+//                cout << moveToStrNotation(movelist.captureMove[i]) << " " << 1 << "\n";
+//            }
+//        }
+
+//        return pfcount;
+
+//    }
 
     for(int i = 0; i < movelist.moveLength; i++){
         doMove(movelist.move[i]);
@@ -1119,108 +1240,6 @@ perftCounts Position::PERFT(int depth, bool tree){
 }
 
 
-
-
-const int PIECEWEIGHTS[6] = {
-        // pawn, knight, bishop, rook, queen, king
-        100, 320, 330, 500, 900, 20000
-};
-
-int PAWNPST[64] = {
-        0,  0,  0,  0,  0,  0,  0,  0,
-        50, 50, 50, 50, 50, 50, 50, 50,
-        10, 10, 20, 30, 30, 20, 10, 10,
-        5,  5, 10, 25, 25, 10,  5,  5,
-        0,  0,  0, 22, 22,  0,  0,  0,
-        0, -5,-10,  0,  0,-10, -5,  0,
-        5, 10, 10,-20,-30, 10, 10,  5,
-        0,  0,  0,  0,  0,  0,  0,  0
-};
-
-int KNIGHTPST[64] = {
-        -50,-40,-30,-30,-30,-30,-40,-50,
-        -40,-20,  0,  0,  0,  0,-20,-40,
-        -30,  0, 10, 15, 15, 10,  0,-30,
-        -30,  5, 15, 20, 20, 15,  5,-30,
-        -30,  0, 15, 20, 20, 15,  0,-30,
-        -30,  5, 10, 15, 15, 10,  5,-30,
-        -40,-20,  0,  5,  5,  0,-20,-40,
-        -50,-30,-30,-30,-30,-30,-30,-50,
-};
-
-
-int BISHOPPST[64] = {
-        -20,-10,-10,-10,-10,-10,-10,-20,
-        -10,  0,  0,  0,  0,  0,  0,-10,
-        -10,  0,  5, 10, 10,  5,  0,-10,
-        -10,  5,  5, 10, 10,  5,  5,-10,
-        -10,  0, 10, 10, 10, 10,  0,-10,
-        -10, 10, 10, 10, 10, 10, 10,-10,
-        -10,  5,  0,  0,  0,  0,  5,-10,
-        -20,-10,-10,-10,-10,-10,-10,-20,
-};
-
-int ROOKPST[64] = {
-        0,  0,  0,  0,  0,  0,  0,  0,
-        5, 10, 10, 10, 10, 10, 10,  5,
-        -5,  0,  0,  0,  0,  0,  0, -5,
-        -5,  0,  0,  0,  0,  0,  0, -5,
-        -5,  0,  0,  0,  0,  0,  0, -5,
-        -5,  0,  0,  0,  0,  0,  0, -5,
-        -5,  0,  0,  0,  0,  0,  0, -5,
-        0,  0,  0,  5,  5,  0,  0,  0
-
-};
-
-int QUEENSPST[64] = {
-        -20,-10,-10, -5, -5,-10,-10,-20,
-        -10,  0,  0,  0,  0,  0,  0,-10,
-        -10,  0,  5,  5,  5,  5,  0,-10,
-        -5,  0,  5,  5,  5,  5,  0, -5,
-        0,  0,  5,  5,  5,  5,  0, -5,
-        -10,  5,  5,  5,  5,  5,  0,-10,
-        -10,  0,  5,  0,  0,  0,  0,-10,
-        -20,-10,-10, 5,  -10,-10,-10,-20
-};
-
-int KINGPSTMIDGAME[64] = {
-        -30,-40,-40,-50,-50,-40,-40,-30,
-        -30,-40,-40,-50,-50,-40,-40,-30,
-        -30,-40,-40,-50,-50,-40,-40,-30,
-        -30,-40,-40,-50,-50,-40,-40,-30,
-        -20,-30,-30,-40,-40,-30,-30,-20,
-        -10,-20,-20,-20,-20,-20,-20,-10,
-        20, 20, -10,-20,-20,-20, 20, 20,
-        20, 30, -10,-20,  0,-20, 30, 20
-};
-
-
-int KINGPSTENDGAME[64] = {
-        -50,-40,-30,-20,-20,-30,-40,-50,
-        -30,-20,-10,  0,  0,-10,-20,-30,
-        -30,-10, 20, 30, 30, 20,-10,-30,
-        -30,-10, 30, 40, 40, 30,-10,-30,
-        -30,-10, 30, 40, 40, 30,-10,-30,
-        -30,-10, 20, 30, 30, 20,-10,-30,
-        -30,-30,  0,  0,  0,  0,-30,-30,
-        -50,-30,-30,-30,-30,-30,-30,-50
-};
-
-
-constexpr int *PSTsMID[6] = {PAWNPST, KNIGHTPST, BISHOPPST, ROOKPST, QUEENSPST, KINGPSTMIDGAME};
-constexpr int *PSTsEND[6] = {PAWNPST, KNIGHTPST, BISHOPPST, ROOKPST, QUEENSPST, KINGPSTENDGAME};
-
-constexpr int INVERT[64] = {
-        56, 57, 58, 59, 60, 61, 62, 63,
-        48, 49, 50, 51, 52, 53, 54, 55,
-        40, 41, 42, 43, 44, 45, 46, 47,
-        32, 33, 34, 35, 36, 37, 38, 39,
-        24, 25, 26, 27, 28, 29, 30, 31,
-        16, 17, 18, 19, 20, 21, 22, 23,
-        8,  9,  10, 11, 12, 13, 14, 15,
-        0,  1,  2,  3,  4,  5,  6,  7
-};
-
 int Position::Evaluate() {
     // score in centipawns (positive is good for white, negative good for black)
     int score = 0;
@@ -1231,7 +1250,7 @@ int Position::Evaluate() {
         // calculate score for all pieces of pieceIndex type
         while(piece){
             // get index of first piece
-            int pieceInt = debruijnSerialization(piece);
+            unsigned pieceInt = debruijnSerialization(piece);
 
             // remove piece from remaining pieces
             piece &= ~(1uLL << pieceInt);
@@ -1254,7 +1273,7 @@ int Position::Evaluate() {
         // calculate score for all pieces of pieceIndex type
         while(piece){
             // get index of first piece
-            int pieceInt = debruijnSerialization(piece);
+            unsigned pieceInt = debruijnSerialization(piece);
 
             // remove piece from remaining pieces
             piece &= ~(1uLL << pieceInt);

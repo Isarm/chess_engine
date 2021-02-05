@@ -15,10 +15,10 @@ using namespace std;
 
 
 void testmain(int argc, char *argv[]){
-//    perft(argc, argv);
+    perft(argc, argv);
 //    perftDebug();
 //    drawTest();
-    hashTest();
+//    hashTest();
 }
 
 void hashTest() {
@@ -72,7 +72,7 @@ void perft(int argc, char *argv[]){
     }
     else { // manual perft setup
         DEPTH = 5;
-        int positionN = 5;
+        int positionN = 1;
         // choose type of position (these are common PERFT test positions)
         switch (positionN) {
             case 1:
