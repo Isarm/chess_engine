@@ -30,6 +30,18 @@ int PAWNPST[64] = {
         0,  0,  0,  0,  0,  0,  0,  0
 };
 
+
+int PAWNPSTEND[64] = {
+0,  0,  0,  0,  0,  0,  0,  0,
+50, 50, 50, 50, 50, 50, 50, 50,
+40, 40, 40, 40, 40, 40, 40, 40,
+30, 30, 30, 30, 30, 30, 30, 30,
+20, 20, 20, 20, 20, 20, 20, 20,
+10, 10, 10, 10, 10, 10, 10, 10,
+ 5,  5,  5,  5,  5,  5,  5,  5,
+0,  0,  0,  0,  0,  0,  0,  0
+};
+
 int KNIGHTPST[64] = {
         -50,-40,-30,-30,-30,-30,-40,-50,
         -40,-20,  0,  0,  0,  0,-20,-40,
@@ -100,8 +112,10 @@ int KINGPSTENDGAME[64] = {
 };
 
 
-constexpr int *PSTsMID[6] = {PAWNPST, KNIGHTPST, BISHOPPST, ROOKPST, QUEENSPST, KINGPSTMIDGAME};
-constexpr int *PSTsEND[6] = {PAWNPST, KNIGHTPST, BISHOPPST, ROOKPST, QUEENSPST, KINGPSTENDGAME};
+int *PSTsMID[6] = {PAWNPST, KNIGHTPST, BISHOPPST, ROOKPST, QUEENSPST, KINGPSTMIDGAME};
+int *PSTsEND[6] = {PAWNPSTEND, KNIGHTPST, BISHOPPST, ROOKPST, QUEENSPST, KINGPSTENDGAME};
+
+int **PSTs[6] = {PSTsMID, PSTsEND};
 
 constexpr int INVERT[64] = {
         56, 57, 58, 59, 60, 61, 62, 63,
@@ -517,8 +531,6 @@ void Position::CastlingToMovelist(moveList &movelist, unsigned castlingType, uin
             }
             nonattacked &= ~nonAttackedBB;
         }
-
-
         move = CASTLING_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
         move |= castlingType << ORIGIN_SQUARE_SHIFT; // put castling type into origin square bits as they are not used
         movelist.move[movelist.moveLength++] = move;
@@ -786,12 +798,12 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
 
     // update evaluation
     if(turn){
-        positionEvaluations[halfMoveNumber] -= PSTsMID[pieceToMove][originInt];
-        positionEvaluations[halfMoveNumber] += PSTsMID[pieceToMove][destinationint];
+        positionEvaluations[halfMoveNumber] -= PSTs[isEndGame][pieceToMove][originInt];
+        positionEvaluations[halfMoveNumber] += PSTs[isEndGame][pieceToMove][destinationint];
     }
     else{
-        positionEvaluations[halfMoveNumber] += PSTsMID[pieceToMove][INVERT[originInt]];
-        positionEvaluations[halfMoveNumber] -= PSTsMID[pieceToMove][INVERT[destinationint]];
+        positionEvaluations[halfMoveNumber] += PSTs[isEndGame][pieceToMove][INVERT[originInt]];
+        positionEvaluations[halfMoveNumber] -= PSTs[isEndGame][pieceToMove][INVERT[destinationint]];
     }
 }
 
@@ -853,7 +865,7 @@ void Position::doMove(unsigned move){
                 unsigned EPcapture = debruijnSerialization(destinationBB << S);
                 positionHashes[halfMoveNumber] ^= zobristPieceTable[BLACK][PAWNS][EPcapture];
                 positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[PAWNS];
-                positionEvaluations[halfMoveNumber] += PSTsMID[PAWNS][INVERT[EPcapture]];
+                positionEvaluations[halfMoveNumber] += PSTs[isEndGame][PAWNS][INVERT[EPcapture]];
             }
             else{
                 bitboards[WHITE][PAWNS] &= ~(destinationBB >> N);
@@ -862,7 +874,7 @@ void Position::doMove(unsigned move){
                 unsigned EPcapture = debruijnSerialization(destinationBB >> N);
                 positionHashes[halfMoveNumber] ^= zobristPieceTable[WHITE][PAWNS][EPcapture];
                 positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[PAWNS];
-                positionEvaluations[halfMoveNumber] -= PSTsMID[PAWNS][EPcapture];
+                positionEvaluations[halfMoveNumber] -= PSTs[isEndGame][PAWNS][EPcapture];
             }
             MovePiece(originBB, destinationBB, this->turn);
             break;
@@ -894,11 +906,11 @@ void Position::doMove(unsigned move){
             positionHashes[halfMoveNumber] ^= zobristPieceTable[this->turn][PAWNS][originInt];
             if(turn) {
                 positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[PAWNS];
-                positionEvaluations[halfMoveNumber] -= PSTsMID[PAWNS][originInt];
+                positionEvaluations[halfMoveNumber] -= PSTs[isEndGame][PAWNS][originInt];
             }
             else{
                 positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[PAWNS];
-                positionEvaluations[halfMoveNumber] += PSTsMID[PAWNS][INVERT[originInt]];
+                positionEvaluations[halfMoveNumber] += PSTs[isEndGame][PAWNS][INVERT[originInt]];
             }
 
             // place promoted piece and update hash and eval
@@ -907,11 +919,11 @@ void Position::doMove(unsigned move){
             positionHashes[halfMoveNumber] ^= zobristPieceTable[this->turn][promotionType][destinationInt];
             if(turn) { // white
                 positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[promotionType];
-                positionEvaluations[halfMoveNumber] += PSTsMID[promotionType][destinationInt];
+                positionEvaluations[halfMoveNumber] += PSTs[isEndGame][promotionType][destinationInt];
             }
             else{ // black
                 positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[promotionType];
-                positionEvaluations[halfMoveNumber] -= PSTsMID[promotionType][INVERT[destinationInt]];
+                positionEvaluations[halfMoveNumber] -= PSTs[isEndGame][promotionType][INVERT[destinationInt]];
             }
 
             // switch to opponent bitboards and remove possible destination piece in case of capture
@@ -925,11 +937,11 @@ void Position::doMove(unsigned move){
                     positionHashes[halfMoveNumber] ^= zobristPieceTable[!this->turn][i][destinationInt];
                     if(turn) { // white promoted, so remove black piece (so INVERT and + is used)
                         positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[i];
-                        positionEvaluations[halfMoveNumber] += PSTsMID[i][INVERT[destinationInt]];
+                        positionEvaluations[halfMoveNumber] += PSTs[isEndGame][i][INVERT[destinationInt]];
                     }
                     else{
                         positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[i];
-                        positionEvaluations[halfMoveNumber] -= PSTsMID[i][destinationInt];
+                        positionEvaluations[halfMoveNumber] -= PSTs[isEndGame][i][destinationInt];
 
                     }
 
@@ -958,11 +970,11 @@ void Position::doMove(unsigned move){
                     positionHashes[halfMoveNumber] ^= zobristPieceTable[!this->turn][i][destinationInt];
                     if(turn) { // white promoted, so remove black piece (so INVERT and + is used)
                         positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[i];
-                        positionEvaluations[halfMoveNumber] += PSTsMID[i][INVERT[destinationInt]];
+                        positionEvaluations[halfMoveNumber] += PSTs[isEndGame][i][INVERT[destinationInt]];
                     }
                     else{
                         positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[i];
-                        positionEvaluations[halfMoveNumber] -= PSTsMID[i][destinationInt];
+                        positionEvaluations[halfMoveNumber] -= PSTs[isEndGame][i][destinationInt];
 
                     }
                     // store the capture move specifications
@@ -1008,6 +1020,7 @@ void Position::doMove(unsigned move){
         // reset possible en passant destination
         bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
     }
+
 
 
 
@@ -1081,12 +1094,12 @@ void Position::doCastlingMove(bool side){
 
         // update evaluation
         if(turn){
-            positionEvaluations[halfMoveNumber] -= PSTsMID[KING][kingInt];
-            positionEvaluations[halfMoveNumber] += PSTsMID[KING][kingInt + 2];
+            positionEvaluations[halfMoveNumber] -= PSTs[isEndGame][KING][kingInt];
+            positionEvaluations[halfMoveNumber] += PSTs[isEndGame][KING][kingInt + 2];
         }
         else{
-            positionEvaluations[halfMoveNumber] += PSTsMID[KING][INVERT[kingInt]];
-            positionEvaluations[halfMoveNumber] -= PSTsMID[KING][INVERT[kingInt + 2]];
+            positionEvaluations[halfMoveNumber] += PSTs[isEndGame][KING][INVERT[kingInt]];
+            positionEvaluations[halfMoveNumber] -= PSTs[isEndGame][KING][INVERT[kingInt + 2]];
         }
 
     }
@@ -1104,12 +1117,12 @@ void Position::doCastlingMove(bool side){
 
         // update evaluation
         if(turn){
-            positionEvaluations[halfMoveNumber] -= PSTsMID[KING][kingInt];
-            positionEvaluations[halfMoveNumber] += PSTsMID[KING][kingInt - 2];
+            positionEvaluations[halfMoveNumber] -= PSTs[isEndGame][KING][kingInt];
+            positionEvaluations[halfMoveNumber] += PSTs[isEndGame][KING][kingInt - 2];
         }
         else{
-            positionEvaluations[halfMoveNumber] += PSTsMID[KING][INVERT[kingInt]];
-            positionEvaluations[halfMoveNumber] -= PSTsMID[KING][INVERT[kingInt - 2]];
+            positionEvaluations[halfMoveNumber] += PSTs[isEndGame][KING][INVERT[kingInt]];
+            positionEvaluations[halfMoveNumber] -= PSTs[isEndGame][KING][INVERT[kingInt - 2]];
         }
     }
 }
@@ -1322,13 +1335,9 @@ int Position::Evaluate() {
             // calculate score
             score += PIECEWEIGHTS[pieceIndex];
 
-            if(isEndGame){
-                score += PSTsEND[pieceIndex][pieceInt];
+
+            score += PSTs[isEndGame][pieceIndex][pieceInt];
             }
-            else{
-                score += PSTsMID[pieceIndex][pieceInt];
-            }
-        }
     }
 
     // for black
@@ -1347,17 +1356,10 @@ int Position::Evaluate() {
             // calculate score
             score -= PIECEWEIGHTS[pieceIndex];
 
-            if(isEndGame){
-                score -= PSTsEND[pieceIndex][pieceInt];
-            }
-            else{
-                score -= PSTsMID[pieceIndex][pieceInt];
-            }
+            score -= PSTs[isEndGame][pieceIndex][pieceInt];
         }
-
-        // for negamax, the score should always be maximizing for whomevers turn it is
     }
-
+    // for negamax, the score should always be maximizing for whomevers turn it is
     if(this->turn){
         return score;
     }
@@ -1395,5 +1397,3 @@ bool Position::isDraw() {
     }
     return false;
 }
-
-

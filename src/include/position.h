@@ -81,7 +81,6 @@ private:
     void doCastlingMove(bool side);
 
     void undoCastlingMove(bool side);
-
 };
 
 #endif

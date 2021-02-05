@@ -276,9 +276,14 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
     return alpha;
 }
 
-int Evaluate::Quiescence(int alpha, int beta, STATS *stats) {
+int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
     // define stand_pat (adapted from chessprogramming wiki quiescence search)
     int stand_pat = position.getEvaluation();
+
+    if(depth == 0){
+        return stand_pat;
+    }
+
     if(stand_pat >= beta){
         return beta; // fail hard
     }
@@ -294,7 +299,7 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats) {
         stats->quiescentNodes += 1;
         stats->totalNodes += 1;
         position.doMove(movelist.captureMove[i]);
-        int score = -Quiescence(-beta, -alpha, stats);
+        int score = -Quiescence(-beta, -alpha, stats, depth-1);
         position.undoMove();
 
         if(score >= beta){
