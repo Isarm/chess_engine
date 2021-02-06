@@ -18,6 +18,7 @@ public:
     // all the values of the pieces (no pawns) are added together, and if they are lower than a certain threshold,
     // the isEndGame flag will be set to true.
     int allPiecesValue = 0;
+    int allPiecesValues[1024];
     float endGameFraction = 0;
 
     bool isIncheck = false;

@@ -153,7 +153,7 @@ Position::Position(string FEN) {
 
         int pieceIndex = FENpieces.at(tolower(pieceChar));
         bitboards[isupper(pieceChar) != 0][pieceIndex] |= 1uLL << BBindex; // shift the bits into place
-        if(pieceIndex != PAWNS) {
+        if(pieceIndex != PAWNS && pieceIndex != KING) {
             allPiecesValue += PIECEWEIGHTS[FENpieces.at(tolower(pieceChar))];
         }
     }
@@ -822,6 +822,9 @@ void Position::doMove(unsigned move){
     temp = halfMovesSinceIrrepr;
     moveL |= temp << HALFMOVENUMBER_SINCE_IRREVERSIBLE_MOVE_SHIFT;
 
+    // store pieceValues
+    allPiecesValues[halfMoveNumber] = allPiecesValue;
+
     // increment halfmovenumber counters
     halfMoveNumber50++;
     halfMoveNumber++;
@@ -986,7 +989,7 @@ void Position::doMove(unsigned move){
 inline void Position::removePiece(unsigned pieceType, uint64_t pieceBB, bool colour, unsigned pieceInt){
     bitboards[colour][pieceType] &= ~pieceBB;
 
-    if(pieceType != PAWNS) {
+    if(pieceType != PAWNS && pieceType != KING) {
         allPiecesValue -= PIECEWEIGHTS[pieceType];
     }
 
@@ -994,18 +997,20 @@ inline void Position::removePiece(unsigned pieceType, uint64_t pieceBB, bool col
     positionHashes[halfMoveNumber] ^= zobristPieceTable[colour][pieceType][pieceInt];
     if(colour) {
         positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[pieceType];
-        positionEvaluations[halfMoveNumber] -= PSTs[0][pieceType][pieceInt];
+        positionEvaluations[halfMoveNumber] -= int((1 - endGameFraction) * float(PSTs[0][pieceType][pieceInt]));
+        positionEvaluations[halfMoveNumber] -= int(endGameFraction * float(PSTs[1][pieceType][pieceInt]));
     }
     else{
         positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[pieceType];
-        positionEvaluations[halfMoveNumber] += PSTs[0][pieceType][INVERT[pieceInt]];
+        positionEvaluations[halfMoveNumber] += int((1 - endGameFraction) * float(PSTs[0][pieceType][INVERT[pieceInt]]));
+        positionEvaluations[halfMoveNumber] += int(endGameFraction * float(PSTs[1][pieceType][INVERT[pieceInt]]));
     }
 }
 
 inline void Position::addPiece(unsigned pieceType, uint64_t pieceBB, bool colour, unsigned pieceInt){
     bitboards[colour][pieceType] |= pieceBB;
 
-    if(pieceType != PAWNS) {
+    if(pieceType != PAWNS && pieceType != KING) {
         allPiecesValue += PIECEWEIGHTS[pieceType];
     }
 
@@ -1013,11 +1018,13 @@ inline void Position::addPiece(unsigned pieceType, uint64_t pieceBB, bool colour
     positionHashes[halfMoveNumber] ^= zobristPieceTable[colour][pieceType][pieceInt];
     if(colour) {
         positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[pieceType];
-        positionEvaluations[halfMoveNumber] += PSTs[0][pieceType][pieceInt];
+        positionEvaluations[halfMoveNumber] += int((1 - endGameFraction) * float(PSTs[0][pieceType][pieceInt]));
+        positionEvaluations[halfMoveNumber] += int(endGameFraction * float(PSTs[1][pieceType][pieceInt]));
     }
     else{
         positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[pieceType];
-        positionEvaluations[halfMoveNumber] -= PSTs[0][pieceType][INVERT[pieceInt]];
+        positionEvaluations[halfMoveNumber] -= int((1 - endGameFraction) * float(PSTs[0][pieceType][INVERT[pieceInt]]));
+        positionEvaluations[halfMoveNumber] -= int(endGameFraction * float(PSTs[1][pieceType][INVERT[pieceInt]]));
     }
 }
 
@@ -1195,6 +1202,10 @@ void Position::undoMove() {
     halfMovesSinceIrrepr = (move & HALFMOVENUMBER_SINCE_IRREVERSIBLE_MOVE_MASK) >> HALFMOVENUMBER_SINCE_IRREVERSIBLE_MOVE_SHIFT;
 
     halfMoveNumber--;
+
+    allPiecesValue = allPiecesValues[halfMoveNumber];
+    // change ratio of PST tables
+    endGameFraction = min(1.0, (6400.0 - float(allPiecesValue))/3200.0);
 
     this->turn = !this->turn;
     generateHelpBitboards();
