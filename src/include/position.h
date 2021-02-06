@@ -13,14 +13,20 @@ class Position{
 public:
 
     bool turn = WHITE;
+
     bool isEndGame = false;
+
+    // used to determine when an endgame occurs.
+    // all the values of the pieces (no pawns) are added together, and if they are lower than a certain threshold,
+    // the isEndGame flag will be set to true.
+    int allPiecesValue = 0;
+
     bool isIncheck = false;
 
     unsigned castlingRights = 0;
     uint64_t bitboards[2][8] = {0};
     uint64_t helpBitboards[2] = {0};
 
-    uint64_t hash;
     uint64_t positionHashes[1024] = {0};
 
     int positionEvaluations[1024] = {0};
@@ -81,6 +87,10 @@ private:
     void doCastlingMove(bool side);
 
     void undoCastlingMove(bool side);
+
+    void removePiece(unsigned int pieceType, uint64_t pieceBB, bool colour, unsigned int pieceInt);
+
+    void addPiece(unsigned int pieceType, uint64_t pieceBB, bool colour, unsigned int pieceInt);
 };
 
 #endif
