@@ -928,25 +928,27 @@ void Position::doMove(unsigned move){
     }
 
     // reset castling rights in case the rook has moved or has been captured. (and update hash)
-    if(!(bitboards[WHITE][ROOKS] & (1uLL << SQ_H1))){
-        positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
-        castlingRights &= ~WHITE_KINGSIDE_CASTLING_RIGHTS;
-        positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
-    }
-    if(!(bitboards[WHITE][ROOKS] & (1uLL << SQ_A1))){
-        positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
-        castlingRights &= ~WHITE_QUEENSIDE_CASTLING_RIGHTS;
-        positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
-    }
-    if(!(bitboards[BLACK][ROOKS] & (1uLL << SQ_H8))){
-        positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
-        castlingRights &= ~BLACK_KINGSIDE_CASTLING_RIGHTS;
-        positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
-    }
-    if(!(bitboards[BLACK][ROOKS] & (1uLL << SQ_A8))){
-        positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
-        castlingRights &= ~BLACK_QUEENSIDE_CASTLING_RIGHTS;
-        positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+    if(castlingRights) {
+        if (!(bitboards[WHITE][ROOKS] & (1uLL << SQ_H1))) {
+            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            castlingRights &= ~WHITE_KINGSIDE_CASTLING_RIGHTS;
+            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+        }
+        if (!(bitboards[WHITE][ROOKS] & (1uLL << SQ_A1))) {
+            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            castlingRights &= ~WHITE_QUEENSIDE_CASTLING_RIGHTS;
+            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+        }
+        if (!(bitboards[BLACK][ROOKS] & (1uLL << SQ_H8))) {
+            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            castlingRights &= ~BLACK_KINGSIDE_CASTLING_RIGHTS;
+            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+        }
+        if (!(bitboards[BLACK][ROOKS] & (1uLL << SQ_A8))) {
+            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            castlingRights &= ~BLACK_QUEENSIDE_CASTLING_RIGHTS;
+            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+        }
     }
 
 
@@ -967,6 +969,8 @@ void Position::doMove(unsigned move){
     this->turn = !this->turn;
     positionHashes[halfMoveNumber] ^= zobristBlackToMove;
 
+    // change ratio of PST tables
+    endGameFraction = min(1.0, (6400.0 - float(allPiecesValue))/3200.0);
 
     // this should be implemented as a continuous process, to not get an  evaluation discontinuity when switching to endgame
 //    if (allPiecesValue < 3400){ // threshold for endgame
@@ -990,11 +994,11 @@ inline void Position::removePiece(unsigned pieceType, uint64_t pieceBB, bool col
     positionHashes[halfMoveNumber] ^= zobristPieceTable[colour][pieceType][pieceInt];
     if(colour) {
         positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[pieceType];
-        positionEvaluations[halfMoveNumber] -= PSTs[isEndGame][pieceType][pieceInt];
+        positionEvaluations[halfMoveNumber] -= PSTs[0][pieceType][pieceInt];
     }
     else{
         positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[pieceType];
-        positionEvaluations[halfMoveNumber] += PSTs[isEndGame][pieceType][INVERT[pieceInt]];
+        positionEvaluations[halfMoveNumber] += PSTs[0][pieceType][INVERT[pieceInt]];
     }
 }
 
@@ -1009,11 +1013,11 @@ inline void Position::addPiece(unsigned pieceType, uint64_t pieceBB, bool colour
     positionHashes[halfMoveNumber] ^= zobristPieceTable[colour][pieceType][pieceInt];
     if(colour) {
         positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[pieceType];
-        positionEvaluations[halfMoveNumber] += PSTs[isEndGame][pieceType][pieceInt];
+        positionEvaluations[halfMoveNumber] += PSTs[0][pieceType][pieceInt];
     }
     else{
         positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[pieceType];
-        positionEvaluations[halfMoveNumber] -= PSTs[isEndGame][pieceType][INVERT[pieceInt]];
+        positionEvaluations[halfMoveNumber] -= PSTs[0][pieceType][INVERT[pieceInt]];
     }
 }
 
@@ -1293,7 +1297,7 @@ int Position::Evaluate() {
             score += PIECEWEIGHTS[pieceIndex];
 
 
-            score += PSTs[isEndGame][pieceIndex][pieceInt];
+            score += PSTs[0][pieceIndex][pieceInt];
             }
     }
 
@@ -1313,7 +1317,7 @@ int Position::Evaluate() {
             // calculate score
             score -= PIECEWEIGHTS[pieceIndex];
 
-            score -= PSTs[isEndGame][pieceIndex][pieceInt];
+            score -= PSTs[0][pieceIndex][pieceInt];
         }
     }
     // for negamax, the score should always be maximizing for whomevers turn it is

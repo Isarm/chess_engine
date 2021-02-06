@@ -14,12 +14,11 @@ public:
 
     bool turn = WHITE;
 
-    bool isEndGame = false;
-
     // used to determine when an endgame occurs.
     // all the values of the pieces (no pawns) are added together, and if they are lower than a certain threshold,
     // the isEndGame flag will be set to true.
     int allPiecesValue = 0;
+    float endGameFraction = 0;
 
     bool isIncheck = false;
 
@@ -77,8 +76,6 @@ private:
     void MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour);
 
     void GenerateKingMoves(moveList &movelist);
-
-    void enPassantToMoveList(moveList &movelist, uint64_t pieceBB, uint64_t enPassantMove);
 
     void GenerateCastlingMoves(moveList &movelist);
 
