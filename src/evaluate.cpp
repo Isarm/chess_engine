@@ -50,6 +50,7 @@ Results Evaluate::StartSearch(){
         int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
         printinformation(milliseconds, score, line, stats, iterativeDepth);
         if(milliseconds > 5000){
+//        if(iterativeDepth > 10){
             break;
         }
     }
@@ -326,6 +327,11 @@ void Evaluate::printinformation(int milliseconds, int score, LINE line, STATS st
     if(score >= 1000000){
         // this indicates that mate is found
         int mateIn = int((depth - score + 1000001)/2);
+        std::cout << "mate " << mateIn << " pv ";
+    }
+    else if(score <= -1000000){
+        // this indicates that the engine is getting mated
+        int mateIn = -int((depth + score + 1000001)/2);
         std::cout << "mate " << mateIn << " pv ";
     }
     else{
