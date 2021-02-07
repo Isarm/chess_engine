@@ -26,11 +26,7 @@ Using PERFT, around 14 million positions are found per second, on an Intel® Cor
 The engine part is mainly implemented in the Evaluation class. The alpha beta pruning search algorithm is implemented in the alphabeta function. At the leaf nodes, a quiescence search is performed up to a depth of 7 to improve search stability. A transposition table is implemented in the transpositionTable class. Iterative deepening has also been implemented in the start search function, which repeatedly calls the alphabeta search function with increasing depth. 
 
 ## How to use
-clone the repository and build using:
-
-```
-make
-```
+--coming
 
 ## TODO
 * ~~Create a simple evaluation function~~
