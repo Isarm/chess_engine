@@ -30,4 +30,5 @@ The engine part is mainly implemented in the Evaluation class. The alpha beta pr
 * ~~Implement the minimax algorithm~~
 * ~~Implement the UCI protocol such that a GUI can be used to improve testing~~
 * ~~Implement Alpha Beta pruning~~
-* ~~Implement Iterative Deepening using a transposition table
+* ~~Implement Iterative Deepening using a transposition table~~
+* Further improve evaluation function and move ordering
