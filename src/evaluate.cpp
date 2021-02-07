@@ -19,7 +19,6 @@ Evaluate::Evaluate(string fen, vector<string> moves, Settings settings) {
     this->position = Position(fen);
     this->depth = settings.depth;
 
-
     // do the moves that are given by the UCI protocol to update the position
     for(string move : moves){
         this->position.doMove(move);
@@ -54,7 +53,6 @@ Results Evaluate::StartSearch(){
             break;
         }
     }
-
     results.bestMove = moveToStrNotation(line.principalVariation[0]);
     return results;
 }
@@ -65,7 +63,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
     LINE line;
     if(depthLeft == 0){
         pline->nmoves = 0;
-        // do a quiescent search for the leaf nodes, to try and reduce the horizon effect (TODO)
+        // do a quiescent search for the leaf nodes, to reduce the horizon effect
         return Quiescence(alpha, beta, stats);
     }
 
@@ -104,6 +102,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
         }
 
         if(score > alpha){
+            // PV is found
             alpha = score;
             pline->principalVariation[0] = iterativeDeepeningMove;
             memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
@@ -153,8 +152,6 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
             bestMove = entry.bestMove;
         }
     }
-
-
 
     // generate list of moves
     moveList movelist;
@@ -355,8 +352,3 @@ void Evaluate::printinformation(int milliseconds, int score, LINE line, STATS st
     std::cout <<'\n';
     std::cout.flush();
 }
-
-
-
-
-

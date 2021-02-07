@@ -9,10 +9,13 @@
 #include "useful.h"
 #include "slider_attacks.h"
 #include <algorithm>
+#include "zobristTables.h"
+
 
 using namespace std;
 using namespace definitions;
 
+// piece weights and piece square tables used for evaluation
 
 const int PIECEWEIGHTS[6] = {
         // pawn, knight, bishop, rook, queen, king
@@ -115,7 +118,7 @@ int KINGPSTENDGAME[64] = {
 int *PSTsMID[6] = {PAWNPST, KNIGHTPST, BISHOPPST, ROOKPST, QUEENSPST, KINGPSTMIDGAME};
 int *PSTsEND[6] = {PAWNPSTEND, KNIGHTPST, BISHOPPST, ROOKPST, QUEENSPST, KINGPSTENDGAME};
 
-int **PSTs[6] = {PSTsMID, PSTsEND};
+constexpr int **PSTs[6] = {PSTsMID, PSTsEND};
 
 constexpr int INVERT[64] = {
         56, 57, 58, 59, 60, 61, 62, 63,
@@ -696,30 +699,6 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
         else {
             uint64_t captureBB = destinationBB & captureDestinations;
             if (captureBB) { // capture move
-
-
-                // give a score to the capture move
-                /*
-                int pieceToMove = -1;
-                for (int i = 0; i < 6; i++) {
-                    if (bitboards[this->turn][i] & origin) {
-                        pieceToMove = i;
-                        break;
-                    }
-                }
-
-                int capturedPiece = -1;
-                for (int i = 0; i < 6; i++) {
-                    if (bitboards[this->turn][i] & captureBB) {
-                        capturedPiece = i;
-                        break;
-                    }
-                }
-
-                // add the score to the move
-                move |= (8 + capturedPiece - pieceToMove) << MOVE_SCORE_SHIFT;
-                */
-
                 movelist.captureMove[movelist.captureMoveLength++] = move;
             } else {
                 movelist.move[movelist.moveLength++] = move;
@@ -727,8 +706,6 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
         }
     }
 }
-
-
 
 
 /*
@@ -972,15 +949,8 @@ void Position::doMove(unsigned move){
     this->turn = !this->turn;
     positionHashes[halfMoveNumber] ^= zobristBlackToMove;
 
-    // change ratio of PST tables
-    endGameFraction = min(1.0, (6400.0 - float(allPiecesValue))/3200.0);
-
-    // this should be implemented as a continuous process, to not get an  evaluation discontinuity when switching to endgame
-//    if (allPiecesValue < 3400){ // threshold for endgame
-//        isEndGame = true;
-//         reevaluate position
-//        positionEvaluations[halfMoveNumber] = Evaluate();
-//    }
+    // change ratio of PST usage: lower value for allPiecesValue indicates further in endgame
+    endGameFraction = min(1.0, (6400.0 - float(allPiecesValue))/3800.0);
 
     generateHelpBitboards();
 }

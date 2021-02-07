@@ -18,8 +18,8 @@ void UCI::start() {
     std::cout << "id name Isar Engine\n";
     std::cout << "id author Isar Meijer\n";
 
-    // hash table size can vary between 1MB and 2GB
-    std::cout << "option name Hash type spin default 512 min 1 max 2048\n";
+    // hash table size can vary between 1MB and 8GB (although the upper bound is kind of arbitrary)
+    std::cout << "option name Hash type spin default 512 min 1 max 8192\n";
 
     // uci is ready
     std::cout << "uciok\n";
@@ -146,13 +146,14 @@ void UCI::mainLoop(){
 
             // only now check if TT is initialized
             if(!TT.size){
-                TT.setSize(2048); // set default size
+                TT.setSize(512); // set default size
             }
 
             threadStarted = true;
             evaluation = std::thread{UCI::go, fen, moves, settings, std::ref(results)};
         }
     }
+    // wait for the evaluation thread to finish so the program can exit safely
     evaluation.join();
 }
 
