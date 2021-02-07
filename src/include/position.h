@@ -47,7 +47,7 @@ public:
 
 
     void doMove(unsigned moveL);
-    void doMove(string);
+    void doMove(const string&);
     void undoMove();
 
     void prettyPrint();

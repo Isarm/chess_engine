@@ -1,6 +1,6 @@
 # chess_engine
 
-This is a chess engine that I am writing. It uses bitboards to efficiently calculate positions.
+This is a chess engine that I am writing. It uses bitboards to efficiently calculate positions. In the evaluation alpha beta pruning is used, combined with transposition tables and iterative deepening to more efficiently prune the search tree. 
 
 Game logic has been implemented and tested with the PERFT debugging method:
 https://www.chessprogramming.org/Perft
@@ -25,10 +25,16 @@ Using PERFT, around 14 million positions are found per second, on an Intel® Cor
 ### Engine
 The engine part is mainly implemented in the Evaluation class. The alpha beta pruning search algorithm is implemented in the alphabeta function. At the leaf nodes, a quiescence search is performed up to a depth of 7 to improve search stability. A transposition table is implemented in the transpositionTable class. Iterative deepening has also been implemented in the start search function, which repeatedly calls the alphabeta search function with increasing depth. 
 
+## How to use
+clone the repository and build using:
+
+```
+make
+```
+
 ## TODO
 * ~~Create a simple evaluation function~~
 * ~~Implement the minimax algorithm~~
 * ~~Implement the UCI protocol such that a GUI can be used to improve testing~~
 * ~~Implement Alpha Beta pruning~~
-* ~~Implement Iterative Deepening using a transposition table~~
-* Further improve evaluation function and move ordering
+* ~~Implement Iterative Deepening using a transposition table

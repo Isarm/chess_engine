@@ -9,7 +9,7 @@
 #include "useful.h"
 #include "slider_attacks.h"
 #include <algorithm>
-#include "zobristTables.h"
+#include "lookupTables.h"
 
 
 using namespace std;
@@ -144,7 +144,7 @@ Position::Position(string FEN) {
 
     if (FEN.at(i) == '"') i++; // skip possible leading quotation marks (in case of perft debug)
 
-    for (i; pieceChar != ' '; i++, BBindex++, pieceChar = FEN.at(i)) { // loop for first part of FEN until first space
+    for (; pieceChar != ' '; i++, BBindex++, pieceChar = FEN.at(i)) { // loop for first part of FEN until first space
         if (pieceChar == '/') {
             BBindex--; // account for (incorrect) increment, as it is simply a new row
             continue;
@@ -526,7 +526,6 @@ void Position::CastlingToMovelist(moveList &movelist, unsigned castlingType, uin
 
     if(!(empty & helpBitboards[OCCUPIED_SQUARES])) { // check if the squares are empty
         unsigned nonAttackedInt;
-        bool illegalFlag = false;
         unsigned move;
         // loop over the squares that should be non attacked
         while(nonattacked){
@@ -542,7 +541,7 @@ void Position::CastlingToMovelist(moveList &movelist, unsigned castlingType, uin
         movelist.move[movelist.moveLength++] = move;
 
     }
-};
+}
 
 // pinnedOrigin is the location that will be checked for pins (e.g. pinnedOrigin is king for legality check)
 // pinned pieces are of colour $colour
@@ -999,7 +998,7 @@ inline void Position::addPiece(unsigned pieceType, uint64_t pieceBB, bool colour
 }
 
 
-void Position::doMove(string move) {
+void Position::doMove(const string& move) {
     // do a move where the move is formatted as for example e2e4, with promotion type appended if necessary.
     unsigned moveUnsigned = strToMoveNotation(move);
 
@@ -1200,8 +1199,8 @@ perftCounts Position::PERFT(int depth, bool tree){
         if(Evaluate() != getEvaluation()){
             cout << "eval error";
         }
-        perftCounts pfcount = {1};
-        return pfcount;
+        perftCounts pfcount0 = {1};
+        return pfcount0;
     }
 
     if(depth == 1){

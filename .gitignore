@@ -1,3 +1,4 @@
-magic-bits/
-/cmake-build-debug
+
+engine*
+CMake*
 /magic-bits

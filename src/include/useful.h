@@ -90,29 +90,6 @@ static unsigned debruijnSerialization(uint64_t pieces) {
     return index64[(LS1B * debruijn64) >> 58u];
 }
 
-// lookup table for direction from square a to square b
-inline int rayDirectionsTable[64][64];
-
-inline void rayDirectionLookupInitialize() {
-    for (int i = 0; i < 64; i++) {
-        for(int j = i + 1; j%8 != 0; j++) rayDirectionsTable[i][j] = HORIZONTAL_RAY;
-        for(int j = i - 1; (j%8 != 7 && j%8 != -1); j--) rayDirectionsTable[i][j] = HORIZONTAL_RAY;
-
-        for(int j = i + 8; j < 64; j += 8) rayDirectionsTable[i][j] = VERTICAL_RAY;
-        for(int j = i - 8; j >= 0 ; j -= 8) rayDirectionsTable[i][j] = VERTICAL_RAY;
-
-        for(int j = i + 9; j%8 != 0 && j < 64; j += 9) rayDirectionsTable[i][j] = NORTHWEST_RAY;
-        for(int j = i - 9; (j%8 != 7 && j%8 != -1) && j > 0;  j -= 9) rayDirectionsTable[i][j] = NORTHWEST_RAY;
-
-        for(int j = i + 7; (j%8 != 7 && j%8 != -1) && j < 64; j += 7) rayDirectionsTable[i][j] = SOUTHWEST_RAY;
-        for(int j = i - 7; j%8 != 0 && j > 0 ; j -= 7) rayDirectionsTable[i][j] = SOUTHWEST_RAY;
-    }
-}
-
-inline int rayDirectionLookup(unsigned a, unsigned b) {
-    return rayDirectionsTable[a][b];
-}
-
 
 
 
