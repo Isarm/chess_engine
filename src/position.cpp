@@ -1204,28 +1204,28 @@ perftCounts Position::PERFT(int depth, bool tree){
         return pfcount;
     }
 
-//    if(depth == 1){
-//        Evaluate();
+    if(depth == 1){
+        Evaluate();
 
-//        captureMoves = movelist.captureMoveLength;
-//        normalMoves = movelist.moveLength;
+        captureMoves = movelist.captureMoveLength;
+        normalMoves = movelist.moveLength;
 
-//        pfcount.captures = captureMoves;
-//        pfcount.normal = normalMoves;
-//        pfcount.total = normalMoves + captureMoves;
+        pfcount.captures = captureMoves;
+        pfcount.normal = normalMoves;
+        pfcount.total = normalMoves + captureMoves;
 
-//        if(tree){
-//            for(int i = 0; i < movelist.moveLength; i++){
-//                cout << moveToStrNotation(movelist.move[i]) << " " << 1 << "\n";
-//            }
-//            for(int i = 0; i < movelist.captureMoveLength; i++){
-//                cout << moveToStrNotation(movelist.captureMove[i]) << " " << 1 << "\n";
-//            }
-//        }
+        if(tree){
+            for(int i = 0; i < movelist.moveLength; i++){
+                cout << moveToStrNotation(movelist.move[i]) << " " << 1 << "\n";
+            }
+            for(int i = 0; i < movelist.captureMoveLength; i++){
+                cout << moveToStrNotation(movelist.captureMove[i]) << " " << 1 << "\n";
+            }
+        }
 
-//        return pfcount;
+        return pfcount;
 
-//    }
+    }
 
     for(int i = 0; i < movelist.moveLength; i++){
         doMove(movelist.move[i]);
