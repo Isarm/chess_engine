@@ -1,5 +1,6 @@
 .idea
 cmake*
 engine*
-CMake*
-CMakeLists.txt
+CMakeCache.txt
+CMakeFiles
+
