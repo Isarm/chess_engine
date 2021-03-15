@@ -15,7 +15,10 @@
 using namespace std;
 using namespace definitions;
 
+
 // piece weights and piece square tables used for evaluation
+// TODO: Figure out a nice way to handle this/where to put this
+
 
 const int PIECEWEIGHTS[6] = {
         // pawn, knight, bishop, rook, queen, king
@@ -35,14 +38,14 @@ int PAWNPST[64] = {
 
 
 int PAWNPSTEND[64] = {
-0,  0,  0,  0,  0,  0,  0,  0,
-50, 50, 50, 50, 50, 50, 50, 50,
-40, 40, 40, 40, 40, 40, 40, 40,
-30, 30, 30, 30, 30, 30, 30, 30,
-20, 20, 20, 20, 20, 20, 20, 20,
-10, 10, 10, 10, 10, 10, 10, 10,
- 5,  5,  5,  5,  5,  5,  5,  5,
-0,  0,  0,  0,  0,  0,  0,  0
+        0,  0,  0,  0,  0,  0,  0,  0,
+        50, 50, 50, 50, 50, 50, 50, 50,
+        40, 40, 40, 40, 40, 40, 40, 40,
+        30, 30, 30, 30, 30, 30, 30, 30,
+        20, 20, 20, 20, 20, 20, 20, 20,
+        10, 10, 10, 10, 10, 10, 10, 10,
+        5,  5,  5,  5,  5,  5,  5,  5,
+        0,  0,  0,  0,  0,  0,  0,  0
 };
 
 int KNIGHTPST[64] = {
@@ -130,7 +133,6 @@ constexpr int INVERT[64] = {
         8,  9,  10, 11, 12, 13, 14, 15,
         0,  1,  2,  3,  4,  5,  6,  7
 };
-
 Position::Position(string FEN) {
 
     string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
