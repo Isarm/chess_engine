@@ -48,7 +48,7 @@ Results Evaluate::StartSearch(){
         auto t2 = std::chrono::high_resolution_clock::now();
         int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
         printinformation(milliseconds, score, line, stats, iterativeDepth);
-        if(milliseconds > 5000){
+        if(milliseconds > 2000){
 //        if(iterativeDepth > 10){
             break;
         }
@@ -58,6 +58,9 @@ Results Evaluate::StartSearch(){
 }
 
 int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine) {
+    /**
+     * This has become quite ugly with a lot of repetition
+     */
     int alphaStart = alpha; // to be able to check if alpha has increased with this position (for tr. table)
 
     LINE line;
@@ -171,8 +174,30 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
         }
     }
 
-    // if there was a transposition found, first evaluate that move.
-    if(bestMove != 0){
+
+    /** if there was a transposition found, first evaluate that move */
+    bool legal = false;
+    if(bestMove != 0) {
+        /** first check if this move exists (this can go wrong in case of transposition table collisions */
+        for (unsigned int move : movelist.captureMove) {
+            if ((uint64_t) move == bestMove) {
+                legal = true;
+                break;
+            }
+        }
+        for (unsigned int move : movelist.move) {
+            if ((uint64_t) move == bestMove) {
+                legal = true;
+                break;
+            }
+        }
+        if(!legal){
+            printf("collision handled\n");
+        }
+    }
+
+
+    if(legal){
         stats->totalNodes += 1;
         position.doMove(bestMove);
 
