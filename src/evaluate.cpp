@@ -48,8 +48,14 @@ Results Evaluate::StartSearch(){
         auto t2 = std::chrono::high_resolution_clock::now();
         int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
         printinformation(milliseconds, score, line, stats, iterativeDepth);
+
+        //* TODO: make this a proper setting */
         if(milliseconds > 2000){
-//        if(iterativeDepth > 10){
+            break;
+        }
+
+        if(abs(score) >= 1000000) {
+            // this indicates that mate is found
             break;
         }
     }
