@@ -7,6 +7,10 @@
 
 
 #include <chrono>
+#include <atomic>
+#include "position.h"
+
+extern std::atomic_bool exitFlag;
 
 class Evaluate {
 

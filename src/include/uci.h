@@ -2,7 +2,11 @@
 #define UCI_H
 
 #include <vector>
+#include <atomic>
+#include <chrono>
 #include "definitions.h"
+
+
 
 namespace UCI {
 
@@ -13,6 +17,8 @@ namespace UCI {
     void perft();
 
     void go(string fen, vector<string> moves, definitions::Settings settings, definitions::Results &results);
+
+    void timer();
 }// namespace UCI
 
 

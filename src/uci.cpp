@@ -10,10 +10,10 @@
 #include <atomic>
 #include "evaluate.h"
 #include "transpositionTable.h"
+#include "exitTimer.h"
 
 
 void UCI::start() {
-
     // output standard info
     std::cout << "id name Isar Engine\n";
     std::cout << "id author Isar Meijer\n";
@@ -26,6 +26,8 @@ void UCI::start() {
 
     // wait for the isready command (ignore options for now)
     std::string input;
+
+
     while(true) {
         std::getline(std::cin, input);
 
@@ -70,8 +72,10 @@ void UCI::mainLoop(){
     std::vector<string> moves;
 
     std::thread evaluation;
+    std::thread exitTimer;
 
     bool threadStarted = false;
+
 
     Results results;
     while(true){
@@ -90,7 +94,9 @@ void UCI::mainLoop(){
 
         if(input == "stop"){
             if(threadStarted){
+                exitFlag.store(true);
                 evaluation.join();
+                exitTimer.join();
                 threadStarted = false;
             }
             // stop the analysis thread
@@ -142,6 +148,7 @@ void UCI::mainLoop(){
             settings.depth = 12;
             if(threadStarted){
                 evaluation.join();
+                exitTimer.join();
             }
 
             // only now check if TT is initialized
@@ -150,13 +157,19 @@ void UCI::mainLoop(){
             }
 
             threadStarted = true;
+
+            exitTimer = std::thread(UCI::timer);
             evaluation = std::thread{UCI::go, fen, moves, settings, std::ref(results)};
         }
     }
     // wait for the evaluation thread to finish so the program can exit safely
     evaluation.join();
+    exitTimer.join();
 }
 
+void UCI::timer(){
+    timerLoop(10000);
+}
 
 void UCI::go(std::string fen, std::vector<std::string> moves, Settings settings, Results &results) {
     Evaluate evaluate = Evaluate(fen, moves, settings);
@@ -164,4 +177,5 @@ void UCI::go(std::string fen, std::vector<std::string> moves, Settings settings,
     std::cout << "bestmove " << results.bestMove << "\n";
     std::cout.flush();
 }
+
 

@@ -13,7 +13,9 @@
 #include "useful.h"
 #include "transpositionTable.h"
 #include <algorithm>
+#include "uci.h"
 
+atomic_bool exitFlag(false);
 
 Evaluate::Evaluate(string fen, vector<string> moves, Settings settings) {
     this->position = Position(fen);
@@ -43,21 +45,23 @@ Results Evaluate::StartSearch(){
         // add min+1 and max-1 because otherwise overflow occurs when inverting
         score = AlphaBeta(iterativeDepth, std::numeric_limits<int>::min() + 1, std::numeric_limits<int>::max() - 1, &line,
                           &stats, previousBestLine);
+        /** if the exitFlag is set, it exited the evaluation prematurely, so take the previous best line */
+        if(exitFlag.load()){
+            line = previousBestLine;
+            break;
+        }
         previousBestLine = line;
 
         auto t2 = std::chrono::high_resolution_clock::now();
         int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
         printinformation(milliseconds, score, line, stats, iterativeDepth);
 
-        //* TODO: make this a proper setting */
-        if(milliseconds > 2000){
-            break;
-        }
-
         if(abs(score) >= 1000000) {
             // this indicates that mate is found
             break;
         }
+
+
     }
     results.bestMove = moveToStrNotation(line.principalVariation[0]);
     return results;
@@ -68,6 +72,10 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
      * This has become quite ugly with a lot of repetition
      */
     int alphaStart = alpha; // to be able to check if alpha has increased with this position (for tr. table)
+
+    if(exitFlag.load()){
+        return 0;
+    }
 
     LINE line;
     if(depthLeft == 0){
@@ -306,6 +314,10 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
 }
 
 int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
+    if(exitFlag.load()){
+        return 0;
+    }
+
     // define stand_pat (adapted from chessprogramming wiki quiescence search)
     int stand_pat = position.getEvaluation();
 

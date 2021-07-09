@@ -17,6 +17,7 @@ add_executable(engine
         src/position.cpp
         src/uci.cpp
         src/include/useful.h
+        src/exitTimer.cpp
         #magic-bits
         magic-bits/src/slider_attacks.h
         magic-bits/src/slider_attacks.cpp src/tests.cpp src/include/tests.h src/evaluate.cpp src/include/evaluate.h src/transpositionTable.cpp src/include/transpositionTable.h src/include/lookupTables.h)
