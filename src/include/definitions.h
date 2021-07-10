@@ -12,6 +12,10 @@ namespace definitions {
         PAWNS, KNIGHTS, BISHOPS, ROOKS, QUEENS, KING, PIECES, EN_PASSANT_SQUARES
     };
 
+    typedef enum {
+        pawn, knight, bishop, rook, queen, king
+    }Pieces;
+
     enum turn {
         BLACK, WHITE
     };
@@ -141,10 +145,8 @@ namespace definitions {
 
 
     struct moveList {
-        unsigned move[218] = {};
+        pair<unsigned, int> moves[512] = {};
         unsigned moveLength = 0;
-        unsigned captureMove[218] = {};
-        unsigned captureMoveLength = 0;
     };
 
 
@@ -162,7 +164,6 @@ namespace definitions {
     struct perftCounts {
         uint64_t total = 0;
         uint64_t normal = 0;
-        uint64_t captures = 0;
     };
 
     struct Settings {

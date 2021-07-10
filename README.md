@@ -43,4 +43,4 @@ The engine uses UCI protocol, so a GUI like Arena can be used to load the engine
 * ~~Implement Alpha Beta pruning~~
 * ~~Implement Iterative Deepening using a transposition table~~
 * Further improve the evaluation function
-* Improve move ordering
+* Improve moves ordering

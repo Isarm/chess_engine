@@ -167,7 +167,7 @@ Position::Position(string FEN) {
         this->turn = BLACK;
     } // turn gets initialized as white's turn by default
 
-    //move on to castling rights
+    //moves on to castling rights
     ++i;
 
     while (FEN.at(++i) != ' ') {
@@ -203,7 +203,7 @@ Position::Position(string FEN) {
         while (FEN.at(++i) != ' ') {
             halfMove50[hmi] = FEN.at(i);
         }
-        // used to check 50 move rule
+        // used to check 50 moves rule
         this->halfMoveNumber50 = stoi(halfMove50);
 
         char fullMove[5];
@@ -333,6 +333,7 @@ void Position::GenerateMoves(moveList &movelist) {
     GenerateKnightMoves(movelist);
     GenerateSliderMoves(movelist);
     GenerateKingMoves(movelist);
+
 }
 
 
@@ -357,7 +358,7 @@ void Position::GeneratePawnMoves(moveList &movelist) {
             currentPawnMoves = pieceBB >> N;
             currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // make sure destination square is empty
 
-            if(currentPawnMoves && is2ndRank(pieceBB)){ //check for double pawn move, if single pawn move exists and pawn is on 2nd rank
+            if(currentPawnMoves && is2ndRank(pieceBB)){ //check for double pawn moves, if single pawn moves exists and pawn is on 2nd rank
                 currentPawnMoves |= pieceBB >> NN;
                 currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // again make sure destination square is empty
             }
@@ -368,7 +369,7 @@ void Position::GeneratePawnMoves(moveList &movelist) {
             enPassantMove = currentPawnCaptureMoves & bitboards[BLACK][EN_PASSANT_SQUARES];
             currentPawnCaptureMoves &= bitboards[BLACK][PIECES];
 
-            // check if the pawn is on the 7th rank, meaning that any move is a promotion move
+            // check if the pawn is on the 7th rank, meaning that any moves is a promotion moves
             if(is7thRank(pieceBB)){ //
                 promotionMoveFlag = true;
             }
@@ -379,7 +380,7 @@ void Position::GeneratePawnMoves(moveList &movelist) {
             currentPawnMoves = pieceBB << S;
             currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // make sure destination square is empty
 
-            if(currentPawnMoves && is7thRank(pieceBB)){ //check for double pawn move, if single pawn move exists and pawn is on 7th rank
+            if(currentPawnMoves && is7thRank(pieceBB)){ //check for double pawn moves, if single pawn moves exists and pawn is on 7th rank
                 currentPawnMoves |= pieceBB << SS;
                 currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // again make sure destination square is empty
             }
@@ -390,7 +391,7 @@ void Position::GeneratePawnMoves(moveList &movelist) {
             enPassantMove = currentPawnCaptureMoves & bitboards[WHITE][EN_PASSANT_SQUARES];
             currentPawnCaptureMoves &= bitboards[WHITE][PIECES];
 
-            // check if the pawn is on the 2nd rank, meaning that any move is a promotion move
+            // check if the pawn is on the 2nd rank, meaning that any moves is a promotion moves
             if(is2ndRank(pieceBB)){ //
                 promotionMoveFlag = true;
             }
@@ -398,11 +399,11 @@ void Position::GeneratePawnMoves(moveList &movelist) {
 
         // en passant moves
         if(enPassantMove){
-            bitboardsToLegalMovelist(movelist, pieceBB, 0, enPassantMove, false, true);
+            bitboardsToLegalMovelist(movelist, pieceBB, 0, enPassantMove, pawn, false, true);
         }
 
         // update movelist
-        bitboardsToLegalMovelist(movelist, pieceBB, currentPawnMoves, currentPawnCaptureMoves, false, false, promotionMoveFlag);
+        bitboardsToLegalMovelist(movelist, pieceBB, currentPawnMoves, currentPawnCaptureMoves, pawn,false, false, promotionMoveFlag);
     }
 }
 
@@ -438,14 +439,14 @@ void Position::GenerateKnightMoves(moveList &movelist) {
         // remove capturemoves from the normal moves bitboard
         currentKnightMoves  &= ~currentKnightCaptures;
 
-        bitboardsToLegalMovelist(movelist, pieceBB, currentKnightMoves, currentKnightCaptures);
-
+        bitboardsToLegalMovelist(movelist, pieceBB, currentKnightMoves, currentKnightCaptures, knight);
     }
 }
 
 
 
 void Position::GenerateSliderMoves(moveList &movelist){
+    int score = 0;
 
     unsigned pieceIndex;
     uint64_t pieceBB, currentPieceMoves, currentPieceCaptures;
@@ -459,16 +460,21 @@ void Position::GenerateSliderMoves(moveList &movelist){
 
             currentPiece &= ~pieceBB; // remove single piece from current pieceBB
 
+            Pieces piece;
+
             // get slider attacks
             switch (currentSlider) {
                 case BISHOPS:
                     currentPieceMoves = sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], int(pieceIndex));
+                    piece = bishop;
                     break;
                 case ROOKS:
                     currentPieceMoves = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], int(pieceIndex));
+                    piece = rook;
                     break;
                 case QUEENS:
                     currentPieceMoves = sliderAttacks.QueenAttacks(helpBitboards[OCCUPIED_SQUARES], int(pieceIndex));
+                    piece = queen;
                     break;
                 default:
                     currentPieceMoves = 0;
@@ -482,7 +488,7 @@ void Position::GenerateSliderMoves(moveList &movelist){
             currentPieceCaptures = currentPieceMoves & bitboards[!this->turn][PIECES];
             currentPieceMoves &= ~currentPieceCaptures;
 
-            bitboardsToLegalMovelist(movelist, pieceBB, currentPieceMoves, currentPieceCaptures);
+            bitboardsToLegalMovelist(movelist, pieceBB, currentPieceMoves, currentPieceCaptures, piece);
         }
     }
 }
@@ -496,7 +502,7 @@ void Position::GenerateKingMoves(moveList &movelist){
     uint64_t kingCaptureMoves = kingMoves & bitboards[!this->turn][PIECES];
     kingMoves &= ~kingCaptureMoves;
 
-    bitboardsToLegalMovelist(movelist, king, kingMoves, kingCaptureMoves, true);
+    bitboardsToLegalMovelist(movelist, king, kingMoves, kingCaptureMoves, definitions::king, true);
 
 }
 
@@ -522,7 +528,7 @@ void Position::GenerateCastlingMoves(moveList &movelist) {
 }
 
 /*
- * Checks legality of castling move and puts into movelist if legal
+ * Checks legality of castling moves and puts into movelist if legal
  */
 void Position::CastlingToMovelist(moveList &movelist, unsigned castlingType, uint64_t empty, uint64_t nonattacked){
 
@@ -540,8 +546,8 @@ void Position::CastlingToMovelist(moveList &movelist, unsigned castlingType, uin
         }
         move = CASTLING_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
         move |= castlingType << ORIGIN_SQUARE_SHIFT; // put castling type into origin square bits as they are not used
-        movelist.move[movelist.moveLength++] = move;
-
+        movelist.moves[movelist.moveLength].second = 28; // score of castling move
+        movelist.moves[movelist.moveLength++].first = move;
     }
 }
 
@@ -623,30 +629,57 @@ bool Position::squareAttacked(uint64_t square, bool colour){
 
 }
 
-/* This function converts a origin bitboard and destinations bitboard into a movelist (appends to the variable movelist).
+/** This function converts a origin bitboard and destinations bitboard into a movelist (appends to the variable movelist).
  * The function assumes the moves are pseudo legal, and performs a legality check to make sure that the king is not
- * left in check after the move has been made.
+ * left in check after the moves has been made.
  *
  * For storing moves the following approach is used: (similar to stockfish)
  * bit 0-5 === origin square;
  * bit 6-11 === destination square;
- * bit 12-13 === promotion piece type (N, B, R, Q)
- * bit 14-15 === special move flag, promotion, en passant, castling
- * bit 16-19 === score given to the move used in move-ordering
+ * bit 12-13 === promotion piece piece (N, B, R, Q)
+ * bit 14-15 === special moves flag, promotion, en passant, castling
+ * bit 16    === capturemoveflag
  *
  */
 
-void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations, bool kingMoveFlag, bool enPassantMoveFlag, bool promotionMoveFlag) {
+void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations, Pieces piece, bool kingMoveFlag, bool enPassantMoveFlag, bool promotionMoveFlag) {
+
     unsigned originInt, destinationInt, move;
     uint64_t destinationBB;
     originInt = debruijnSerialization(origin);
+
+    /** TODO: put this in a proper place */
+    int score = 0;
+    switch (piece) {
+        case pawn:
+            score = 30;
+            break;
+        case knight:
+            score = 25;
+            break;
+        case bishop:
+            score = 23;
+            break;
+        case rook:
+            score = 22;
+            break;
+        case queen:
+            score = 20;
+            break;
+        case king:
+            score = 0;
+            break;
+    }
 
     // check if the piece is pinned
     bool pinnedFlag = false;
     if(origin & helpBitboards[PINNED_PIECES]) pinnedFlag = true;
 
-    // combine destinations and loop over them (check can be made later to see if it is a capture move)
+    // combine destinations and loop over them (check can be made later to see if it is a capture moves)
     uint64_t allDestinations = destinations | captureDestinations;
+
+    int currentMobility = popCount(allDestinations);
+
     while(allDestinations != 0){
         // get integer of destination position
         destinationInt = debruijnSerialization(allDestinations);
@@ -654,7 +687,9 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
 
         allDestinations &= ~destinationBB;
 
-        // generate the move
+        int mobilityBonus = calculateMobilityBonus(currentMobility, destinationInt, piece);
+
+        // generate the moves
         move = originInt << ORIGIN_SQUARE_SHIFT;
         move |= destinationInt << DESTINATION_SQUARE_SHIFT;
 
@@ -662,20 +697,20 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
             move |= EN_PASSANT_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
         }
 
-        // check if piece is pinned and check legality of move.
+        // check if piece is pinned and check legality of moves.
         if(pinnedFlag){
             unsigned kingInt = debruijnSerialization(bitboards[this->turn][KING]);
-            // if the piece does not move in the same line as the king, the move is illegal, thus continue with the next move
+            // if the piece does not moves in the same line as the king, the moves is illegal, thus continue with the next moves
             if(rayDirectionLookup(kingInt, originInt) != rayDirectionLookup(originInt, destinationInt)) {
                 continue;
             }
         }
 
-        // for these types of moves, simply checking if the piece is pinned does not work, so the move has to be done and
+        // for these types of moves, simply checking if the piece is pinned does not work, so the moves has to be done and
         // subsequently checked if the king is not in check.
         if(isIncheck || enPassantMoveFlag || kingMoveFlag){
             doMove(move);
-            // check if the king is attacked after this move
+            // check if the king is attacked after this moves
             if(squareAttacked(bitboards[!this->turn][KING], !this->turn)){
                 undoMove();
                 continue;
@@ -689,20 +724,28 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
             for(int promotionType = 0; promotionType < 4; promotionType++){
                 move = baseMove | promotionType << PROMOTION_TYPE_SHIFT;
                 if(destinationBB & captureDestinations){
-                    movelist.captureMove[movelist.captureMoveLength++] = move;
+                    move |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
+                    movelist.moves[movelist.moveLength].second = score + 250;
+                    movelist.moves[movelist.moveLength++].first = move;
                 }
                 else {
-                    movelist.move[movelist.moveLength++] = move;
+                    movelist.moves[movelist.moveLength].second = score + 150;
+                    movelist.moves[movelist.moveLength++].first = move;
                 }
 
             }
         }
         else {
             uint64_t captureBB = destinationBB & captureDestinations;
-            if (captureBB) { // capture move
-                movelist.captureMove[movelist.captureMoveLength++] = move;
+            if (captureBB && !enPassantMoveFlag) { // capture moves
+                move |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
+                movelist.moves[movelist.moveLength].second = score
+                        + 4 * getPieceValue(!this->turn, captureBB)
+                        - getPieceValue(this->turn, origin);
+                movelist.moves[movelist.moveLength++].first = move;
             } else {
-                movelist.move[movelist.moveLength++] = move;
+                movelist.moves[movelist.moveLength].second = score + mobilityBonus;
+                movelist.moves[movelist.moveLength++].first = move;
             }
         }
     }
@@ -711,8 +754,8 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
 
 /*
  * This method checks which piece occupies originInt, and moves that piece to destinationInt. It does NOT check captures.
- * It DOES set the en passant bit in case of double pawn move
- * It also sets removes castling rights in case of king move
+ * It DOES set the en passant bit in case of double pawn moves
+ * It also sets removes castling rights in case of king moves
  * @param originInt origin bitboard
  * @param destinationInt destination bitboard
  * @param colour specify which colour moves (speeds up the search for the piece)
@@ -732,7 +775,7 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
         cout << "DANGER IN POSITION::PIECETOMOVE";
     }
 
-    // TODO: move rook castling right removal to here, using if(rook == originBB | destinationBB construction)
+    // TODO: moves rook castling right removal to here, using if(rook == originBB | destinationBB construction)
 
     // remove castling rights if king is moved and update hash
     // note that in case of moving the rook, the removal of castling rights is handled in the doMove function.
@@ -748,7 +791,7 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
         }
     }
 
-    // set en passant square in case of double pawn move and update positionHashes[halfMoveNumber]
+    // set en passant square in case of double pawn moves and update positionHashes[halfMoveNumber]
     if (pieceToMove == PAWNS) {
         if (colour == WHITE) {
             if ((originBB >> NN) & destinationBB) {
@@ -774,29 +817,28 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
     addPiece(pieceToMove, destinationBB, colour, destinationint);
 }
 
-// doMove does the move and stores move information in the previesMoves array
+// doMove does the moves and stores moves information in the previesMoves array
 // other than the 15 bits used in the bitboardsToMoveList convention the following bits are used:
-// bit 16 capturemoveflag
 // bit 17-19 captured piece
 // bit 20-25 captured piece index
 // bit 26-31 en passant square index
-// bit 32-35 castling rights before this move
-// bit 36-42 halfmove number for the 50 move rule (gets reset in case of pawn or capture move)
-// bit 43-48 halfmoves since the last time an irreversible move occured
+// bit 32-35 castling rights before this moves
+// bit 36-42 halfmove number for the 50 moves rule (gets reset in case of pawn or capture moves)
+// bit 43-48 halfmoves since the last time an irreversible moves occured
 // in definitions.h the enum can be found for the shifts and the masks
 
 void Position::doMove(unsigned move){
     unsigned originInt, destinationInt, enPassantInt;
     uint64_t originBB, destinationBB;
 
-    // as the previousmoves array uses uint64_t to store a move. So moveL(arge) is the variable for previousmoves list
+    // as the previousmoves array uses uint64_t to store a moves. So moveL(arge) is the variable for previousmoves list
     uint64_t moveL = move;
 
-    // store halfmovenumbers for 50 move repetition rule
+    // store halfmovenumbers for 50 moves repetition rule
     uint64_t temp = halfMoveNumber50;
     moveL |= temp << HALFMOVENUMBER_BEFORE_MOVE_SHIFT;
 
-    // store halfmovenumbers since the last irreversible move (for 3fold repetion check)
+    // store halfmovenumbers since the last irreversible moves (for 3fold repetion check)
     temp = halfMovesSinceIrrepr;
     moveL |= temp << HALFMOVENUMBER_SINCE_IRREVERSIBLE_MOVE_SHIFT;
 
@@ -816,10 +858,10 @@ void Position::doMove(unsigned move){
     originBB = 1uLL << originInt;
     destinationBB = 1uLL << destinationInt;
 
-    // store the castling rights of before the move
+    // store the castling rights of before the moves
     moveL |= uint64_t(castlingRights) << CASTLING_RIGHTS_BEFORE_MOVE_SHIFT;
 
-    // used for the promotion special move case
+    // used for the promotion special moves case
     unsigned promotionType;
     unsigned promotionIndices[] = {KNIGHTS, BISHOPS, ROOKS, QUEENS};
 
@@ -827,7 +869,7 @@ void Position::doMove(unsigned move){
     switch((SPECIAL_MOVE_FLAG_MASK & moveL) >> SPECIAL_MOVE_FLAG_SHIFT){
         case EN_PASSANT_FLAG:
             halfMovesSinceIrrepr = 0; // reset for 3fold repetition
-            halfMoveNumber50 = 0; // reset for 50 move rule
+            halfMoveNumber50 = 0; // reset for 50 moves rule
             if(this->turn == WHITE){ // remove pawn south of destination square, so left shift
                 unsigned EPcapture = debruijnSerialization(destinationBB << S);
                 removePiece(PAWNS, destinationBB << S, BLACK, EPcapture);
@@ -860,7 +902,7 @@ void Position::doMove(unsigned move){
             break;
         case PROMOTION_FLAG:
             halfMovesSinceIrrepr = 0; // reset for 3fold repetition
-            halfMoveNumber50 = 0; // reset for 50 move rule
+            halfMoveNumber50 = 0; // reset for 50 moves rule
 
             // remove the pawn
             removePiece(PAWNS, originBB, this->turn, originInt);
@@ -877,7 +919,7 @@ void Position::doMove(unsigned move){
                 if(capturedPiece) {
                     removePiece(i, capturedPiece, !this->turn, destinationInt);
 
-                    // store the capture move specifications
+                    // store the capture moves specifications
                     moveL |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
                     moveL |= i << CAPTURED_PIECE_TYPE_SHIFT;
                     moveL |= destinationInt << CAPTURED_PIECE_INDEX_SHIFT;
@@ -894,11 +936,11 @@ void Position::doMove(unsigned move){
                 capturedPiece = bitboards[!this->turn][i] & destinationBB;
                 if(capturedPiece) {
                     halfMovesSinceIrrepr = 0; // reset for 3fold repetition
-                    halfMoveNumber50 = 0; // reset for 50 move rule
+                    halfMoveNumber50 = 0; // reset for 50 moves rule
 
                     removePiece(i, capturedPiece, !this->turn, destinationInt);
 
-                    // store the capture move specifications
+                    // store the capture moves specifications
                     moveL |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
                     moveL |= i << CAPTURED_PIECE_TYPE_SHIFT;
                     moveL |= debruijnSerialization(capturedPiece) << CAPTURED_PIECE_INDEX_SHIFT;
@@ -1001,7 +1043,7 @@ inline void Position::addPiece(unsigned pieceType, uint64_t pieceBB, bool colour
 
 
 void Position::doMove(const string& move) {
-    // do a move where the move is formatted as for example e2e4, with promotion type appended if necessary.
+    // do a moves where the moves is formatted as for example e2e4, with promotion type appended if necessary.
     unsigned moveUnsigned = strToMoveNotation(move);
 
     // in case of castling
@@ -1030,7 +1072,7 @@ void Position::doMove(const string& move) {
         }
     }
 
-    // check for en passant move (as in case of do_move from external source this is not known)
+    // check for en passant moves (as in case of do_move from external source this is not known)
     unsigned destinationInt = (moveUnsigned & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
     if(bitboards[!this->turn][EN_PASSANT_SQUARES] & (1ull << destinationInt )){
         moveUnsigned |= EN_PASSANT_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
@@ -1076,22 +1118,22 @@ inline void Position::undoCastlingMove(bool side) {
     if (side) { // kingside
         bitboards[!this->turn][ROOKS] |= (1uLL << (7u + shift)); // add rook
         bitboards[!this->turn][ROOKS] &= ~(1uLL << (5u + shift)); // remove rook
-        bitboards[!this->turn][KING] = bitboards[!this->turn][KING] >> 2u; // move king
+        bitboards[!this->turn][KING] = bitboards[!this->turn][KING] >> 2u; // moves king
     } else { // queenside
         bitboards[!this->turn][ROOKS] |= (1uLL << (0u + shift)); // add rook
         bitboards[!this->turn][ROOKS] &= ~(1uLL << (3u + shift)); // remove rook
-        bitboards[!this->turn][KING] = bitboards[!this->turn][KING] << 2u; // move king
+        bitboards[!this->turn][KING] = bitboards[!this->turn][KING] << 2u; // moves king
     }
 }
 
-// undo the last made move
+// undo the last made moves
 void Position::undoMove() {
     // hash does not have to be updated manually, as it is stored for previous positions. But, as the
     // movePiece function changes the current hash, the final hash update has to be done at the end of this function
     // ______
     unsigned originInt, destinationInt, enPassantInt;
 
-    // get the move
+    // get the moves
     uint64_t move = this->previousMoves[this->halfMoveNumber - 1];
     // revert back to 0
     this->previousMoves[this->halfMoveNumber - 1] = 0;
@@ -1103,19 +1145,19 @@ void Position::undoMove() {
     uint64_t destinationBB = 1uLL << destinationInt;
 
 
-    // used for the promotion special move case
+    // used for the promotion special moves case
     unsigned promotionType;
     unsigned promotionIndices[] = {KNIGHTS, BISHOPS, ROOKS, QUEENS};
 
     switch((SPECIAL_MOVE_FLAG_MASK & move) >> SPECIAL_MOVE_FLAG_SHIFT){
         case EN_PASSANT_FLAG:
-            if(this->turn == BLACK){ // add pawn south of destination square, so left shift (as we undo whites move if it is blacks turn)
+            if(this->turn == BLACK){ // add pawn south of destination square, so left shift (as we undo whites moves if it is blacks turn)
                 bitboards[BLACK][PAWNS] |= (destinationBB << S);
             }
             else{
                 bitboards[WHITE][PAWNS] |= (destinationBB >> N);
             }
-            // move the piece from destination to origin (so a possible wrong order warning is expected)
+            // moves the piece from destination to origin (so a possible wrong order warning is expected)
             MovePiece(destinationBB, originBB, !this->turn);
             break;
 
@@ -1142,7 +1184,7 @@ void Position::undoMove() {
             }
             break;
         default:
-            // move the piece from destination to origin (so a possible wrong order warning is expected)
+            // moves the piece from destination to origin (so a possible wrong order warning is expected)
             MovePiece(destinationBB, originBB, !this->turn);
 
             // put the captured piece back
@@ -1166,10 +1208,10 @@ void Position::undoMove() {
     // restore castling rights
     castlingRights = (move & CASTLING_RIGHTS_BEFORE_MOVE_MASK) >> CASTLING_RIGHTS_BEFORE_MOVE_SHIFT;
 
-    // restore halfmove number for 50 move rule;
+    // restore halfmove number for 50 moves rule;
     halfMoveNumber50 = (move & HALFMOVENUMBER_BEFORE_MOVE_MASK) >> HALFMOVENUMBER_BEFORE_MOVE_SHIFT;
 
-    // restore halfmove halfmoves since last time irreversible move (for 3fold repetion checks)
+    // restore halfmove halfmoves since last time irreversible moves (for 3fold repetion checks)
     halfMovesSinceIrrepr = (move & HALFMOVENUMBER_SINCE_IRREVERSIBLE_MOVE_MASK) >> HALFMOVENUMBER_SINCE_IRREVERSIBLE_MOVE_SHIFT;
 
     halfMoveNumber--;
@@ -1198,7 +1240,7 @@ perftCounts Position::PERFT(int depth, bool tree){
     GenerateMoves(movelist);
 
     if(depth == 0){
-        if(Evaluate() != getEvaluation(movelist)){
+        if(Evaluate() != getEvaluation()){
             cout << "eval error";
         }
         perftCounts pfcount0 = {1};
@@ -1208,19 +1250,14 @@ perftCounts Position::PERFT(int depth, bool tree){
     if(depth == 1){
         Evaluate();
 
-        captureMoves = movelist.captureMoveLength;
         normalMoves = movelist.moveLength;
 
-        pfcount.captures = captureMoves;
         pfcount.normal = normalMoves;
-        pfcount.total = normalMoves + captureMoves;
+        pfcount.total = normalMoves;
 
         if(tree){
             for(int i = 0; i < movelist.moveLength; i++){
-                cout << moveToStrNotation(movelist.move[i]) << " " << 1 << "\n";
-            }
-            for(int i = 0; i < movelist.captureMoveLength; i++){
-                cout << moveToStrNotation(movelist.captureMove[i]) << " " << 1 << "\n";
+                cout << moveToStrNotation(movelist.moves[i].first) << " " << 1 << "\n";
             }
         }
 
@@ -1229,24 +1266,11 @@ perftCounts Position::PERFT(int depth, bool tree){
     }
 
     for(int i = 0; i < movelist.moveLength; i++){
-        doMove(movelist.move[i]);
+        doMove(movelist.moves[i].first);
         pfcountTemp = PERFT(depth - 1, false);
         if(tree) {
-            cout << moveToStrNotation(movelist.move[i]) << " " << pfcountTemp.total << "\n";
+            cout << moveToStrNotation(movelist.moves[i].first) << " " << pfcountTemp.total << "\n";
         }
-        captureMoves += pfcountTemp.captures;
-        normalMoves += pfcountTemp.normal;
-        totalMoves += pfcountTemp.total;
-        undoMove();
-    }
-
-    for(int i = 0; i < movelist.captureMoveLength; i++){
-        doMove(movelist.captureMove[i]);
-        pfcountTemp = PERFT(depth - 1, false);
-        if(tree) {
-            cout << moveToStrNotation(movelist.captureMove[i]) << " " << pfcountTemp.total << "\n";
-        }
-        captureMoves += pfcountTemp.captures;
         normalMoves += pfcountTemp.normal;
         totalMoves += pfcountTemp.total;
         undoMove();
@@ -1254,7 +1278,6 @@ perftCounts Position::PERFT(int depth, bool tree){
 
     pfcount.total = totalMoves;
     pfcount.normal = normalMoves;
-    pfcount.captures = captureMoves;
 
     return pfcount;
 }
@@ -1311,8 +1334,8 @@ int Position::Evaluate() {
     }
 }
 
-int Position::getEvaluation(moveList &movelist){
-    int mobilityBonus = (int) (movelist.moveLength + movelist.captureMoveLength) - 30;
+int Position::getEvaluation(){
+    int mobilityBonus = calculateMobility(this->turn) - calculateMobility(!this->turn);
 
     if(this->turn){
         return positionEvaluations[halfMoveNumber] + mobilityBonus;
@@ -1328,7 +1351,7 @@ bool Position::isDraw() {
     }
 
     // check three fold repetition rule
-    if(halfMovesSinceIrrepr >= 8){
+    if(halfMovesSinceIrrepr >= 6){
         int threefoldRepetitionCount = 0;
         for(int halfmove = 2; halfmove <= halfMovesSinceIrrepr; halfmove += 2){
             // check same colour positions (so 2 halfmoves per check).
@@ -1341,4 +1364,107 @@ bool Position::isDraw() {
         }
     }
     return false;
+}
+
+int Position::getPieceValue(bool side, uint64_t pieceBB) {
+    int i = 0;
+    for(uint64_t &bb : bitboards[side]){
+        if(bb & pieceBB){
+            return PIECEWEIGHTS[i];
+        }
+        i++;
+    }
+    printf("PIECE NOT FOUND");
+    return 0;
+}
+
+
+
+#include <cstdlib>     /* qsort */
+
+int compare(const pair<int, unsigned> & t1, const pair<int, unsigned> & t2){
+    return (t1.second <= t2.second);
+}
+
+void Position::sortMoves(moveList &list) {
+    qsort(list.moves, list.moveLength, sizeof(pair<int, unsigned>), reinterpret_cast<__compar_fn_t>(compare));
+}
+
+int Position::calculateMobilityBonus(int currentMobility, unsigned destinationInt, Pieces piece) {
+    uint64_t attacks;
+    int mobilityBonus;
+    switch (piece) {
+        case definitions::bishop:
+            attacks = sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], destinationInt);
+            mobilityBonus = popCount(attacks)/1.2;
+            currentMobility /= 1.2;
+            break;
+        case definitions::rook:
+            attacks = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], destinationInt);
+            mobilityBonus = popCount(attacks)/1.5;
+            currentMobility /= 1.5;
+            break;
+        case definitions::queen:
+            attacks = sliderAttacks.QueenAttacks(helpBitboards[OCCUPIED_SQUARES], destinationInt);
+            mobilityBonus = popCount(attacks)/3;
+            currentMobility /= 3;
+            break;
+        case definitions::knight:
+            attacks = knightAttacks(1ull << destinationInt);
+            mobilityBonus = popCount(attacks);
+            break;
+        default:
+            return 0;
+    }
+
+    return mobilityBonus - currentMobility;
+}
+
+int Position::popCount(uint64_t x) {
+    int count = 0;
+    while (x) {
+        count++;
+        x &= x - 1; // reset LS1B
+    }
+    return count;
+}
+
+int Position::calculateMobility(bool turn) {
+    unsigned mobility = 0;
+
+    int mobilityPieces[4] = {BISHOPS, KNIGHTS, ROOKS, QUEENS};
+    for(int &i : mobilityPieces){
+        uint64_t pieces = bitboards[turn][i];
+
+        unsigned pieceIndex;
+        uint64_t pieceBB;
+        while(pieces != 0){
+            /** get single pieces and remove from remaining pieces */
+            pieceIndex = debruijnSerialization(pieces);
+            pieceBB = 1uLL << pieceIndex;
+
+            pieces &= ~pieceBB;
+
+            uint64_t attacks;
+            switch(i){
+                case BISHOPS:
+                    attacks = sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], pieceIndex);
+                    mobility += popCount(attacks)/1.2;
+                    break;
+                case ROOKS:
+                    attacks = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], pieceIndex);
+                    mobility += popCount(attacks)/1.5;
+                    break;
+                case QUEENS:
+                    attacks = sliderAttacks.QueenAttacks(helpBitboards[OCCUPIED_SQUARES], pieceIndex);
+                    mobility += popCount(attacks)/3;
+                    break;
+                case KNIGHTS:
+                    attacks = knightAttacks(pieceBB);
+                    mobility += popCount(attacks);
+                    break;
+            }
+        }
+    }
+    return mobility;
 }

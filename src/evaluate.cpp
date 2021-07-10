@@ -144,6 +144,13 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
                     if(entry.score >= beta){
                         return beta;
                     }
+
+                    position.doMove(entry.bestMove);
+                    if(position.isDraw()){
+                        position.undoMove();
+                        break;
+                    }
+                    position.undoMove();
                     pline->principalVariation[0] = entry.bestMove;
                     pline->nmoves = 1;
                     return entry.score; // return the exact score of this position
@@ -163,8 +170,8 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
 
             }
         }
-        // if the depthLeft is not deep enough, or the bounds above are not strong enough, the best move can still be used
-        // to improve move ordering in the search below. Note that alpha nodes have no valid best move.
+        // if the depthLeft is not deep enough, or the bounds above are not strong enough, the best moves can still be used
+        // to improve moves ordering in the search below. Note that alpha nodes have no valid best moves.
         if(entry.typeOfNode != UPPER_BOUND_ALPHA) {
             bestMove = entry.bestMove;
         }
@@ -173,9 +180,10 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
     // generate list of moves
     moveList movelist;
     position.GenerateMoves(movelist);
+    Position::sortMoves(movelist);
 
     // check for stalemate or checkmate in case of no moves left:
-    if(movelist.moveLength + movelist.captureMoveLength == 0){
+    if(movelist.moveLength == 0){
         if(position.isIncheck){
             pline->nmoves = 0;
             // high score that cant be reached by evaluation function, thus indicating mate.
@@ -189,30 +197,22 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
     }
 
 
-    /** if there was a transposition found, first evaluate that move */
+    /** if there was a transposition found, first evaluate that moves */
     bool legal = false;
     if(bestMove != 0) {
-        /** first check if this move exists (this can go wrong in case of transposition table collisions */
-        for (unsigned int move : movelist.captureMove) {
-            if ((uint64_t) move == bestMove) {
-                legal = true;
-                break;
-            }
-        }
-        for (unsigned int move : movelist.move) {
-            if ((uint64_t) move == bestMove) {
+        /** first check if this moves exists (this can go wrong in case of transposition table collisions */
+        for (pair<unsigned, int> move : movelist.moves) {
+            if ((uint64_t) move.first == bestMove) {
                 legal = true;
                 break;
             }
         }
     }
-
-
     if(legal){
         stats->totalNodes += 1;
         position.doMove(bestMove);
 
-        //check if this move has lead to a draw (3fold rep/50move rule); as then the search can be stopped
+        //check if this moves has lead to a draw (3fold rep/50move rule); as then the search can be stopped
         int score;
         if(position.isDraw()){
             position.undoMove();
@@ -237,44 +237,15 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
     }
 
 
-    // next do the capture moves, as often the best move is a capture
-    for(int i = 0; i < movelist.captureMoveLength; i++){
-        if(movelist.captureMove[i] == bestMove || movelist.captureMove[i] == iterativeDeepeningMove){
-            continue; // as this has already been evaluated above
-        }
-        stats->totalNodes += 1;
-        position.doMove(movelist.captureMove[i]);
-
-        // no draw can occur after a capture move due to 3fold rep/50move rule
-        // so no need to check for that here
-
-        //  invert all values for other colour
-        int score = -AlphaBeta(depthLeft - 1, -beta, -alpha, &line, stats);
-        position.undoMove();
-
-        if(score >= beta){
-            stats->betaCutoffs += 1;
-            TT.addEntry(score, movelist.captureMove[i], depthLeft, LOWER_BOUND_BETA, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
-            return beta; // beta cutoff
-        }
-
-        if(score > alpha){ // principal variation found
-            alpha = score;
-            pline->principalVariation[0] = movelist.captureMove[i];
-            memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
-            pline->nmoves = line.nmoves + 1;
-        }
-    }
-
-    // then finally the normal moves
+    // then the normal moves
     for(int i = 0; i < movelist.moveLength; i++){
-        if(movelist.move[i] == bestMove || movelist.move[i] == iterativeDeepeningMove){
+        if(movelist.moves[i].first == bestMove || movelist.moves[i].first == iterativeDeepeningMove){
             continue; // as this has already been evaluated above
         }
         stats->totalNodes += 1;
-        position.doMove(movelist.move[i]);
+        position.doMove(movelist.moves[i].first);
 
-        //check if this move has lead to a draw (3fold rep/50move rule); as then the search can be stopped
+        //check if this moves has lead to a draw (3fold rep/50move rule); as then the search can be stopped
         int score;
         if(position.isDraw()){
             position.undoMove();
@@ -287,24 +258,24 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
 
         if(score >= beta){
             stats->betaCutoffs += 1;
-            TT.addEntry(score, movelist.move[i], depthLeft, LOWER_BOUND_BETA, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
+            TT.addEntry(score, movelist.moves[i].first, depthLeft, LOWER_BOUND_BETA, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
             return beta; // beta cutoff
         }
 
         if(score > alpha){ // principal variation found
             alpha = score;
-            pline->principalVariation[0] = movelist.move[i];
+            pline->principalVariation[0] = movelist.moves[i].first;
             memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
             pline->nmoves = line.nmoves + 1;
         }
     }
 
-    if(alpha > alphaStart) { // this means that the PV is an exact score move
+    if(alpha > alphaStart) { // this means that the PV is an exact score moves
         TT.addEntry(alpha, pline->principalVariation[0], depthLeft, EXACT_PV, position.positionHashes[position.halfMoveNumber],
                     position.halfMoveNumber);
     }
     else{
-        // for an alpha cutoff, there is no known best move so this is left as 0.
+        // for an alpha cutoff, there is no known best moves so this is left as 0.
         TT.addEntry(alpha, 0, depthLeft, UPPER_BOUND_ALPHA, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
     }
     return alpha;
@@ -315,11 +286,8 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
         return 0;
     }
 
-    moveList movelist;
-    position.GenerateMoves(movelist);
-
     // define stand_pat (adapted from chessprogramming wiki quiescence search)
-    int stand_pat = position.getEvaluation(movelist);
+    int stand_pat = position.getEvaluation();
 
     if(depth == 0){
         return stand_pat;
@@ -332,13 +300,17 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
         alpha = stand_pat; // raise alpha to establish lower bound on postion
     }
 
-
+    moveList movelist;
+    position.GenerateMoves(movelist);
 
     // go over all capture moves to avoid horizon effect on tactical moves.
-    for(int i = 0; i < movelist.captureMoveLength; i++){
+    for(int i = 0; i < movelist.moveLength; i++){
+        if(!(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK)){
+            continue;
+        }
         stats->quiescentNodes += 1;
         stats->totalNodes += 1;
-        position.doMove(movelist.captureMove[i]);
+        position.doMove(movelist.moves[i].first);
         int score = -Quiescence(-beta, -alpha, stats, depth-1);
         position.undoMove();
 

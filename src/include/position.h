@@ -59,7 +59,9 @@ public:
     bool isDraw();
     uint64_t calculateHash();
 
-    int getEvaluation(moveList &movelist);
+    int getEvaluation();
+
+    static void sortMoves(moveList &list);
 
 private:
 
@@ -67,7 +69,7 @@ private:
     void GenerateKnightMoves(moveList &movelist);
     void GenerateSliderMoves(moveList &movelist);
 
-    void bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations,
+    void bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations, Pieces piece,
                                   bool kingMoveFlag = false, bool enPassantMoveFlag = false, bool promotionMoveFlag = false); // flags
 
 
@@ -89,6 +91,14 @@ private:
     void removePiece(unsigned int pieceType, uint64_t pieceBB, bool colour, unsigned int pieceInt);
 
     void addPiece(unsigned int pieceType, uint64_t pieceBB, bool colour, unsigned int pieceInt);
+
+    int getPieceValue(bool side, uint64_t bb);
+
+    int calculateMobilityBonus(int currentMobility, unsigned destinationInt, Pieces piece);
+
+    static int popCount(uint64_t destinations);
+
+    int calculateMobility(bool turn);
 };
 
 #endif

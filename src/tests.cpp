@@ -41,7 +41,7 @@ void drawTest() {
     position.doMove("h4e1");
 }
 
-// function that keeps printing moves and waits for move as input, such that you can manually traverse the search tree
+// function that keeps printing moves and waits for moves as input, such that you can manually traverse the search tree
 [[noreturn]] void perftDebug(){
     Position position = Position("8/8/7k/1Pp5/8/8/1K6/8 w - c6 0 1");
 
@@ -134,7 +134,6 @@ void perft(int argc, char *argv[]){
         cout << "Perft String:" << posString << "\n";
         cout << "Nodes: " << pfcount.total << "\n";
         cout << "Normal: " << pfcount.normal << "\n";
-        cout << "Capture: " << pfcount.captures << "\n";
 
         int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
