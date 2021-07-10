@@ -205,9 +205,6 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
                 break;
             }
         }
-        if(!legal){
-            printf("collision handled\n");
-        }
     }
 
 
@@ -318,8 +315,11 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
         return 0;
     }
 
+    moveList movelist;
+    position.GenerateMoves(movelist);
+
     // define stand_pat (adapted from chessprogramming wiki quiescence search)
-    int stand_pat = position.getEvaluation();
+    int stand_pat = position.getEvaluation(movelist);
 
     if(depth == 0){
         return stand_pat;
@@ -332,8 +332,7 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
         alpha = stand_pat; // raise alpha to establish lower bound on postion
     }
 
-    moveList movelist;
-    position.GenerateMoves(movelist);
+
 
     // go over all capture moves to avoid horizon effect on tactical moves.
     for(int i = 0; i < movelist.captureMoveLength; i++){

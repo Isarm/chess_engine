@@ -1198,7 +1198,7 @@ perftCounts Position::PERFT(int depth, bool tree){
     GenerateMoves(movelist);
 
     if(depth == 0){
-        if(Evaluate() != getEvaluation()){
+        if(Evaluate() != getEvaluation(movelist)){
             cout << "eval error";
         }
         perftCounts pfcount0 = {1};
@@ -1311,12 +1311,14 @@ int Position::Evaluate() {
     }
 }
 
-int Position::getEvaluation(){
+int Position::getEvaluation(moveList &movelist){
+    int mobilityBonus = (int) (movelist.moveLength + movelist.captureMoveLength) - 30;
+
     if(this->turn){
-        return positionEvaluations[halfMoveNumber];
+        return positionEvaluations[halfMoveNumber] + mobilityBonus;
     }
     else{
-        return -positionEvaluations[halfMoveNumber];
+        return -positionEvaluations[halfMoveNumber] + mobilityBonus;
     }
 }
 

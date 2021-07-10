@@ -59,7 +59,7 @@ public:
     bool isDraw();
     uint64_t calculateHash();
 
-    int getEvaluation();
+    int getEvaluation(moveList &movelist);
 
 private:
 
