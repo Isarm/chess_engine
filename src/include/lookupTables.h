@@ -34,7 +34,7 @@ inline void zobristPieceTableInitialize(){
 }
 
 // lookup table for direction from square a to square b
-int rayDirectionsTable[64][64];
+static int rayDirectionsTable[64][64];
 
 inline void rayDirectionLookupInitialize() {
     for (int i = 0; i < 64; i++) {
@@ -52,7 +52,7 @@ inline void rayDirectionLookupInitialize() {
     }
 }
 
-inline int rayDirectionLookup(unsigned a, unsigned b) {
+inline int rayDirectionLookup(const unsigned a, const unsigned b) {
     return rayDirectionsTable[a][b];
 }
 #define ENGINE_ZOBRISTTABLES_H

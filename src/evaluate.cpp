@@ -171,7 +171,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
             }
         }
         // if the depthLeft is not deep enough, or the bounds above are not strong enough, the best moves can still be used
-        // to improve moves ordering in the search below. Note that alpha nodes have no valid best moves.
+        // to improve move ordering in the search below. Note that alpha nodes have no valid best moves.
         if(entry.typeOfNode != UPPER_BOUND_ALPHA) {
             bestMove = entry.bestMove;
         }
@@ -197,7 +197,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
     }
 
 
-    /** if there was a transposition found, first evaluate that moves */
+    /** if there was a transposition found, first evaluate that move */
     bool legal = false;
     if(bestMove != 0) {
         /** first check if this moves exists (this can go wrong in case of transposition table collisions */
