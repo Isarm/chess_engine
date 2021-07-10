@@ -142,6 +142,14 @@ void UCI::mainLoop(){
 
 
         if(input.substr(0, input.find(' ')) == "go"){
+            input.erase(0, input.find(' ') + 1);
+
+            int time = 10000;
+
+            if(input.substr(0, input.find(' ')) == "movetime"){
+                input.erase(0, input.find(' ') + 1);
+                time = stoi(input.substr(0, input.find(' ')));
+            }
 
             input.clear();
             Settings settings;
@@ -158,7 +166,7 @@ void UCI::mainLoop(){
 
             threadStarted = true;
 
-            exitTimer = std::thread(UCI::timer);
+            exitTimer = std::thread(UCI::timer, time);
             evaluation = std::thread{UCI::go, fen, moves, settings, std::ref(results)};
         }
     }
@@ -167,8 +175,8 @@ void UCI::mainLoop(){
     exitTimer.join();
 }
 
-void UCI::timer(){
-    timerLoop(10000);
+void UCI::timer(int ms){
+    timerLoop(ms);
 }
 
 void UCI::go(std::string fen, std::vector<std::string> moves, Settings settings, Results &results) {

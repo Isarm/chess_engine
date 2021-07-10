@@ -18,7 +18,7 @@ namespace UCI {
 
     void go(string fen, vector<string> moves, definitions::Settings settings, definitions::Results &results);
 
-    void timer();
+    void timer(int ms);
 }// namespace UCI
 
 

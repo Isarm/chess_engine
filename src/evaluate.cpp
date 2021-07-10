@@ -247,8 +247,10 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
 
         //check if this moves has lead to a draw (3fold rep/50move rule); as then the search can be stopped
         int score;
+        bool drawFlag = false;
         if(position.isDraw()){
             position.undoMove();
+            drawFlag = true;
             score = 0;
         }
         else {
@@ -258,7 +260,10 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
 
         if(score >= beta){
             stats->betaCutoffs += 1;
-            TT.addEntry(score, movelist.moves[i].first, depthLeft, LOWER_BOUND_BETA, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
+            if(!drawFlag) {
+                TT.addEntry(score, movelist.moves[i].first, depthLeft, LOWER_BOUND_BETA,
+                            position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
+            }
             return beta; // beta cutoff
         }
 
@@ -267,14 +272,14 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
             pline->principalVariation[0] = movelist.moves[i].first;
             memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
             pline->nmoves = line.nmoves + 1;
+            if(!drawFlag) {
+                TT.addEntry(score, movelist.moves[i].first, depthLeft, UPPER_BOUND_ALPHA,
+                            position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
+            }
         }
     }
 
-    if(alpha > alphaStart) { // this means that the PV is an exact score moves
-        TT.addEntry(alpha, pline->principalVariation[0], depthLeft, EXACT_PV, position.positionHashes[position.halfMoveNumber],
-                    position.halfMoveNumber);
-    }
-    else{
+    if(alpha == alphaStart){
         // for an alpha cutoff, there is no known best moves so this is left as 0.
         TT.addEntry(alpha, 0, depthLeft, UPPER_BOUND_ALPHA, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
     }
