@@ -152,7 +152,7 @@ const int PSTs[2][6][64] = {
 }
 };
 
-constexpr int INVERT[64] = {
+const int INVERT[64] = {
         56, 57, 58, 59, 60, 61, 62, 63,
         48, 49, 50, 51, 52, 53, 54, 55,
         40, 41, 42, 43, 44, 45, 46, 47,
@@ -681,7 +681,7 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
     int score = 0;
     switch (piece) {
         case pawn:
-            score = 30;
+            score = 24;
             break;
         case knight:
             score = 25;
@@ -1367,10 +1367,10 @@ int Position::getEvaluation(){
     int mobilityBonus = calculateMobility(this->turn) - calculateMobility(!this->turn);
 
     if(this->turn){
-        return positionEvaluations[halfMoveNumber] + mobilityBonus;
+        return positionEvaluations[halfMoveNumber] + mobilityBonus + 20;
     }
     else{
-        return -positionEvaluations[halfMoveNumber] + mobilityBonus;
+        return -positionEvaluations[halfMoveNumber] - mobilityBonus - 20;
     }
 }
 
@@ -1446,7 +1446,7 @@ int Position::calculateMobilityBonus(int currentMobility, unsigned destinationIn
             return 0;
     }
 
-    return mobilityBonus - currentMobility;
+    return (int) ((float)(mobilityBonus - currentMobility) * (1 - endGameFraction));
 }
 
 int Position::popCount(uint64_t x) {
@@ -1495,5 +1495,5 @@ int Position::calculateMobility(bool turn) {
             }
         }
     }
-    return mobility;
+    return (int)((float)(mobility * 5) *  (1 - endGameFraction));
 }

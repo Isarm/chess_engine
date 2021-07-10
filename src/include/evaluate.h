@@ -25,7 +25,7 @@ public:
 
 private:
 
-    int Quiescence(int alpha, int beta, STATS *pStats, int depth = 100);
+    int Quiescence(int alpha, int beta, STATS *pStats, int depth = 7);
 
     int AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine = {});
 
