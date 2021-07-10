@@ -20,22 +20,22 @@ class SliderAttacks {
  public:
   void Initialize();
 
-  U64 RookAttacks(const U64 bitboard, const int index) const {
+  inline U64 RookAttacks(const U64 bitboard, const int index) const {
     const Magic& m = rook_magics_[index];
     return rook_attack_table_[AttackTableIndex(bitboard, m)];
   }
 
-  U64 BishopAttacks(const U64 bitboard, const int index) const {
+  inline U64 BishopAttacks(const U64 bitboard, const int index) const {
     const Magic& m = bishop_magics_[index];
     return bishop_attack_table_[AttackTableIndex(bitboard, m)];
   }
 
-  U64 QueenAttacks(const U64 bitboard, const int index) const {
+  inline U64 QueenAttacks(const U64 bitboard, const int index) const {
     return RookAttacks(bitboard, index) | BishopAttacks(bitboard, index);
   }
 
  private:
-  U64 AttackTableIndex(const U64 bitboard, const Magic& m) const {
+  inline U64 AttackTableIndex(const U64 bitboard, const Magic& m) const {
     U64 occupancy = bitboard & m.mask;
     return ((occupancy * m.magic) >> (kSquares - m.shift)) + m.offset;
   }
