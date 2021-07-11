@@ -41,8 +41,8 @@ Results Evaluate::StartSearch(){
     auto t1 = std::chrono::high_resolution_clock::now();
 
     /** alpha and beta, with a little buffer to stop any overflowing */
-    int alpha = std::numeric_limits<int>::min() + 10;
-    int beta = std::numeric_limits<int>::max() - 10;
+    int alpha = std::numeric_limits<int>::min() + 10000;
+    int beta = std::numeric_limits<int>::max() - 10000;
 
     int score = 0;
     for(int iterativeDepth = 1; iterativeDepth <= depth; iterativeDepth++) {
@@ -328,6 +328,11 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
 
     if(stand_pat >= beta){
         return beta; // fail hard
+    }
+
+
+    if(stand_pat < alpha - 910){
+        return alpha;
     }
 
     if(alpha < stand_pat){

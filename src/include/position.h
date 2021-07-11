@@ -9,6 +9,9 @@ using namespace definitions;
 #ifndef POSITION_H
 #define POSITION_H
 
+extern const int PIECEWEIGHTS[6];
+
+
 class Position{
 public:
 
