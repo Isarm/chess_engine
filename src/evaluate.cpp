@@ -13,6 +13,7 @@
 #include "useful.h"
 #include "transpositionTable.h"
 #include <algorithm>
+#include "lookupTables.h"
 #include "uci.h"
 
 atomic_bool exitFlag(false);
@@ -67,7 +68,7 @@ Results Evaluate::StartSearch(){
     return results;
 }
 
-int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine) {
+int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine) {
     /**
      * This has become quite ugly with a lot of repetition
      */
@@ -78,7 +79,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
     }
 
     LINE line;
-    if(depthLeft == 0){
+    if(ply == 0){
         pline->nmoves = 0;
         // do a quiescent search for the leaf nodes, to reduce the horizon effect
         return Quiescence(alpha, beta, stats);
@@ -109,7 +110,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
             score = 0;
         }
         else {
-            score = -AlphaBeta(depthLeft - 1, -beta, -alpha, &line, stats, newBestLine);
+            score = -AlphaBeta(ply - 1, -beta, -alpha, &line, stats, newBestLine);
             position.undoMove();
         }
 
@@ -135,7 +136,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
     if(TT.contains(currentPositionHash, entry)){
         stats->transpositionHits++;
         // this means that the values are useful for this search
-        if(entry.depth >= depthLeft){
+        if(entry.depth >= ply){
             switch (entry.typeOfNode) {
                 case EXACT_PV:
                     if(entry.score <= alpha){
@@ -170,7 +171,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
 
             }
         }
-        // if the depthLeft is not deep enough, or the bounds above are not strong enough, the best moves can still be used
+        // if the ply is not deep enough, or the bounds above are not strong enough, the best moves can still be used
         // to improve move ordering in the search below. Note that alpha nodes have no valid best moves.
         if(entry.typeOfNode != UPPER_BOUND_ALPHA) {
             bestMove = entry.bestMove;
@@ -180,6 +181,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
     // generate list of moves
     moveList movelist;
     position.GenerateMoves(movelist);
+    scoreMoves(movelist, ply, position.turn);
     Position::sortMoves(movelist);
 
     // check for stalemate or checkmate in case of no moves left:
@@ -187,8 +189,8 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
         if(position.isIncheck){
             pline->nmoves = 0;
             // high score that cant be reached by evaluation function, thus indicating mate.
-            // subtract depthLeft, indicating that higher depthLeft (so faster mate) is better.
-            return -1000000 - depthLeft;
+            // subtract ply, indicating that higher ply (so faster mate) is better.
+            return -1000000 - ply;
 
         }
         else{
@@ -219,7 +221,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
             score = 0;
         }
         else {
-            score = -AlphaBeta(depthLeft - 1, -beta, -alpha, &line, stats, LINE());
+            score = -AlphaBeta(ply - 1, -beta, -alpha, &line, stats, LINE());
             position.undoMove();
         }
 
@@ -254,15 +256,19 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
             score = 0;
         }
         else {
-            score = -AlphaBeta(depthLeft - 1, -beta, -alpha, &line, stats);
+            score = -AlphaBeta(ply - 1, -beta, -alpha, &line, stats);
             position.undoMove();
         }
 
         if(score >= beta){
             stats->betaCutoffs += 1;
             if(!drawFlag) {
-                TT.addEntry(score, movelist.moves[i].first, depthLeft, LOWER_BOUND_BETA,
+                TT.addEntry(score, movelist.moves[i].first, ply, LOWER_BOUND_BETA,
                             position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
+                addKillerMove(ply, movelist.moves[i].first);
+                if(!(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK)){
+                    updateButterflyTable(ply, movelist.moves[i].first, position.turn);
+                }
             }
             return beta; // beta cutoff
         }
@@ -273,7 +279,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
             memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
             pline->nmoves = line.nmoves + 1;
             if(!drawFlag) {
-                TT.addEntry(score, movelist.moves[i].first, depthLeft, UPPER_BOUND_ALPHA,
+                TT.addEntry(score, movelist.moves[i].first, ply, UPPER_BOUND_ALPHA,
                             position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
             }
         }
@@ -281,7 +287,7 @@ int Evaluate::AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *
 
     if(alpha == alphaStart){
         // for an alpha cutoff, there is no known best moves so this is left as 0.
-        TT.addEntry(alpha, 0, depthLeft, UPPER_BOUND_ALPHA, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
+        TT.addEntry(alpha, 0, ply, UPPER_BOUND_ALPHA, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
     }
     return alpha;
 }
@@ -327,6 +333,17 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
         }
     }
     return alpha;
+}
+
+
+void Evaluate::scoreMoves(moveList &list, int ply, bool side) {
+    for(int i = 0; i < list.moveLength; i++){
+        if(isKiller(ply, list.moves[i].first)){
+            list.moves[i].second += KILLER_BONUS;
+        }
+        list.moves[i].second += getButterflyScore(ply, list.moves[i].first, side);
+
+    }
 }
 
 void Evaluate::printinformation(int milliseconds, int score, LINE line, STATS stats, int depth) {

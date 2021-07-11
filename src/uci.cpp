@@ -153,7 +153,7 @@ void UCI::mainLoop(){
 
             input.clear();
             Settings settings;
-            settings.depth = 12;
+            settings.depth = MAX_DEPTH;
             if(threadStarted){
                 evaluation.join();
                 exitTimer.join();

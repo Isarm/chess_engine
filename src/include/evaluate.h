@@ -27,9 +27,11 @@ private:
 
     int Quiescence(int alpha, int beta, STATS *pStats, int depth = 7);
 
-    int AlphaBeta(int depthLeft, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine = {});
+    int AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine = {});
 
-    void printinformation(int milliseconds, int score, LINE line, STATS stats, int i);
+    static void printinformation(int milliseconds, int score, LINE line, STATS stats, int i);
+
+    static void scoreMoves(moveList &list, int left, bool side);
 };
 
 

@@ -2,12 +2,21 @@
 // Created by isar on 07/02/2021.
 //
 
+
 #ifndef ENGINE_ZOBRISTTABLES_H
-// zobrist piece table for [colour][piece][index]
-uint64_t zobristPieceTable[2][6][64];
-uint64_t zobristCastlingRightsTable[16];
-uint64_t zobristBlackToMove;
-uint64_t zobristEnPassantFile[8];
+
+
+#include <cstdint>
+#include <random>
+#include "definitions.h"
+#include "useful.h"
+
+using namespace definitions;
+
+extern uint64_t zobristPieceTable[2][6][64];
+extern uint64_t zobristCastlingRightsTable[16];
+extern uint64_t zobristBlackToMove;
+extern uint64_t zobristEnPassantFile[8];
 
 inline void zobristPieceTableInitialize(){
     /* Random number generator */
@@ -34,7 +43,7 @@ inline void zobristPieceTableInitialize(){
 }
 
 // lookup table for direction from square a to square b
-static int rayDirectionsTable[64][64];
+extern int rayDirectionsTable[64][64];
 
 inline void rayDirectionLookupInitialize() {
     for (int i = 0; i < 64; i++) {
@@ -55,6 +64,45 @@ inline void rayDirectionLookupInitialize() {
 inline int rayDirectionLookup(const unsigned a, const unsigned b) {
     return rayDirectionsTable[a][b];
 }
+
+
+extern unsigned int killerMoves[MAX_DEPTH][KILLER_MOVE_SLOTS];
+
+
+inline void addKillerMove(unsigned ply, unsigned move){
+    /** shift old killer moves */
+    for (int i = KILLER_MOVE_SLOTS - 2; i >= 0; i--)
+        killerMoves[ply][i + 1] = killerMoves[ply][i];
+    /** add new */
+    killerMoves[ply][0] = move;
+}
+
+inline bool isKiller(unsigned ply, unsigned move){
+    for(unsigned &kmove : killerMoves[ply]){
+        if((kmove & (ORIGIN_SQUARE_MASK | DESTINATION_SQUARE_MASK)) == (move & (ORIGIN_SQUARE_MASK | DESTINATION_SQUARE_MASK))){
+            return true;
+        }
+    }
+    return false;
+}
+
+
+extern uint64_t butterflyTable[2][64][64];
+
+inline void updateButterflyTable(unsigned ply, unsigned move, bool side){
+    unsigned from = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
+    unsigned to = (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
+
+    butterflyTable[side][from][to] += ply * ply;
+}
+
+inline unsigned getButterflyScore(unsigned ply, unsigned move, bool side){
+    unsigned from = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
+    unsigned to = (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
+
+    return butterflyTable[side][from][to];
+}
+
 #define ENGINE_ZOBRISTTABLES_H
 
 #endif //ENGINE_ZOBRISTTABLES_H

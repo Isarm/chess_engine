@@ -12,12 +12,14 @@ add_executable(engine
         src/include/definitions.h
         src/include/position.h
         src/include/uci.h
+        src/include/lookupTables.h
         src/bitboard.cpp
         src/main.cpp
         src/position.cpp
         src/uci.cpp
         src/include/useful.h
         src/exitTimer.cpp
+        src/lookupTables.cpp
         #magic-bits
         magic-bits/src/slider_attacks.h
         magic-bits/src/slider_attacks.cpp src/tests.cpp src/include/tests.h src/evaluate.cpp src/include/evaluate.h src/transpositionTable.cpp src/include/transpositionTable.h src/include/lookupTables.h)

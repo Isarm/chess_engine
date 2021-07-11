@@ -8,6 +8,8 @@
 
 #include <random>
 
+using namespace definitions;
+
 inline static bool notAFile(uint64_t bb) {
     return uint64_t(0xFEFEFEFEFEFEFEFE) & bb;
 }

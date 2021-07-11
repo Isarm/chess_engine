@@ -186,13 +186,18 @@ namespace definitions {
         int transpositionHits = 0;
     };
 
-    const double BISHOP_MOBILITY_SCALING = 1.5;
-    const double KNIGHT_MOBILITY_SCALING = 1;
-    const double ROOK_MOBILITY_SCALING = 2;
-    const double QUEEN_MOBILITY_SCALING = 6;
+
+    constexpr unsigned MAX_DEPTH = 30;
+    constexpr unsigned KILLER_MOVE_SLOTS = 3;
+
+    constexpr double BISHOP_MOBILITY_SCALING = 1.5;
+    constexpr double KNIGHT_MOBILITY_SCALING = 1;
+    constexpr double ROOK_MOBILITY_SCALING = 2;
+    constexpr double QUEEN_MOBILITY_SCALING = 6;
 
 
-    const int CAPTURE_SCORE = 10000;
+    constexpr int CAPTURE_SCORE = 1000000;
+    constexpr int KILLER_BONUS = 900000;
 
 }
 
