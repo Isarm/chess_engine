@@ -769,8 +769,9 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
             if (captureBB && !enPassantMoveFlag) { // capture moves
                 move |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
                 movelist.moves[movelist.moveLength].second = score
-                        + 4 * getPieceValue(!this->turn, captureBB)
-                        - getPieceValue(this->turn, origin);
+                        * getPieceValue(!this->turn, captureBB)
+                        - getPieceValue(this->turn, origin) +
+                        CAPTURE_SCORE; // offset to sort captures first
                 movelist.moves[movelist.moveLength++].first = move;
             } else {
                 movelist.moves[movelist.moveLength].second = score + mobilityBonus;
@@ -1420,33 +1421,39 @@ void Position::sortMoves(moveList &list) {
 }
 
 int Position::calculateMobilityBonus(int currentMobility, unsigned destinationInt, Pieces piece) {
+    /** Only do this in the opening */
+    if(endGameFraction > 0.3){
+        return 0;
+    }
+
     uint64_t attacks;
     int mobilityBonus;
     switch (piece) {
         case definitions::bishop:
             attacks = sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], destinationInt);
-            mobilityBonus = popCount(attacks)/1.5;
-            currentMobility /= 1.5;
+            mobilityBonus = popCount(attacks) / BISHOP_MOBILITY_SCALING;
+            currentMobility /= BISHOP_MOBILITY_SCALING;
             break;
         case definitions::rook:
             attacks = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], destinationInt);
-            mobilityBonus = popCount(attacks)/2;
-            currentMobility /= 2;
+            mobilityBonus = popCount(attacks) / ROOK_MOBILITY_SCALING;
+            currentMobility /= ROOK_MOBILITY_SCALING;
             break;
         case definitions::queen:
             attacks = sliderAttacks.QueenAttacks(helpBitboards[OCCUPIED_SQUARES], destinationInt);
-            mobilityBonus = popCount(attacks)/6;
-            currentMobility /= 6;
+            mobilityBonus = popCount(attacks) / QUEEN_MOBILITY_SCALING;
+            currentMobility /= QUEEN_MOBILITY_SCALING;
             break;
         case definitions::knight:
             attacks = knightAttacks(1ull << destinationInt);
-            mobilityBonus = popCount(attacks);
+            mobilityBonus = popCount(attacks) / KNIGHT_MOBILITY_SCALING;
+            currentMobility /= KNIGHT_MOBILITY_SCALING;
             break;
         default:
             return 0;
     }
 
-    return (int) ((float)(mobilityBonus - currentMobility) * (1 - endGameFraction));
+    return (int) ((float)(mobilityBonus - currentMobility));
 }
 
 int Position::popCount(uint64_t x) {
@@ -1478,22 +1485,22 @@ int Position::calculateMobility(bool turn) {
             switch(i){
                 case BISHOPS:
                     attacks = sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], pieceIndex);
-                    mobility += popCount(attacks)/1.5;
+                    mobility += popCount(attacks) / BISHOP_MOBILITY_SCALING;
                     break;
                 case ROOKS:
                     attacks = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], pieceIndex);
-                    mobility += popCount(attacks)/2;
+                    mobility += popCount(attacks) / ROOK_MOBILITY_SCALING;
                     break;
                 case QUEENS:
                     attacks = sliderAttacks.QueenAttacks(helpBitboards[OCCUPIED_SQUARES], pieceIndex);
-                    mobility += popCount(attacks)/6;
+                    mobility += popCount(attacks) / QUEEN_MOBILITY_SCALING;
                     break;
                 case KNIGHTS:
                     attacks = knightAttacks(pieceBB);
-                    mobility += popCount(attacks);
+                    mobility += popCount(attacks) / KNIGHT_MOBILITY_SCALING;
                     break;
             }
         }
     }
-    return (int)((float)(mobility * 5) *  (1 - endGameFraction));
+    return (int)((float)(mobility * 5) *  max(0.0, double(1 - 2 * endGameFraction)) );
 }

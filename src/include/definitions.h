@@ -186,7 +186,13 @@ namespace definitions {
         int transpositionHits = 0;
     };
 
+    const double BISHOP_MOBILITY_SCALING = 1.5;
+    const double KNIGHT_MOBILITY_SCALING = 1;
+    const double ROOK_MOBILITY_SCALING = 2;
+    const double QUEEN_MOBILITY_SCALING = 6;
 
+
+    const int CAPTURE_SCORE = 10000;
 
 }
 
