@@ -16,6 +16,11 @@ void TranspositionTable::setSize(unsigned sizeMB){
     table = new Entry[size];
 }
 
+void TranspositionTable::reset(){
+    free(table);
+    table = new Entry[size];
+}
+
 bool TranspositionTable::contains(uint64_t hash, Entry &entry){
     uint64_t entryHash = table[hash % size].key;
     if(hash == entryHash){

@@ -38,6 +38,8 @@ public:
 
     void addEntry(int score, unsigned int bestMove, unsigned short depth, typeOfNodes typeOfNode, uint64_t hash,
                   unsigned short halfmoveNumber);
+
+    void reset();
 };
 
 extern TranspositionTable TT;

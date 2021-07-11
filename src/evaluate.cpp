@@ -40,12 +40,34 @@ Results Evaluate::StartSearch(){
 
     auto t1 = std::chrono::high_resolution_clock::now();
 
+    /** alpha and beta, with a little buffer to stop any overflowing */
+    int alpha = std::numeric_limits<int>::min() + 10;
+    int beta = std::numeric_limits<int>::max() - 10;
+
     int score = 0;
     for(int iterativeDepth = 1; iterativeDepth <= depth; iterativeDepth++) {
         line = {};
-        // add min+1 and max-1 because otherwise overflow occurs when inverting
-        score = AlphaBeta(iterativeDepth, std::numeric_limits<int>::min() + 1, std::numeric_limits<int>::max() - 1, &line,
-                          &stats, previousBestLine);
+        while(true) {
+            score = AlphaBeta(iterativeDepth, alpha, beta, &line,
+                              &stats, previousBestLine);
+            if(score > alpha && score < beta){
+                break;
+            }
+            else{
+                /** widen aspiration window */
+                if(score <= alpha){
+                    alpha -= 100;
+                }
+                if(score >= beta){
+                    beta += 100;
+                }
+            }
+        }
+
+        /** aspiration window */
+        alpha = score - 50;
+        beta = score + 50;
+
         /** if the exitFlag is set, it exited the evaluation prematurely, so take the previous best line */
         if(exitFlag.load()){
             line = previousBestLine;
@@ -307,6 +329,7 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
     if(stand_pat >= beta){
         return beta; // fail hard
     }
+
     if(alpha < stand_pat){
         alpha = stand_pat; // raise alpha to establish lower bound on postion
     }
