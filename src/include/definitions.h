@@ -168,6 +168,7 @@ namespace definitions {
 
     struct Settings {
         int depth = 1;
+        int threads = 1;
     };
 
     struct Results {

@@ -17,25 +17,19 @@
 #include "uci.h"
 
 atomic_bool exitFlag(false);
+atomic_int bestDepth(0);
 
-Evaluate::Evaluate(string fen, vector<string> moves, Settings settings) {
-    this->position = Position(fen);
-    this->depth = settings.depth;
-
-    // do the moves that are given by the UCI protocol to update the position
-    for(string move : moves){
-        this->position.doMove(move);
-    }
-}
 
 
 // start evaluation
-Results Evaluate::StartSearch(){
+Results search(std::string fen, std::vector<std::string> moves, Settings settings){
     Results results;
 
     LINE line{};
     LINE previousBestLine{};
     STATS stats{};
+
+    int depth = settings.depth;
 
 
     auto t1 = std::chrono::high_resolution_clock::now();
@@ -48,8 +42,13 @@ Results Evaluate::StartSearch(){
     for(int iterativeDepth = 1; iterativeDepth <= depth; iterativeDepth++) {
         line = {};
         while(true) {
+
+            for
+
+
             score = AlphaBeta(iterativeDepth, alpha, beta, &line,
                               &stats, previousBestLine);
+
             if((score > alpha && score < beta) || abs(score) >= 1000000){
                 break;
             }
@@ -88,7 +87,18 @@ Results Evaluate::StartSearch(){
     return results;
 }
 
-int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine) {
+Search::Search(string fen, vector<string> moves, Settings settings) {
+    this->position = Position(fen);
+    this->depth = settings.depth;
+
+    // do the moves that are given by the UCI protocol to update the position
+    for(string move : moves){
+        this->position.doMove(move);
+    }
+}
+
+
+int Search::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine) {
     /**
      * This has become quite ugly with a lot of repetition
      */
@@ -148,56 +158,6 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         }
     }
 
-    // check if the position has been evaluated before with the transposition table
-    uint64_t bestMove = 0;
-    Entry entry;
-    uint64_t currentPositionHash = position.positionHashes[position.halfMoveNumber];
-
-    if(TT.contains(currentPositionHash, entry)){
-        stats->transpositionHits++;
-        // this means that the values are useful for this search
-        if(entry.depth >= ply){
-            switch (entry.typeOfNode) {
-                case EXACT_PV:
-                    if(entry.score <= alpha){
-                        return alpha;
-                    }
-                    if(entry.score >= beta){
-                        return beta;
-                    }
-
-                    position.doMove(entry.bestMove);
-                    if(position.isDraw()){
-                        position.undoMove();
-                        break;
-                    }
-                    position.undoMove();
-                    pline->principalVariation[0] = entry.bestMove;
-                    pline->nmoves = 1;
-                    return entry.score; // return the exact score of this position
-                case UPPER_BOUND_ALPHA:
-                    if(entry.score < alpha){
-                        return alpha; // we know for sure that the evaluation of this position will be lower than alpha,
-                    }
-                    break;
-                case LOWER_BOUND_BETA:
-                    if(entry.score >= beta){
-                        return beta; // we have a lower bound, which is higher than beta
-                    }
-                    break;
-                default:
-                    cout << "Incorrect entry in TT" << "\n";
-                    break;
-
-            }
-        }
-        // if the ply is not deep enough, or the bounds above are not strong enough, the best moves can still be used
-        // to improve move ordering in the search below. Note that alpha nodes have no valid best moves.
-        if(entry.typeOfNode != UPPER_BOUND_ALPHA) {
-            bestMove = entry.bestMove;
-        }
-    }
-
     // generate list of moves
     moveList movelist;
     position.GenerateMoves(movelist);
@@ -218,19 +178,69 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         }
     }
 
+    // check if the position has been evaluated before with the transposition table
+    uint64_t bestMove = 0;
+    Entry entry;
+    uint64_t currentPositionHash = position.positionHashes[position.halfMoveNumber];
 
-    /** if there was a transposition found, first evaluate that move */
-    bool legal = false;
-    if(bestMove != 0) {
+    if(TT.contains(currentPositionHash, entry)){
         /** first check if this moves exists (this can go wrong in case of transposition table collisions */
+        bool legal = false;
         for (pair<unsigned, int> move : movelist.moves) {
             if ((uint64_t) move.first == bestMove) {
                 legal = true;
                 break;
             }
         }
+        if(legal) {
+            stats->transpositionHits++;
+            // this means that the values are useful for this search
+            if (entry.depth >= ply) {
+                switch (entry.typeOfNode) {
+                    case EXACT_PV:
+                        if (entry.score <= alpha) {
+                            return alpha;
+                        }
+                        if (entry.score >= beta) {
+                            return beta;
+                        }
+
+                        position.doMove(entry.bestMove);
+                        if (position.isDraw()) {
+                            position.undoMove();
+                            break;
+                        }
+                        position.undoMove();
+                        pline->principalVariation[0] = entry.bestMove;
+                        pline->nmoves = 1;
+                        return entry.score; // return the exact score of this position
+                    case UPPER_BOUND_ALPHA:
+                        if (entry.score < alpha) {
+                            return alpha; // we know for sure that the evaluation of this position will be lower than alpha,
+                        }
+                        break;
+                    case LOWER_BOUND_BETA:
+                        if (entry.score >= beta) {
+                            return beta; // we have a lower bound, which is higher than beta
+                        }
+                        break;
+                    default:
+                        cout << "Incorrect entry in TT" << "\n";
+                        break;
+
+                }
+            }
+            // if the ply is not deep enough, or the bounds above are not strong enough, the best moves can still be used
+            // to improve move ordering in the search below. Note that alpha nodes have no valid best moves.
+            if (entry.typeOfNode != UPPER_BOUND_ALPHA) {
+                bestMove = entry.bestMove;
+            }
+        }
     }
-    if(legal){
+
+
+    /** if there was a transposition found, first evaluate that move */
+    if(bestMove != 0) {
         stats->totalNodes += 1;
         position.doMove(bestMove);
 
@@ -316,7 +326,7 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
     return alpha;
 }
 
-int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
+int Search::Quiescence(int alpha, int beta, STATS *stats, int depth) {
     if(exitFlag.load()){
         return 0;
     }
@@ -379,17 +389,16 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
 }
 
 
-void Evaluate::scoreMoves(moveList &list, int ply, bool side) {
+void Search::scoreMoves(moveList &list, int ply, bool side) {
     for(int i = 0; i < list.moveLength; i++){
         if(isKiller(ply, list.moves[i].first)){
             list.moves[i].second += KILLER_BONUS;
         }
         list.moves[i].second += getButterflyScore(ply, list.moves[i].first, side);
-
     }
 }
 
-void Evaluate::printinformation(int milliseconds, int score, LINE line, STATS stats, int depth) {
+void Search::printinformation(int milliseconds, int score, LINE line, STATS stats, int depth) {
     string pv[100];
 
     std::cout << "info depth " << depth;
@@ -434,7 +443,7 @@ void Evaluate::printinformation(int milliseconds, int score, LINE line, STATS st
 
 
 
-inline void Evaluate::addKillerMove(unsigned ply, unsigned move){
+inline void Search::addKillerMove(unsigned ply, unsigned move){
     /** shift old killer moves */
     for (int i = KILLER_MOVE_SLOTS - 2; i >= 0; i--)
         killerMoves[ply][i + 1] = killerMoves[ply][i];
@@ -442,7 +451,7 @@ inline void Evaluate::addKillerMove(unsigned ply, unsigned move){
     killerMoves[ply][0] = move;
 }
 
-inline bool Evaluate::isKiller(unsigned ply, unsigned move){
+inline bool Search::isKiller(unsigned ply, unsigned move){
     for(unsigned &kmove : killerMoves[ply]){
         if((kmove & (ORIGIN_SQUARE_MASK | DESTINATION_SQUARE_MASK)) == (move & (ORIGIN_SQUARE_MASK | DESTINATION_SQUARE_MASK))){
             return true;
@@ -452,14 +461,14 @@ inline bool Evaluate::isKiller(unsigned ply, unsigned move){
 }
 
 
-inline void Evaluate::updateButterflyTable(unsigned ply, unsigned move, bool side){
+inline void Search::updateButterflyTable(unsigned ply, unsigned move, bool side){
     unsigned from = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
     unsigned to = (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
 
     butterflyTable[side][from][to] += ply * ply;
 }
 
-inline unsigned Evaluate::getButterflyScore(unsigned ply, unsigned move, bool side){
+inline unsigned Search::getButterflyScore(unsigned ply, unsigned move, bool side){
     unsigned from = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
     unsigned to = (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
 

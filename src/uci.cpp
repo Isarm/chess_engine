@@ -11,6 +11,7 @@
 #include "evaluate.h"
 #include "transpositionTable.h"
 #include "exitTimer.h"
+#include "threads.h"
 
 
 void UCI::start() {
@@ -180,8 +181,7 @@ void UCI::timer(int ms){
 }
 
 void UCI::go(std::string fen, std::vector<std::string> moves, Settings settings, Results &results) {
-    Evaluate evaluate = Evaluate(fen, moves, settings);
-    results = evaluate.StartSearch();
+    results = search(fen, moves, settings);
     std::cout << "bestmove " << results.bestMove << "\n";
     std::cout.flush();
 }
