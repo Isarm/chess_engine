@@ -66,42 +66,6 @@ inline int rayDirectionLookup(const unsigned a, const unsigned b) {
 }
 
 
-extern unsigned int killerMoves[MAX_DEPTH][KILLER_MOVE_SLOTS];
-
-
-inline void addKillerMove(unsigned ply, unsigned move){
-    /** shift old killer moves */
-    for (int i = KILLER_MOVE_SLOTS - 2; i >= 0; i--)
-        killerMoves[ply][i + 1] = killerMoves[ply][i];
-    /** add new */
-    killerMoves[ply][0] = move;
-}
-
-inline bool isKiller(unsigned ply, unsigned move){
-    for(unsigned &kmove : killerMoves[ply]){
-        if((kmove & (ORIGIN_SQUARE_MASK | DESTINATION_SQUARE_MASK)) == (move & (ORIGIN_SQUARE_MASK | DESTINATION_SQUARE_MASK))){
-            return true;
-        }
-    }
-    return false;
-}
-
-
-extern uint64_t butterflyTable[2][64][64];
-
-inline void updateButterflyTable(unsigned ply, unsigned move, bool side){
-    unsigned from = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
-    unsigned to = (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
-
-    butterflyTable[side][from][to] += ply * ply;
-}
-
-inline unsigned getButterflyScore(unsigned ply, unsigned move, bool side){
-    unsigned from = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
-    unsigned to = (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
-
-    return butterflyTable[side][from][to];
-}
 
 #define ENGINE_ZOBRISTTABLES_H
 
