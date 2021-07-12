@@ -321,17 +321,30 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
         return 0;
     }
 
-    // define stand_pat (adapted from chessprogramming wiki quiescence search)
-    int stand_pat = position.getEvaluation();
 
     if(depth == 0){
-        return stand_pat;
+        return position.getEvaluation();
     }
+
+    // define stand_pat (adapted from chessprogramming wiki quiescence search)
+    // first do lazy evaluation
+    int stand_pat = position.getLazyEvaluation();
+
+    if(stand_pat >= beta + 50){
+        return beta;
+    }
+
+    if(stand_pat < alpha - 960){
+        return alpha;
+    }
+
+    // do proper eval
+    stand_pat = position.getEvaluation();
+
 
     if(stand_pat >= beta){
-        return beta; // fail hard
+        return beta;
     }
-
 
     if(stand_pat < alpha - 910){
         return alpha;

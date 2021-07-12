@@ -64,6 +64,8 @@ public:
 
     int getEvaluation();
 
+    int getLazyEvaluation();
+
     static void sortMoves(moveList &list);
 
 private:

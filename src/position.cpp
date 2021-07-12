@@ -1374,6 +1374,16 @@ int Position::Evaluate() {
     }
 }
 
+int Position::getLazyEvaluation(){
+    if(this->turn){
+        return positionEvaluations[halfMoveNumber] + 20;
+    }
+    else{
+        return -positionEvaluations[halfMoveNumber] - 20;
+    }
+
+}
+
 int Position::getEvaluation(){
     int mobilityBonus = calculateMobility(this->turn) - calculateMobility(!this->turn);
 
