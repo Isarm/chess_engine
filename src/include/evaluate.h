@@ -35,8 +35,8 @@ private:
     void scoreMoves(moveList &list, int left, bool side);
 
 
-    unsigned int killerMoves[MAX_DEPTH][KILLER_MOVE_SLOTS];
-    uint64_t butterflyTable[2][64][64];
+    unsigned int killerMoves[MAX_DEPTH][KILLER_MOVE_SLOTS] = {};
+    uint64_t butterflyTable[2][64][64] = {};
 
     void addKillerMove(unsigned int ply, unsigned int move);
 
