@@ -6,19 +6,31 @@
 #include "tests.h"
 #include "definitions.h"
 #include <chrono>
+#include "useful.h"
+#include "benchmarks.h"
 
 void drawTest();
 
 void hashTest();
 
+void benchmarks();
+
 using namespace std;
 
 
 void testmain(int argc, char *argv[]){
-    perft(argc, argv);
+//    perft(argc, argv);
 //    perftDebug();
 //    drawTest();
 //    hashTest();
+    benchmarks();
+}
+
+void benchmarks() {
+
+    benchmarkDeBruijn();
+    benchmarkMoveGen();
+
 }
 
 void hashTest() {
@@ -72,7 +84,7 @@ void perft(int argc, char *argv[]){
     }
     else { // manual perft setup
         DEPTH = 5;
-        int positionN = 1;
+        int positionN = 2;
         // choose type of position (these are common PERFT test positions)
         switch (positionN) {
             case 1:

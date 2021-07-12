@@ -300,17 +300,21 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
             pline->principalVariation[0] = movelist.moves[i].first;
             memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
             pline->nmoves = line.nmoves + 1;
-            if(!drawFlag) {
-                TT.addEntry(score, movelist.moves[i].first, ply, UPPER_BOUND_ALPHA,
-                            position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
-            }
         }
     }
 
-    if(alpha == alphaStart){
+    if(alpha > alphaStart) { // this means that the PV is an exact score moves
+        if(alpha != 0) { // if alpha is 0 there are some weird draw variations that you do not want in your TT
+            TT.addEntry(alpha, pline->principalVariation[0], ply, EXACT_PV,
+                        position.positionHashes[position.halfMoveNumber],
+                        position.halfMoveNumber);
+        }
+    }
+    else{
         // for an alpha cutoff, there is no known best moves so this is left as 0.
         TT.addEntry(alpha, 0, ply, UPPER_BOUND_ALPHA, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
     }
+
     return alpha;
 }
 

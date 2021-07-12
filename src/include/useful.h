@@ -7,42 +7,43 @@
 
 
 #include <random>
+#include "definitions.h"
 
 using namespace definitions;
 
-inline static bool notAFile(uint64_t bb) {
+inline static bool notAFile(const uint64_t bb) {
     return uint64_t(0xFEFEFEFEFEFEFEFE) & bb;
 }
 
-inline static bool notABFile(uint64_t bb) {
+inline static bool notABFile(const uint64_t bb) {
     return uint64_t(0xFCFCFCFCFCFCFCFC) & bb;
 }
 
-inline static bool notHFile(uint64_t bb) {
+inline static bool notHFile(const uint64_t bb) {
     return uint64_t(0x7F7F7F7F7F7F7F7F) & bb;
 }
 
-inline static bool notGHFile(uint64_t bb) {
+inline static bool notGHFile(const uint64_t bb) {
     return uint64_t(0x3F3F3F3F3F3F3F3F) & bb;
 }
 
-inline static bool is1stRank(uint64_t bb) {
+inline static bool is1stRank(const uint64_t bb) {
     return uint64_t(0xFF00000000000000) & bb;
 }
 
-inline static bool is2ndRank(uint64_t bb) {
+inline static bool is2ndRank(const uint64_t bb) {
     return uint64_t(0x00FF000000000000) & bb;
 }
 
-inline static bool is7thRank(uint64_t bb) {
+inline static bool is7thRank(const uint64_t bb) {
     return uint64_t(0x000000000000FF00) & bb;
 }
 
-inline static bool is8thRank(uint64_t bb) {
+inline static bool is8thRank(const uint64_t bb) {
     return uint64_t(0x00000000000000FF) & bb;
 }
 
-inline uint64_t knightAttacks(uint64_t knight) {
+inline uint64_t knightAttacks(const uint64_t knight) {
     uint64_t currentKnightMoves = 0;
     if (notAFile(knight)) {
         currentKnightMoves |= ((knight >> NNW) | (knight << SSW));
@@ -59,7 +60,7 @@ inline uint64_t knightAttacks(uint64_t knight) {
     return currentKnightMoves;
 }
 
-inline uint64_t kingAttacks(uint64_t king){
+inline uint64_t kingAttacks(const uint64_t king){
     uint64_t kingAttacks = 0;
     if(notAFile(king)){
         kingAttacks |= (king >> NW) | (king >> W) | (king << SW);
@@ -86,7 +87,10 @@ const int index64[64] = {
         46, 26, 40, 15, 34, 20, 31, 10,
         25, 14, 19, 9, 13, 8, 7, 6
 };
-static unsigned debruijnSerialization(uint64_t pieces) {
+
+
+
+inline unsigned debruijnSerialization(const uint64_t pieces) {
     uint64_t LS1B = pieces & -pieces; // only keeps the 1st LSB bit so that the DeBruijn bitscan can be used
     return index64[(LS1B * debruijn64) >> 58u];
 }
@@ -94,7 +98,8 @@ static unsigned debruijnSerialization(uint64_t pieces) {
 
 
 
-inline string moveToStrNotation(unsigned move){
+
+inline string moveToStrNotation(const unsigned move){
     unsigned originInt = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
     unsigned destinationInt =  (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
 
@@ -130,7 +135,7 @@ inline string moveToStrNotation(unsigned move){
 
 };
 
-inline unsigned strToMoveNotation(string str){
+inline unsigned strToMoveNotation(const string str){
     unsigned originInt = 0, destinationInt = 0, move;
 
     originInt += str[0] - 'a';

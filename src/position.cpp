@@ -9,7 +9,9 @@
 #include "useful.h"
 #include "slider_attacks.h"
 #include <algorithm>
+#include <chrono>
 #include "lookupTables.h"
+#include "benchmarks.h"
 
 
 using namespace std;
@@ -366,8 +368,7 @@ void Position::GenerateMoves(moveList &movelist) {
 }
 
 
-
-void Position::GeneratePawnMoves(moveList &movelist) {
+inline void Position::GeneratePawnMoves(moveList &movelist) {
     uint64_t pawns;
 
     pawns = bitboards[this->turn][PAWNS];
@@ -379,7 +380,6 @@ void Position::GeneratePawnMoves(moveList &movelist) {
         bool promotionMoveFlag = false;
 
         pieceIndex = debruijnSerialization(pawns);
-
         pieceBB = 1uLL << pieceIndex;
         pawns &= ~pieceBB;
 
@@ -398,11 +398,11 @@ void Position::GeneratePawnMoves(moveList &movelist) {
             enPassantMove = currentPawnCaptureMoves & bitboards[BLACK][EN_PASSANT_SQUARES];
             currentPawnCaptureMoves &= bitboards[BLACK][PIECES];
 
+
             // check if the pawn is on the 7th rank, meaning that any moves is a promotion moves
             if(is7thRank(pieceBB)){ //
                 promotionMoveFlag = true;
             }
-
 
         }
         else{ //black's turn, pawns going south so left shift
@@ -433,12 +433,15 @@ void Position::GeneratePawnMoves(moveList &movelist) {
 
         // update movelist
         bitboardsToLegalMovelist(movelist, pieceBB, currentPawnMoves, currentPawnCaptureMoves, pawn,false, false, promotionMoveFlag);
+
+
+
     }
 }
 
 
 
-void Position::GenerateKnightMoves(moveList &movelist) {
+inline void Position::GenerateKnightMoves(moveList &movelist) {
 
     uint64_t knights;
     knights = bitboards[this->turn][KNIGHTS];
@@ -474,7 +477,7 @@ void Position::GenerateKnightMoves(moveList &movelist) {
 
 
 
-void Position::GenerateSliderMoves(moveList &movelist){
+inline void Position::GenerateSliderMoves(moveList &movelist){
     int score = 0;
 
     unsigned pieceIndex;
@@ -522,7 +525,7 @@ void Position::GenerateSliderMoves(moveList &movelist){
     }
 }
 
-void Position::GenerateKingMoves(moveList &movelist){
+inline void Position::GenerateKingMoves(moveList &movelist){
     uint64_t king = bitboards[this->turn][KING];
 
     uint64_t kingMoves = kingAttacks(king);
@@ -559,7 +562,7 @@ void Position::GenerateCastlingMoves(moveList &movelist) {
 /*
  * Checks legality of castling moves and puts into movelist if legal
  */
-void Position::CastlingToMovelist(moveList &movelist, unsigned castlingType, uint64_t empty, uint64_t nonattacked){
+inline void Position::CastlingToMovelist(moveList &movelist, unsigned castlingType, uint64_t empty, uint64_t nonattacked){
 
     if(!(empty & helpBitboards[OCCUPIED_SQUARES])) { // check if the squares are empty
         unsigned nonAttackedInt;
@@ -582,7 +585,7 @@ void Position::CastlingToMovelist(moveList &movelist, unsigned castlingType, uin
 
 // pinnedOrigin is the location that will be checked for pins (e.g. pinnedOrigin is king for legality check)
 // pinned pieces are of colour $colour
-uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
+inline uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
 
     int squareIndex = (int) debruijnSerialization(pinnedOrigin);
     uint64_t pinnedPieces = 0;
@@ -628,7 +631,7 @@ uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
 }
 
 // checks if the square of $colour is attacked
-bool Position::squareAttacked(uint64_t square, bool colour){
+inline bool Position::squareAttacked(uint64_t square, bool colour){
     unsigned squareIndex = debruijnSerialization(square);
     square = 1uLL << squareIndex; // as the square bit gets removed in debruijnSerialization function
 
@@ -671,7 +674,8 @@ bool Position::squareAttacked(uint64_t square, bool colour){
  *
  */
 
-void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations, Pieces piece, bool kingMoveFlag, bool enPassantMoveFlag, bool promotionMoveFlag) {
+void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origin, const uint64_t destinations, const uint64_t captureDestinations, const Pieces piece, bool kingMoveFlag, bool enPassantMoveFlag, bool promotionMoveFlag) {
+
 
     unsigned originInt, destinationInt, move;
     uint64_t destinationBB;
@@ -707,7 +711,7 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
     // combine destinations and loop over them (check can be made later to see if it is a capture moves)
     uint64_t allDestinations = destinations | captureDestinations;
 
-    int currentMobility = popCount(allDestinations);
+//    int currentMobility = popCount(allDestinations);
 
     while(allDestinations != 0){
         // get integer of destination position
@@ -716,7 +720,7 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
 
         allDestinations &= ~destinationBB;
 
-        int mobilityBonus = calculateMobilityBonus(currentMobility, destinationInt, piece);
+//        int mobilityBonus = calculateMobilityBonus(currentMobility, destinationInt, piece);
 
         // generate the moves
         move = originInt << ORIGIN_SQUARE_SHIFT;
@@ -737,7 +741,7 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
 
         // for these types of moves, simply checking if the piece is pinned does not work, so the moves has to be done and
         // subsequently checked if the king is not in check.
-        if(isIncheck || enPassantMoveFlag || kingMoveFlag){
+        if(isIncheck || enPassantMoveFlag){
             doMove(move);
             // check if the king is attacked after this moves
             if(squareAttacked(bitboards[!this->turn][KING], !this->turn)){
@@ -745,6 +749,12 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
                 continue;
             }
             undoMove();
+        }
+
+        if(kingMoveFlag){
+            if(squareAttacked(destinationBB, this->turn)){
+                continue;
+            }
         }
 
         if(promotionMoveFlag){
@@ -774,7 +784,7 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uin
                         CAPTURE_SCORE; // offset to sort captures first
                 movelist.moves[movelist.moveLength++].first = move;
             } else {
-                movelist.moves[movelist.moveLength].second = score + mobilityBonus;
+                movelist.moves[movelist.moveLength].second = score;
                 movelist.moves[movelist.moveLength++].first = move;
             }
         }
@@ -857,7 +867,7 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
 // bit 43-48 halfmoves since the last time an irreversible moves occured
 // in definitions.h the enum can be found for the shifts and the masks
 
-void Position::doMove(unsigned move){
+void Position::doMove(const unsigned move){
     unsigned originInt, destinationInt, enPassantInt;
     uint64_t originBB, destinationBB;
 
@@ -1029,7 +1039,7 @@ void Position::doMove(unsigned move){
 }
 
 // removes the piece and updates hashes and evaluation
-inline void Position::removePiece(unsigned pieceType, uint64_t pieceBB, bool colour, unsigned pieceInt){
+inline void Position::removePiece(const unsigned pieceType, const uint64_t pieceBB, const bool colour, const unsigned pieceInt){
     bitboards[colour][pieceType] &= ~pieceBB;
 
     if(pieceType != PAWNS && pieceType != KING) {
@@ -1050,7 +1060,7 @@ inline void Position::removePiece(unsigned pieceType, uint64_t pieceBB, bool col
     }
 }
 
-inline void Position::addPiece(unsigned pieceType, uint64_t pieceBB, bool colour, unsigned pieceInt){
+inline void Position::addPiece(const unsigned pieceType, const uint64_t pieceBB, const bool colour, const unsigned pieceInt){
     bitboards[colour][pieceType] |= pieceBB;
 
     if(pieceType != PAWNS && pieceType != KING) {
@@ -1396,7 +1406,7 @@ bool Position::isDraw() {
     return false;
 }
 
-int Position::getPieceValue(bool side, uint64_t pieceBB) {
+inline int Position::getPieceValue(bool side, const uint64_t pieceBB) {
     int i = 0;
     for(uint64_t &bb : bitboards[side]){
         if(bb & pieceBB){

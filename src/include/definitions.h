@@ -145,7 +145,7 @@ namespace definitions {
 
 
     struct moveList {
-        pair<unsigned, int> moves[512] = {};
+        pair<unsigned, int> moves[256] = {};
         unsigned moveLength = 0;
     };
 
