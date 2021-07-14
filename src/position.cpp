@@ -247,7 +247,7 @@ Position::Position(string FEN) {
         this->fullMoveNumber = stoi(fullMove);
 
     }
-    catch (out_of_range) {
+    catch (...) {
         this->halfMoveNumber50 = 0;
         this->fullMoveNumber = 0;
     }
@@ -868,7 +868,7 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
 // in definitions.h the enum can be found for the shifts and the masks
 
 void Position::doMove(const unsigned move){
-    unsigned originInt, destinationInt, enPassantInt;
+    unsigned long long originInt, destinationInt, enPassantInt;
     uint64_t originBB, destinationBB;
 
     // as the previousmoves array uses uint64_t to store a moves. So moveL(arge) is the variable for previousmoves list
@@ -1171,7 +1171,7 @@ void Position::undoMove() {
     // hash does not have to be updated manually, as it is stored for previous positions. But, as the
     // movePiece function changes the current hash, the final hash update has to be done at the end of this function
     // ______
-    unsigned originInt, destinationInt, enPassantInt;
+    unsigned long long originInt, destinationInt, enPassantInt;
 
     // get the moves
     uint64_t move = this->previousMoves[this->halfMoveNumber - 1];
@@ -1186,7 +1186,7 @@ void Position::undoMove() {
 
 
     // used for the promotion special moves case
-    unsigned promotionType;
+    unsigned long long promotionType;
     unsigned promotionIndices[] = {KNIGHTS, BISHOPS, ROOKS, QUEENS};
 
     switch((SPECIAL_MOVE_FLAG_MASK & move) >> SPECIAL_MOVE_FLAG_SHIFT){

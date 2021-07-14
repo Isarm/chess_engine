@@ -8,6 +8,7 @@
 #include <chrono>
 #include "useful.h"
 #include "benchmarks.h"
+#include "bitboard.h"
 
 void drawTest();
 
@@ -19,11 +20,11 @@ using namespace std;
 
 
 void testmain(int argc, char *argv[]){
-//    perft(argc, argv);
+    perft(argc, argv);
 //    perftDebug();
 //    drawTest();
 //    hashTest();
-    benchmarks();
+//    benchmarks();
 }
 
 void benchmarks() {
@@ -84,7 +85,7 @@ void perft(int argc, char *argv[]){
     }
     else { // manual perft setup
         DEPTH = 5;
-        int positionN = 2;
+        int positionN = 6;
         // choose type of position (these are common PERFT test positions)
         switch (positionN) {
             case 1:
@@ -120,6 +121,7 @@ void perft(int argc, char *argv[]){
 
     Position position = Position(posString);
 
+
     if(argc >= 4) {
         std::string moveList = argv[3];
         std::string singleMove;
@@ -127,6 +129,7 @@ void perft(int argc, char *argv[]){
             if (i != ' ') {
                 singleMove.push_back(i);
             } else {
+                printf("%s\n", singleMove.c_str());
                 position.doMove(singleMove);
                 singleMove = "";
             }
