@@ -261,6 +261,9 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
 
     // then the normal moves
     for(int i = 0; i < movelist.moveLength; i++){
+        if(exitFlag.load()){
+            return 0;
+        }
         if(movelist.moves[i].first == bestMove || movelist.moves[i].first == iterativeDeepeningMove){
             continue; // as this has already been evaluated above
         }
@@ -300,6 +303,9 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
             pline->nmoves = line.nmoves + 1;
         }
     }
+    if(exitFlag.load()){
+        return 0;
+    }
 
     if(alpha > alphaStart) { // this means that the PV is an exact score moves
         if(alpha != 0) { // if alpha is 0 there are some weird draw variations that you do not want in your TT
@@ -327,7 +333,7 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
     }
 
     // define stand_pat (adapted from chessprogramming wiki quiescence search)
-    // first do lazy evaluation
+    // first do lazy evaluation (with a safety margin of 50 centipawns)
     int stand_pat = position.getLazyEvaluation();
 
     if(stand_pat >= beta + 50){

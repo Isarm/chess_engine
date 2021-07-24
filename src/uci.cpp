@@ -161,7 +161,7 @@ void UCI::mainLoop(){
 
             // only now check if TT is initialized
             if(!TT.size){
-                TT.setSize(512); // set default size
+                TT.setSize(2048); // set default size
             }
 
             threadStarted = true;

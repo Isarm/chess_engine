@@ -685,19 +685,19 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
     int score = 0;
     switch (piece) {
         case pawn:
-            score = 24;
+            score = 5;
             break;
         case knight:
-            score = 25;
+            score = 4;
             break;
         case bishop:
-            score = 23;
+            score = 3;
             break;
         case rook:
-            score = 22;
+            score = 2;
             break;
         case queen:
-            score = 20;
+            score = 1;
             break;
         case king:
             score = 0;
@@ -778,8 +778,9 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
             uint64_t captureBB = destinationBB & captureDestinations;
             if (captureBB && !enPassantMoveFlag) { // capture moves
                 move |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
+
                 movelist.moves[movelist.moveLength].second = score
-                        * getPieceValue(!this->turn, captureBB)
+                        + getPieceValue(!this->turn, captureBB)
                         - getPieceValue(this->turn, origin) +
                         CAPTURE_SCORE; // offset to sort captures first
                 movelist.moves[movelist.moveLength++].first = move;
@@ -1386,12 +1387,13 @@ int Position::getLazyEvaluation(){
 
 int Position::getEvaluation(){
     int mobilityBonus = calculateMobility(this->turn) - calculateMobility(!this->turn);
+    int pinnedPenalty = -popCount(bitboards[this->turn][PINNED_PIECES]);
 
     if(this->turn){
-        return positionEvaluations[halfMoveNumber] + mobilityBonus + 20;
+        return positionEvaluations[halfMoveNumber] + mobilityBonus + pinnedPenalty + 20;
     }
     else{
-        return -positionEvaluations[halfMoveNumber] - mobilityBonus - 20;
+        return -positionEvaluations[halfMoveNumber] - mobilityBonus -pinnedPenalty - 20;
     }
 }
 
@@ -1401,7 +1403,7 @@ bool Position::isDraw() {
     }
 
     // check three fold repetition rule
-    if(halfMovesSinceIrrepr >= 6){
+    if(halfMovesSinceIrrepr >= 4){
         int threefoldRepetitionCount = 0;
         for(int halfmove = 2; halfmove <= halfMovesSinceIrrepr; halfmove += 2){
             // check same colour positions (so 2 halfmoves per check).
