@@ -2,35 +2,33 @@
 // Created by isar on 31/01/2021.
 //
 
-#ifndef ENGINE_EVALUATE_H
-#define ENGINE_EVALUATE_H
+#ifndef ENGINE_SEARCH_H
+#define ENGINE_SEARCH_H
 
 
 #include <chrono>
 #include <atomic>
 #include "position.h"
 
-extern std::atomic_bool exitFlag;
 
-class Evaluate {
+class Search {
 
 public:
     Position position = Position("startpos");
 
-    Evaluate(string fen, vector<string> moves, Settings settings);
+    Search(string fen, const vector<string>& moves, Settings settings);
 
     int depth;
 
-    Results StartSearch();
+    int AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine = {});
 
 
 private:
 
     int Quiescence(int alpha, int beta, STATS *pStats, int depth = 7);
 
-    int AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine = {});
 
-    static void printinformation(int milliseconds, int score, LINE line, STATS stats, int i);
+    void printinformation(int milliseconds, int score, LINE line, STATS stats, int i);
 
     void scoreMoves(moveList &list, int left, bool side);
 
@@ -48,4 +46,4 @@ private:
 };
 
 
-#endif //ENGINE_EVALUATE_H
+#endif //ENGINE_SEARCH_H

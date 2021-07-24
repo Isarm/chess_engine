@@ -6,7 +6,7 @@ project(engine)
 set(OPTIMIZATION_FLAGS "-Ofast -funroll-loops")
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_FLAGS "-pthread ${OPTIMIZATION_FLAGS}" )
+set(CMAKE_CXX_FLAGS "-pthread" )
 
 include_directories(src/include
                 magic-bits/src)
@@ -17,6 +17,8 @@ add_executable(engine
         src/include/position.h
         src/include/uci.h
         src/include/lookupTables.h
+        src/include/threadManager.h
+        src/include/search.h
         src/bitboard.cpp
         src/main.cpp
         src/position.cpp
@@ -25,7 +27,10 @@ add_executable(engine
         src/exitTimer.cpp
         src/lookupTables.cpp
         src/benchmarks.cpp
+        src/threadManager.cpp
+        src/search.cpp
+        src/include/search.h
         #magic-bits
         magic-bits/src/slider_attacks.h
-        magic-bits/src/slider_attacks.cpp src/tests.cpp src/include/tests.h src/evaluate.cpp src/include/evaluate.h src/transpositionTable.cpp src/include/transpositionTable.h src/include/lookupTables.h)
+        magic-bits/src/slider_attacks.cpp src/tests.cpp src/include/tests.h src/transpositionTable.cpp src/include/transpositionTable.h src/include/lookupTables.h)
 

@@ -3,9 +3,10 @@
 //
 
 #include <string>
+#include <utility>
 #include <vector>
 #include <position.h>
-#include "evaluate.h"
+#include "search.h"
 #include "definitions.h"
 #include <cstring>
 #include <limits>
@@ -13,88 +14,33 @@
 #include "useful.h"
 #include "transpositionTable.h"
 #include <algorithm>
+
 #include "lookupTables.h"
 #include "uci.h"
+#include "threadManager.h"
 
-atomic_bool exitFlag(false);
 
-Evaluate::Evaluate(string fen, vector<string> moves, Settings settings) {
-    this->position = Position(fen);
+bool exitCondition();
+
+Search::Search(string fen, const vector<string>& moves, Settings settings) {
+    this->position = Position(std::move(fen));
     this->depth = settings.depth;
 
     // do the moves that are given by the UCI protocol to update the position
-    for(string move : moves){
+    for(const string& move : moves){
         this->position.doMove(move);
     }
 }
 
 
-// start evaluation
-Results Evaluate::StartSearch(){
-    Results results;
 
-    LINE line{};
-    LINE previousBestLine{};
-    STATS stats{};
-
-
-    auto t1 = std::chrono::high_resolution_clock::now();
-
-    /** alpha and beta, with a little buffer to stop any overflowing */
-    int alpha = std::numeric_limits<int>::min() + 10000;
-    int beta = std::numeric_limits<int>::max() - 10000;
-
-    int score = 0;
-    for(int iterativeDepth = 1; iterativeDepth <= depth; iterativeDepth++) {
-        line = {};
-        while(true) {
-            score = AlphaBeta(iterativeDepth, alpha, beta, &line,
-                              &stats, previousBestLine);
-            if((score > alpha && score < beta) || abs(score) >= 1000000){
-                break;
-            }
-            else{
-                /** widen aspiration window */
-                if(score <= alpha){
-                    alpha -= 100;
-                }
-                if(score >= beta){
-                    beta += 100;
-                }
-            }
-        }
-
-        /** aspiration window */
-        alpha = score - 50;
-        beta = score + 50;
-
-        /** if the exitFlag is set, it exited the evaluation prematurely, so take the previous best line */
-        if(exitFlag.load()){
-            line = previousBestLine;
-            break;
-        }
-        previousBestLine = line;
-
-        auto t2 = std::chrono::high_resolution_clock::now();
-        int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-        printinformation(milliseconds, score, line, stats, iterativeDepth);
-
-        if(abs(score) >= 1000000) {
-            // this indicates that mate is found
-            break;
-        }
-    }
-    results.bestMove = moveToStrNotation(line.principalVariation[0]);
-    return results;
-}
-
-int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine) {
+int Search::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine) {
     /**
      * This has become quite ugly with a lot of repetition
      */
     int alphaStart = alpha; // to be able to check if alpha has increased with this position (for tr. table)
 
-    if(exitFlag.load()){
+    if(exitCondition()){
         return 0;
     }
 
@@ -261,7 +207,7 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
 
     // then the normal moves
     for(int i = 0; i < movelist.moveLength; i++){
-        if(exitFlag.load()){
+        if(exitCondition()){
             return 0;
         }
         if(movelist.moves[i].first == bestMove || movelist.moves[i].first == iterativeDeepeningMove){
@@ -303,7 +249,7 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
             pline->nmoves = line.nmoves + 1;
         }
     }
-    if(exitFlag.load()){
+    if(exitCondition()){
         return 0;
     }
 
@@ -322,13 +268,17 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
     return alpha;
 }
 
-int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
-    if(exitFlag.load()){
+inline bool exitCondition() {
+    return timerFlag.load() || exitFlag.load();
+}
+
+int Search::Quiescence(int alpha, int beta, STATS *stats, int qdepth) {
+    if(exitCondition()){
         return 0;
     }
 
 
-    if(depth == 0){
+    if(qdepth == 0){
         return position.getEvaluation();
     }
 
@@ -371,7 +321,7 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
         stats->quiescentNodes += 1;
         stats->totalNodes += 1;
         position.doMove(movelist.moves[i].first);
-        int score = -Quiescence(-beta, -alpha, stats, depth-1);
+        int score = -Quiescence(-beta, -alpha, stats, qdepth - 1);
         position.undoMove();
 
         if(score >= beta){
@@ -385,7 +335,7 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
 }
 
 
-void Evaluate::scoreMoves(moveList &list, int ply, bool side) {
+void Search::scoreMoves(moveList &list, int ply, bool side) {
     for(int i = 0; i < list.moveLength; i++){
         if(isKiller(ply, list.moves[i].first)){
             list.moves[i].second += KILLER_BONUS;
@@ -395,52 +345,10 @@ void Evaluate::scoreMoves(moveList &list, int ply, bool side) {
     }
 }
 
-void Evaluate::printinformation(int milliseconds, int score, LINE line, STATS stats, int depth) {
-    string pv[100];
-
-    std::cout << "info depth " << depth;
-    std::cout << " time " << milliseconds;
-    std::cout << " nodes " << stats.totalNodes;
-
-    if(milliseconds !=0) {
-        std::cout << " nps " << int(1000 * float(stats.totalNodes) / float(milliseconds));
-    }
-    std::cout << " score ";
-    if(score >= 1000000){
-        // this indicates that mate is found
-        int mateIn = int((depth - score + 1000001)/2);
-        std::cout << "mate " << mateIn << " pv ";
-    }
-    else if(score <= -1000000){
-        // this indicates that the engine is getting mated
-        int mateIn = -int((depth + score + 1000001)/2);
-        std::cout << "mate " << mateIn << " pv ";
-    }
-    else{
-        std::cout << "cp " << score << " pv ";
-    }
-
-    for(int i = 0; i < line.nmoves; i++){
-        pv[i] = moveToStrNotation(line.principalVariation[i]);
-        std::cout << pv[i] << " ";
-    }
-    std::cout << "\n";
-    std::cout.flush();
-
-    std::cout << "quiescent nodes " << stats.quiescentNodes << "/" << stats.totalNodes << " total nodes\n";
-    std::cout << float(stats.quiescentNodes)/stats.totalNodes << "\n";
-
-//    std::cout << stats.totalNodes - stats.quiescentNodes << " normal nodes\n";
-//
-//    std::cout << "table hits: " << stats.transpositionHits << "\n";
-
-    std::cout <<'\n';
-    std::cout.flush();
-}
 
 
 
-inline void Evaluate::addKillerMove(unsigned ply, unsigned move){
+inline void Search::addKillerMove(unsigned ply, unsigned move){
     /** shift old killer moves */
     for (int i = KILLER_MOVE_SLOTS - 2; i >= 0; i--)
         killerMoves[ply][i + 1] = killerMoves[ply][i];
@@ -448,7 +356,7 @@ inline void Evaluate::addKillerMove(unsigned ply, unsigned move){
     killerMoves[ply][0] = move;
 }
 
-inline bool Evaluate::isKiller(unsigned ply, unsigned move){
+inline bool Search::isKiller(unsigned ply, unsigned move){
     for(unsigned &kmove : killerMoves[ply]){
         if((kmove & (ORIGIN_SQUARE_MASK | DESTINATION_SQUARE_MASK)) == (move & (ORIGIN_SQUARE_MASK | DESTINATION_SQUARE_MASK))){
             return true;
@@ -458,14 +366,14 @@ inline bool Evaluate::isKiller(unsigned ply, unsigned move){
 }
 
 
-inline void Evaluate::updateButterflyTable(unsigned ply, unsigned move, bool side){
+inline void Search::updateButterflyTable(unsigned ply, unsigned move, bool side){
     unsigned from = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
     unsigned to = (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
 
     butterflyTable[side][from][to] += ply * ply;
 }
 
-inline unsigned Evaluate::getButterflyScore(unsigned ply, unsigned move, bool side){
+inline unsigned Search::getButterflyScore(unsigned ply, unsigned move, bool side){
     unsigned from = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
     unsigned to = (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
 

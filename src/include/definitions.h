@@ -168,6 +168,7 @@ namespace definitions {
 
     struct Settings {
         int depth = 1;
+        int threads = 0;
     };
 
     struct Results {
@@ -198,6 +199,19 @@ namespace definitions {
 
     constexpr int CAPTURE_SCORE = 1000000;
     constexpr int KILLER_BONUS = 900000;
+
+
+    typedef struct{
+        int depth;
+        int alpha;
+        int beta;
+        LINE *pline;
+        STATS *pStats;
+        LINE IDline;
+        string fen;
+        Settings settings;
+        vector<string> moves;
+    } searchParams;
 
 }
 

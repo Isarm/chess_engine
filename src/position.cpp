@@ -1524,5 +1524,5 @@ int Position::calculateMobility(bool turn) {
             }
         }
     }
-    return (int)((float)(mobility * 5) *  max(0.0, double(1 - 2 * endGameFraction)) );
+    return (int)((double)(mobility * 5) *  max(0.0, double(1 - 2 * endGameFraction)) );
 }

@@ -3,14 +3,19 @@
 #include "uci.h"
 #include "position.h"
 #include <string>
+#include <utility>
 #include <vector>
 #include <chrono>
 #include <thread>
 #include <mutex>
 #include <atomic>
-#include "evaluate.h"
+#include "search.h"
 #include "transpositionTable.h"
 #include "exitTimer.h"
+#include "threadManager.h"
+
+
+UCI::UCI() = default;
 
 
 void UCI::start() {
@@ -59,6 +64,8 @@ void UCI::start() {
 
     }
 
+
+
     // give the ready signal
     std::cout << "readyok\n";
 
@@ -66,6 +73,15 @@ void UCI::start() {
 }
 
 
+void timer(int ms){
+    timerLoop(ms);
+}
+
+void go(std::string fen, std::vector<std::string> moves, Settings settings, Results &results, ThreadManager threadManager) {
+    results = threadManager.StartSearch(std::move(fen), std::move(moves), settings);
+    std::cout << "bestmove " << results.bestMove << "\n";
+    std::cout.flush();
+}
 void UCI::mainLoop(){
     std::string input;
     std::string fen;
@@ -76,6 +92,9 @@ void UCI::mainLoop(){
 
     bool threadStarted = false;
 
+    settings.depth = MAX_DEPTH;
+    settings.threads = 4;
+    threadManager.setSettings(settings);
 
     Results results;
     while(true){
@@ -94,7 +113,7 @@ void UCI::mainLoop(){
 
         if(input == "stop"){
             if(threadStarted){
-                exitFlag.store(true);
+                timerFlag.store(true);
                 evaluation.join();
                 exitTimer.join();
                 threadStarted = false;
@@ -144,7 +163,7 @@ void UCI::mainLoop(){
         if(input.substr(0, input.find(' ')) == "go"){
             input.erase(0, input.find(' ') + 1);
 
-            int time = 10000;
+            int time = 100000000;
 
             if(input.substr(0, input.find(' ')) == "movetime"){
                 input.erase(0, input.find(' ') + 1);
@@ -152,8 +171,7 @@ void UCI::mainLoop(){
             }
 
             input.clear();
-            Settings settings;
-            settings.depth = MAX_DEPTH;
+
             if(threadStarted){
                 evaluation.join();
                 exitTimer.join();
@@ -166,8 +184,8 @@ void UCI::mainLoop(){
 
             threadStarted = true;
 
-            exitTimer = std::thread(UCI::timer, time);
-            evaluation = std::thread{UCI::go, fen, moves, settings, std::ref(results)};
+            exitTimer = std::thread(timer, time);
+            evaluation = std::thread{go, fen, moves, settings, std::ref(results), this->threadManager};
         }
     }
     // wait for the evaluation thread to finish so the program can exit safely
@@ -175,15 +193,6 @@ void UCI::mainLoop(){
     exitTimer.join();
 }
 
-void UCI::timer(int ms){
-    timerLoop(ms);
-}
 
-void UCI::go(std::string fen, std::vector<std::string> moves, Settings settings, Results &results) {
-    Evaluate evaluate = Evaluate(fen, moves, settings);
-    results = evaluate.StartSearch();
-    std::cout << "bestmove " << results.bestMove << "\n";
-    std::cout.flush();
-}
 
 
