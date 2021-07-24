@@ -25,7 +25,9 @@ add_executable(engine
         src/exitTimer.cpp
         src/lookupTables.cpp
         src/benchmarks.cpp
+        src/threadManager.cpp
+        src/include/threadManager.h
         #magic-bits
         magic-bits/src/slider_attacks.h
-        magic-bits/src/slider_attacks.cpp src/tests.cpp src/include/tests.h src/evaluate.cpp src/include/evaluate.h src/transpositionTable.cpp src/include/transpositionTable.h src/include/lookupTables.h)
+        magic-bits/src/slider_attacks.cpp src/tests.cpp src/include/tests.h src/evaluate.cpp src/include/evaluate.h src/transpositionTable.cpp src/include/transpositionTable.h src/include/lookupTables.h src/thread.cpp src/include/thread.h)
 

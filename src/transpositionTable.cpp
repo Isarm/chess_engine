@@ -6,6 +6,7 @@
 #include <iostream>
 #include <evaluate.h>
 #include "transpositionTable.h"
+#include "threadManager.h"
 
 TranspositionTable TT;
 
@@ -34,7 +35,7 @@ bool TranspositionTable::contains(uint64_t hash, Entry &entry){
 
 void TranspositionTable::addEntry(int score, unsigned int bestMove, unsigned short depth, typeOfNodes typeOfNode, uint64_t hash,
                                   unsigned short halfmoveNumber) {
-    if(exitFlag.load()){
+    if(exitCondition()){
         return;
     }
     Entry newEntry{};

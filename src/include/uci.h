@@ -5,21 +5,23 @@
 #include <atomic>
 #include <chrono>
 #include "definitions.h"
+#include "threadManager.h"
 
 
-
-namespace UCI {
+class UCI {
+public:
+    ThreadManager threadManager = ThreadManager(Settings());
 
     void mainLoop();
 
     void start();
 
-    void perft();
-
-    void go(string fen, vector<string> moves, definitions::Settings settings, definitions::Results &results);
+    void go(string fen, vector<string> moves, definitions::Results &results);
 
     void timer(int ms);
-}// namespace UCI
+
+    UCI();
+};// namespace UCI
 
 
 #endif

@@ -15,8 +15,10 @@ int main(int argc, char *argv[]) {
         string input;
         getline(cin, input);
 
+        UCI uci = UCI();
+
         if (input == "uci") {
-            UCI::start();
+            uci.start();
         }
 
     }

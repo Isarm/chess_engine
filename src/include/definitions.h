@@ -1,10 +1,12 @@
-#include <map>
-#include <vector>
 
 using namespace std;
 
 #ifndef DICTIONARIES_H
 #define DICTIONARIES_H
+
+#include <map>
+#include <vector>
+#include "string"
 
 namespace definitions {
 
@@ -167,7 +169,8 @@ namespace definitions {
     };
 
     struct Settings {
-        int depth = 1;
+        int depth = 20;
+        int threads = 6;
     };
 
     struct Results {
@@ -198,6 +201,13 @@ namespace definitions {
 
     constexpr int CAPTURE_SCORE = 1000000;
     constexpr int KILLER_BONUS = 900000;
+
+    typedef struct{
+        int ply;
+        int alpha;
+        int beta;
+        LINE iterativeDeepeningLine;
+    }SearchParams;
 
 }
 

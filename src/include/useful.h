@@ -171,6 +171,12 @@ inline unsigned strToMoveNotation(const string str){
     return move;
 }
 
+inline void copyline(LINE *from, LINE *to){
+    to->nmoves = from->nmoves;
+    for (int i = 0; i < from->nmoves; ++i) {
+        to->principalVariation[i] = from->principalVariation[i];
+    }
+}
 
 
 #endif //MOVEGENHELPFUNCTIONS_H
