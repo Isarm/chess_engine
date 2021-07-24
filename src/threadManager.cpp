@@ -4,7 +4,7 @@
 
 #include <chrono>
 #include <utility>
-#include <search.h>
+#include <evaluate.h>
 #include "threadManager.h"
 #include "useful.h"
 #include "definitions.h"
@@ -91,7 +91,7 @@ void * startThread(void * args){
 
     std::cout << (&params.fen) << "\n";
 
-    Search search = Search(params.fen, params.moves, params.settings);
+    Evaluate search = Evaluate(params.fen, params.moves, params.settings);
     search.AlphaBeta(params.depth, params.alpha, params.beta, params.pline, params.pStats, params.IDline);
 
     return nullptr;
@@ -126,7 +126,7 @@ int ThreadManager::lazySMP(int ply, int alpha, int beta, LINE *pline, STATS *sta
      * Main thread
      */
     string fenTemp = fen;
-    Search mainSearch = Search("startpos", moves, settings);
+    Evaluate mainSearch = Evaluate("startpos", moves, settings);
     mainSearch.AlphaBeta(ply, alpha, beta, pline, stats, iterativeDeepeningLine);
 
     /** Exit the other threads */

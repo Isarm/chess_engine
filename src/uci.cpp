@@ -93,7 +93,7 @@ void UCI::mainLoop(){
     bool threadStarted = false;
 
     settings.depth = MAX_DEPTH;
-    settings.threads = 4;
+    settings.threads = 6;
     threadManager.setSettings(settings);
 
     Results results;

@@ -2,8 +2,8 @@
 // Created by isar on 31/01/2021.
 //
 
-#ifndef ENGINE_SEARCH_H
-#define ENGINE_SEARCH_H
+#ifndef ENGINE_EVALUATE_H
+#define ENGINE_EVALUATE_H
 
 
 #include <chrono>
@@ -11,12 +11,12 @@
 #include "position.h"
 
 
-class Search {
+class Evaluate {
 
 public:
     Position position = Position("startpos");
 
-    Search(string fen, const vector<string>& moves, Settings settings);
+    Evaluate(string fen, const vector<string>& moves, Settings settings);
 
     int depth;
 
@@ -46,4 +46,4 @@ private:
 };
 
 
-#endif //ENGINE_SEARCH_H
+#endif //ENGINE_EVALUATE_H

@@ -11,6 +11,7 @@
 #include "definitions.h"
 #include "position.h"
 #include <pthread.h>
+#include "atomic"
 
 extern std::atomic_bool timerFlag;
 extern std::atomic_bool exitFlag;

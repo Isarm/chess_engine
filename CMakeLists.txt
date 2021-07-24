@@ -18,7 +18,7 @@ add_executable(engine
         src/include/uci.h
         src/include/lookupTables.h
         src/include/threadManager.h
-        src/include/search.h
+        src/include/evaluate.h
         src/bitboard.cpp
         src/main.cpp
         src/position.cpp
@@ -28,8 +28,8 @@ add_executable(engine
         src/lookupTables.cpp
         src/benchmarks.cpp
         src/threadManager.cpp
-        src/search.cpp
-        src/include/search.h
+        src/evaluate.cpp
+        src/include/evaluate.h
         #magic-bits
         magic-bits/src/slider_attacks.h
         magic-bits/src/slider_attacks.cpp src/tests.cpp src/include/tests.h src/transpositionTable.cpp src/include/transpositionTable.h src/include/lookupTables.h)

@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 #include <position.h>
-#include "search.h"
+#include "evaluate.h"
 #include "definitions.h"
 #include <cstring>
 #include <limits>
@@ -22,7 +22,7 @@
 
 bool exitCondition();
 
-Search::Search(string fen, const vector<string>& moves, Settings settings) {
+Evaluate::Evaluate(string fen, const vector<string>& moves, Settings settings) {
     this->position = Position(std::move(fen));
     this->depth = settings.depth;
 
@@ -34,7 +34,7 @@ Search::Search(string fen, const vector<string>& moves, Settings settings) {
 
 
 
-int Search::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine) {
+int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine) {
     /**
      * This has become quite ugly with a lot of repetition
      */
@@ -272,7 +272,7 @@ inline bool exitCondition() {
     return timerFlag.load() || exitFlag.load();
 }
 
-int Search::Quiescence(int alpha, int beta, STATS *stats, int qdepth) {
+int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int qdepth) {
     if(exitCondition()){
         return 0;
     }
@@ -335,7 +335,7 @@ int Search::Quiescence(int alpha, int beta, STATS *stats, int qdepth) {
 }
 
 
-void Search::scoreMoves(moveList &list, int ply, bool side) {
+void Evaluate::scoreMoves(moveList &list, int ply, bool side) {
     for(int i = 0; i < list.moveLength; i++){
         if(isKiller(ply, list.moves[i].first)){
             list.moves[i].second += KILLER_BONUS;
@@ -348,7 +348,7 @@ void Search::scoreMoves(moveList &list, int ply, bool side) {
 
 
 
-inline void Search::addKillerMove(unsigned ply, unsigned move){
+inline void Evaluate::addKillerMove(unsigned ply, unsigned move){
     /** shift old killer moves */
     for (int i = KILLER_MOVE_SLOTS - 2; i >= 0; i--)
         killerMoves[ply][i + 1] = killerMoves[ply][i];
@@ -356,7 +356,7 @@ inline void Search::addKillerMove(unsigned ply, unsigned move){
     killerMoves[ply][0] = move;
 }
 
-inline bool Search::isKiller(unsigned ply, unsigned move){
+inline bool Evaluate::isKiller(unsigned ply, unsigned move){
     for(unsigned &kmove : killerMoves[ply]){
         if((kmove & (ORIGIN_SQUARE_MASK | DESTINATION_SQUARE_MASK)) == (move & (ORIGIN_SQUARE_MASK | DESTINATION_SQUARE_MASK))){
             return true;
@@ -366,14 +366,14 @@ inline bool Search::isKiller(unsigned ply, unsigned move){
 }
 
 
-inline void Search::updateButterflyTable(unsigned ply, unsigned move, bool side){
+inline void Evaluate::updateButterflyTable(unsigned ply, unsigned move, bool side){
     unsigned from = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
     unsigned to = (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
 
     butterflyTable[side][from][to] += ply * ply;
 }
 
-inline unsigned Search::getButterflyScore(unsigned ply, unsigned move, bool side){
+inline unsigned Evaluate::getButterflyScore(unsigned ply, unsigned move, bool side){
     unsigned from = (move & ORIGIN_SQUARE_MASK) >> ORIGIN_SQUARE_SHIFT;
     unsigned to = (move & DESTINATION_SQUARE_MASK) >> DESTINATION_SQUARE_SHIFT;
 
