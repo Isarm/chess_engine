@@ -61,7 +61,7 @@ void UCI::start() {
 
     Settings settings;
     settings.depth = MAX_DEPTH;
-    settings.threads = 0;
+    settings.threads = 3;
     this->threadManager = ThreadManager(settings);
 
     // give the ready signal
@@ -163,7 +163,7 @@ void UCI::mainLoop(){
 
             // only now check if TT is initialized
             if(!TT.size){
-                TT.setSize(4096); // set default size
+                TT.setSize(2048); // set default size
             }
 
             threadStarted = true;

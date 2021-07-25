@@ -6,7 +6,7 @@ project(engine)
 set(OPTIMIZATION_FLAGS "-Ofast -funroll-loops")
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_FLAGS "-pthread" )
+set(CMAKE_CXX_FLAGS "-pthread ${OPTIMIZATION_FLAGS}" )
 
 include_directories(src/include
                 magic-bits/src)

@@ -59,7 +59,6 @@ string Thread::search() {
         }
         previousBestLine = PVline;
 
-
         auto t2 = std::chrono::high_resolution_clock::now();
         long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
@@ -83,13 +82,11 @@ string Thread::search() {
         /** This thread is the first to complete the search at this depth, so print and store the information */
         printinformation(milliseconds, score, PVline, searchInfo.stats, iterativeDepth);
 
-
         searchInfo.depth = iterativeDepth;
         searchInfo.searchingAt[iterativeDepth + 1]++;
         copyline(&PVline, &searchInfo.PVline);
 
         searchInfoMutex.unlock();
-
 
         if(abs(score) >= 1000000) {
             // this indicates that mate is found
