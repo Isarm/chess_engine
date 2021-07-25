@@ -17,6 +17,7 @@ struct Entry{
     int score = 0;
     short typeOfNode = 0;
     unsigned short age = 0;
+    unsigned long long checksum;
 };
 
 enum typeOfNodes : short{
