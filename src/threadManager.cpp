@@ -4,27 +4,59 @@
 
 #include <chrono>
 #include <utility>
+#include <mutex>
 #include "threadManager.h"
 #include "evaluate.h"
 #include "thread.h"
+
 
 std::atomic_bool timeFlag(false);
 std::atomic_bool exitFlag(false);
 
 
+/** Mutex for search parameters */
+SearchParams params;
 
+/** Mutex for position settings */
+string mutexFen;
+vector<string> mutexMoves;
+std::mutex positionMutex;
+
+bool startID[16];
+
+atomic_bool killThreads(false);
+
+void startThread(int id){
+    Thread thread = Thread(id);
+    thread.idleLoop();
+}
 
 ThreadManager::ThreadManager(Settings newsettings){
     settings = newsettings;
 }
 
+void ThreadManager::Initialize(string fen, vector<string> moves){
+    /** Main search object */
+    mainSearch = Evaluate(fen, moves);
+
+    /** Set variables for threads protected with mutex */
+    positionMutex.lock();
+    mutexFen = fen;
+    for(string &move : moves){
+        mutexMoves.push_back(move);
+    }
+    positionMutex.unlock();
+
+    /** Start the helper threads */
+    for (int i = 0; i < settings.threads; ++i) {
+        threads[i] = std::thread(startThread, i);
+    }
+
+}
+
 // start evaluation
 Results ThreadManager::StartSearch(string fen, vector<string> moves) {
-    mainSearch = Evaluate(fen, moves, settings);
-
-    for (int i = 0; i < settings.threads; ++i) {
-        threadEvals[i] = Evaluate(fen, moves, settings);
-    }
+    Initialize(fen, moves);
 
     Results results;
 
@@ -34,7 +66,7 @@ Results ThreadManager::StartSearch(string fen, vector<string> moves) {
     int alpha = std::numeric_limits<int>::min() + 10000;
     int beta = std::numeric_limits<int>::max() - 10000;
 
-    int score = 0;
+    int score;
     for(int iterativeDepth = 1; iterativeDepth <= settings.depth; iterativeDepth++) {
         while(true) {
             score = lazySMP(iterativeDepth, alpha, beta);
@@ -72,25 +104,26 @@ Results ThreadManager::StartSearch(string fen, vector<string> moves) {
             break;
         }
     }
+
+    /** Kill the threads */
+    killThreads.store(true);
+    for(int i = 0; i < settings.threads; i++){
+        threads[i].join();
+    }
+    killThreads.store(false);
+
     results.bestMove = moveToStrNotation(PVline.principalVariation[0]);
     return results;
 }
 
-void startThread(Evaluate eval, SearchParams params, int id){
-    Thread thread = Thread(id);
-    thread.go(std::move(eval), params);
-}
-
 int ThreadManager::lazySMP(int depth, int &alpha, int &beta) {
     /** Start helper threads */
-    for(int i = 0; i < settings.threads; i++){
-        SearchParams params;
-        copyline(&previousBestLine, &params.iterativeDeepeningLine);
-        params.alpha = alpha; params.beta = beta;
-        params.ply = depth;
-        threads[i] = std::thread(&startThread, threadEvals[i], params, i);
-    }
+    copyline(&previousBestLine, &params.iterativeDeepeningLine);
+    params.alpha = alpha; params.beta = beta;
+    params.ply = depth;
 
+    exitFlag.store(false);
+    this->startAll();
 
     /** Main search */
     LINE iterativeLine {};
@@ -98,12 +131,6 @@ int ThreadManager::lazySMP(int depth, int &alpha, int &beta) {
     int score = mainSearch.AlphaBeta(depth, alpha, beta, &PVline, &stats, iterativeLine);
 
     exitFlag.store(true);
-
-    for(int i = 0; i < settings.threads; i++){
-        threads[i].join();
-    }
-
-    exitFlag.store(false);
 
     return score;
 }
@@ -149,6 +176,13 @@ void ThreadManager::printinformation(int milliseconds, int score, LINE line, STA
 
     std::cout <<'\n';
     std::cout.flush();
+
+}
+
+void ThreadManager::startAll() {
+    for (int i = 0; i < settings.threads; ++i) {
+        startID[i] = true;
+    }
 
 }
 

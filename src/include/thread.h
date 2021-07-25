@@ -11,12 +11,16 @@
 class Thread {
 public:
     explicit Thread(int id);
-    void go(Evaluate eval, SearchParams params) const;
+
+    void idleLoop();
 
 private:
     Evaluate evaluate;
     int id;
 
+
+
+    void search();
 };
 
 

@@ -9,9 +9,24 @@
 #include "definitions.h"
 #include "useful.h"
 #include "evaluate.h"
+#include "mutex"
 
 extern std::atomic_bool timeFlag;
-extern std::atomic_bool timeFlag;
+extern std::atomic_bool exitFlag;
+
+extern SearchParams params;
+extern std::mutex paramsMutex;
+
+extern std::mutex startSearch;
+extern bool startID[16];
+
+extern std::atomic_bool killThreads;
+
+extern string mutexFen;
+extern vector<string> mutexMoves;
+extern std::mutex positionMutex;
+
+extern atomic_int doneCount;
 
 extern bool exitCondition();
 
@@ -38,6 +53,10 @@ private:
     std::thread threads[16];
 
     int lazySMP(int depth, int &alpha, int &beta);
+
+    void Initialize(string fen, vector<string> moves);
+
+    void startAll();
 };
 
 

@@ -20,7 +20,7 @@
 
 Evaluate::Evaluate() = default;
 
-Evaluate::Evaluate(string fen, vector<string> moves, Settings settings) {
+Evaluate::Evaluate(string fen, vector<string> moves) {
     this->position = Position(fen);
 
     // do the moves that are given by the UCI protocol to update the position

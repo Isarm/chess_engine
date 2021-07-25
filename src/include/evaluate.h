@@ -16,7 +16,7 @@ public:
     Position position = Position("startpos");
 
     Evaluate();
-    Evaluate(string fen, vector<string> moves, Settings settings);
+    Evaluate(string fen, vector<string> moves);
 
 
     int AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine = {});

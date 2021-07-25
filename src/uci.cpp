@@ -59,12 +59,11 @@ void UCI::start() {
             }
 
         }
-
     }
 
     Settings settings;
     settings.depth = MAX_DEPTH;
-    settings.threads = 0;
+    settings.threads = 8;
     this->threadManager = ThreadManager(settings);
 
     // give the ready signal
