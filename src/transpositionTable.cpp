@@ -13,7 +13,7 @@ TranspositionTable TT;
 TranspositionTable::TranspositionTable() = default;
 
 void TranspositionTable::setSize(unsigned sizeMB){
-    size = 1024 * 1024 * sizeMB / sizeof(Entry);
+    size = 1024ull * 1024ull * sizeMB / sizeof(Entry);
 
     table = new Entry[size];
 }

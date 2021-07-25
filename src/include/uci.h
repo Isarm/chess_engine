@@ -16,7 +16,7 @@ public:
 
     void start();
 
-    void go(string fen, vector<string> moves, definitions::Results &results);
+    void go(string fen, vector<string> moves);
 
     void timer(int ms);
 

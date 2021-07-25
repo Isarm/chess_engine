@@ -63,7 +63,7 @@ void UCI::start() {
 
     Settings settings;
     settings.depth = MAX_DEPTH;
-    settings.threads = 8;
+    settings.threads = 4;
     this->threadManager = ThreadManager(settings);
 
     // give the ready signal
@@ -83,8 +83,6 @@ void UCI::mainLoop(){
 
     bool threadStarted = false;
 
-
-    Results results;
     while(true){
 
         std::getline(std::cin, input);
@@ -151,7 +149,7 @@ void UCI::mainLoop(){
         if(input.substr(0, input.find(' ')) == "go"){
             input.erase(0, input.find(' ') + 1);
 
-            int time = 10000000;
+            int time = 10000;
 
             if(input.substr(0, input.find(' ')) == "movetime"){
                 input.erase(0, input.find(' ') + 1);
@@ -167,13 +165,13 @@ void UCI::mainLoop(){
 
             // only now check if TT is initialized
             if(!TT.size){
-                TT.setSize(2048); // set default size
+                TT.setSize(4096); // set default size
             }
 
             threadStarted = true;
 
             exitTimer = std::thread(&UCI::timer, this, time);
-            evaluation = std::thread{&UCI::go, this, fen, moves, std::ref(results)};
+            evaluation = std::thread{&UCI::go, this, fen, moves};
         }
     }
     // wait for the evaluation thread to finish so the program can exit safely
@@ -185,13 +183,8 @@ void UCI::timer(int ms){
     timerLoop(ms);
 }
 
-void UCI::go(std::string fen, std::vector<std::string> moves, Results &results) {
-
-
-    results = threadManager.StartSearch(fen, moves);
-
-    std::cout << "bestmove " << results.bestMove << "\n";
-    std::cout.flush();
+void UCI::go(std::string fen, std::vector<std::string> moves) {
+    threadManager.StartSearch(fen, moves);
 }
 
 

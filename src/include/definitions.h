@@ -171,13 +171,12 @@ namespace definitions {
     struct Settings {
         int depth = 20;
         int threads = 6;
-    };
-
-    struct Results {
-        string bestMove;
+        string fen = "startpos";
+        vector<string> moves = {};
     };
 
     struct LINE {
+        int depth;
         int nmoves;
         unsigned principalVariation[100];
     };
@@ -203,11 +202,16 @@ namespace definitions {
     constexpr int KILLER_BONUS = 900000;
 
     typedef struct{
-        int ply;
-        int alpha;
-        int beta;
-        LINE iterativeDeepeningLine;
-    }SearchParams;
+        LINE PVline = {
+                0,0, {}
+        };
+        STATS stats = {
+                0,0,0,0
+        };
+        int depth = 0;
+        int searchingAt[MAX_DEPTH] = {};
+    }SearchInfo;
+
 
 }
 

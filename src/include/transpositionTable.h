@@ -26,7 +26,7 @@ enum typeOfNodes : short{
 class TranspositionTable {
 
 public:
-    unsigned size = 0;
+    unsigned long long size = 0;
 
     Entry * table = nullptr;
 
