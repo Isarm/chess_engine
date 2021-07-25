@@ -31,7 +31,6 @@ string Thread::search() {
 
     int score;
     for(int iterativeDepth = 1; iterativeDepth <= settings.depth; iterativeDepth++) {
-//        printf("ID: %i, depth: %i\n", id, iterativeDepth);
         PVline = {};
         while(true) {
             score = evaluate.AlphaBeta(iterativeDepth, alpha, beta, &PVline, &stats, previousBestLine);
@@ -64,10 +63,15 @@ string Thread::search() {
         int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
         searchInfoMutex.lock();
+
+        searchInfo.stats.totalNodes += stats.totalNodes;
+        stats.totalNodes = 0;
+
         /** A different thread has found a line at this depth already */
         if(searchInfo.depth >= iterativeDepth){
+            iterativeDepth = searchInfo.depth;
             /** Check if a majority is already searching the next depth */
-            if(searchInfo.searchingAt[iterativeDepth + 1] > settings.threads / 2){
+            if(searchInfo.searchingAt[searchInfo.depth + 1] > (settings.threads + 1) / 2){
                 iterativeDepth++; /** In that case jump ahead*/
             }
             searchInfo.searchingAt[iterativeDepth + 1]++;
@@ -76,7 +80,7 @@ string Thread::search() {
         }
 
         /** This thread is the first to complete the search at this depth, so print and store the information */
-        printinformation(milliseconds, score, PVline, stats, iterativeDepth);
+        printinformation(milliseconds, score, PVline, searchInfo.stats, iterativeDepth);
 
         searchInfo.depth = iterativeDepth;
         searchInfo.searchingAt[iterativeDepth + 1]++;

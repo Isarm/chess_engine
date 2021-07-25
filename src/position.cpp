@@ -349,7 +349,6 @@ void Position::prettyPrint() {
 
 
 void Position::GenerateMoves(moveList &movelist) {
-
     this->isIncheck = squareAttacked(bitboards[this->turn][KING], this->turn);
     if(!isIncheck) {
         this->helpBitboards[PINNED_PIECES] = pinnedPieces(bitboards[this->turn][KING], this->turn);
