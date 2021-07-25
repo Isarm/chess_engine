@@ -149,7 +149,7 @@ void UCI::mainLoop(){
         if(input.substr(0, input.find(' ')) == "go"){
             input.erase(0, input.find(' ') + 1);
 
-            int time = 10000;
+            int time = 10000000;
 
             if(input.substr(0, input.find(' ')) == "movetime"){
                 input.erase(0, input.find(' ') + 1);

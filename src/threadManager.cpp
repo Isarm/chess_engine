@@ -16,7 +16,7 @@ std::atomic_bool exitFlag(false);
 atomic_bool killThreads(false);
 
 
-void startThread(int id, Settings settings){
+string startThread(int id, Settings settings){
     Settings newSettings;
     newSettings.threads = settings.threads;
     newSettings.depth = settings.depth;
@@ -26,7 +26,7 @@ void startThread(int id, Settings settings){
     newSettings.fen = settings.fen;
 
     Thread thread = Thread(id, newSettings);
-    thread.search();
+    return thread.search();
 }
 
 ThreadManager::ThreadManager(Settings newsettings){
@@ -38,13 +38,16 @@ void ThreadManager::StartSearch(string fen, vector<string> moves) {
     settings.fen = std::move(fen);
     settings.moves = std::move(moves);
 
+    searchInfo = SearchInfo();
+
     /** Start the helper threads */
     for (int i = 0; i < settings.threads; ++i) {
         threads[i] = std::thread(startThread, i, settings);
     }
 
     /** Main thread with id -1 */
-    startThread(-1, settings);
+    string bestmove = startThread(-1, settings);
+    printf("bestmove %s\n", bestmove.c_str());
 
     for (int i = 0; i < settings.threads; ++i) {
         threads[i].join();

@@ -8,8 +8,8 @@
 #include "mutex"
 #include "useful.h"
 
-static std::mutex searchInfoMutex;
-static SearchInfo searchInfo;
+std::mutex searchInfoMutex;
+SearchInfo searchInfo;
 
 Thread::Thread(int id, Settings settings) {
     this->id = id;

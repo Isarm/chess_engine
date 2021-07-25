@@ -9,6 +9,9 @@
 #include "evaluate.h"
 #include "definitions.h"
 
+extern SearchInfo searchInfo;
+
+
 class Thread {
 public:
     explicit Thread(int id, Settings settings);
