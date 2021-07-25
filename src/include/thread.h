@@ -16,8 +16,6 @@ class Thread {
 public:
     explicit Thread(int id, Settings settings);
 
-    void idleLoop();
-
     string search();
 
 private:
@@ -28,7 +26,7 @@ private:
 
     Settings settings;
 
-    void printinformation(int milliseconds, int score, LINE line, STATS stats, int depth);
+    void printinformation(long milliseconds, int score, LINE line, STATS stats, int depth);
 };
 
 

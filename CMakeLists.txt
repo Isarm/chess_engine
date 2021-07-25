@@ -6,7 +6,7 @@ project(engine)
 set(OPTIMIZATION_FLAGS "-Ofast -funroll-loops")
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_FLAGS "-pthread ${OPTIMIZATION_FLAGS}" )
+set(CMAKE_CXX_FLAGS "-pthread" )
 
 include_directories(src/include
                 magic-bits/src)
@@ -22,7 +22,6 @@ add_executable(engine
         src/position.cpp
         src/uci.cpp
         src/include/useful.h
-        src/exitTimer.cpp
         src/lookupTables.cpp
         src/benchmarks.cpp
         src/threadManager.cpp

@@ -59,8 +59,9 @@ string Thread::search() {
         }
         previousBestLine = PVline;
 
+
         auto t2 = std::chrono::high_resolution_clock::now();
-        int milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
         searchInfoMutex.lock();
 
@@ -82,11 +83,13 @@ string Thread::search() {
         /** This thread is the first to complete the search at this depth, so print and store the information */
         printinformation(milliseconds, score, PVline, searchInfo.stats, iterativeDepth);
 
+
         searchInfo.depth = iterativeDepth;
         searchInfo.searchingAt[iterativeDepth + 1]++;
         copyline(&PVline, &searchInfo.PVline);
 
         searchInfoMutex.unlock();
+
 
         if(abs(score) >= 1000000) {
             // this indicates that mate is found
@@ -102,7 +105,7 @@ string Thread::search() {
 }
 
 
-void Thread::printinformation(int milliseconds, int score, LINE line, STATS stats, int depth) {
+void Thread::printinformation(long milliseconds, int score, LINE line, STATS stats, int depth) {
     string pv[100];
 
     std::cout << "info depth " << depth;
@@ -130,7 +133,7 @@ void Thread::printinformation(int milliseconds, int score, LINE line, STATS stat
         std::cout << pv[i] << " ";
     }
 //    std::cout << "\n";
-    std::cout.flush();
+//    std::cout.flush();
 
 //    std::cout << "quiescent nodes " << stats.quiescentNodes << "/" << stats.totalNodes << " total nodes\n";
 //    std::cout << float(stats.quiescentNodes) / stats.totalNodes << "\n";

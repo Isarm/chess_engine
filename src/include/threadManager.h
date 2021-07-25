@@ -14,13 +14,6 @@
 extern std::atomic_bool timeFlag;
 extern std::atomic_bool exitFlag;
 
-extern std::atomic_bool killThreads;
-
-extern string mutexFen;
-extern vector<string> mutexMoves;
-extern std::mutex positionMutex;
-
-
 extern bool exitCondition();
 
 class ThreadManager {

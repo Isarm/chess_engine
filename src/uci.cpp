@@ -10,9 +10,7 @@
 #include <atomic>
 #include "evaluate.h"
 #include "transpositionTable.h"
-#include "exitTimer.h"
 #include "threadManager.h"
-
 
 UCI::UCI() = default;
 
@@ -63,7 +61,7 @@ void UCI::start() {
 
     Settings settings;
     settings.depth = MAX_DEPTH;
-    settings.threads = 4;
+    settings.threads = 0;
     this->threadManager = ThreadManager(settings);
 
     // give the ready signal
@@ -180,7 +178,9 @@ void UCI::mainLoop(){
 }
 
 void UCI::timer(int ms){
-    timerLoop(ms);
+    timeFlag.store(false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+    timeFlag.store(true);
 }
 
 void UCI::go(std::string fen, std::vector<std::string> moves) {

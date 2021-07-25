@@ -47,7 +47,8 @@ void ThreadManager::StartSearch(string fen, vector<string> moves) {
 
     /** Main thread with id -1 */
     string bestmove = startThread(-1, settings);
-    printf("bestmove %s\n", bestmove.c_str());
+    std::cout << "bestmove " << bestmove.c_str() << "\n";
+    std::cout.flush();
 
     for (int i = 0; i < settings.threads; ++i) {
         threads[i].join();
@@ -56,7 +57,7 @@ void ThreadManager::StartSearch(string fen, vector<string> moves) {
 
 
 bool exitCondition() {
-    if(timeFlag.load() or exitFlag.load()){
+    if(timeFlag.load() || exitFlag.load()){
         return true;
     }
     return false;
