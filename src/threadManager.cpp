@@ -11,10 +11,6 @@
 
 
 std::atomic_bool timeFlag(false);
-std::atomic_bool exitFlag(false);
-
-atomic_bool killThreads(false);
-
 
 string startThread(int id, Settings settings){
     Settings newSettings;
@@ -53,12 +49,8 @@ void ThreadManager::StartSearch(string fen, vector<string> moves) {
     for (int i = 0; i < settings.threads; ++i) {
         threads[i].join();
     }
+    std::cout << "info nodes " << searchInfo.stats.totalNodes << "\n";
 }
 
 
-bool exitCondition() {
-    if(timeFlag.load() || exitFlag.load()){
-        return true;
-    }
-    return false;
-}
+

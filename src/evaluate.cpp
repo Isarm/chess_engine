@@ -203,9 +203,6 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
 
     // then the normal moves
     for(int i = 0; i < movelist.moveLength; i++){
-        if(exitCondition()){
-            return 0;
-        }
         if(movelist.moves[i].first == bestMove || movelist.moves[i].first == iterativeDeepeningMove){
             continue; // as this has already been evaluated above
         }
@@ -245,9 +242,6 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
             pline->nmoves = line.nmoves + 1;
         }
     }
-    if(exitCondition()){
-        return 0;
-    }
 
     if(alpha > alphaStart) { // this means that the PV is an exact score moves
         if(alpha != 0) { // if alpha is 0 there are some weird draw variations that you do not want in your TT
@@ -268,7 +262,6 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
     if(exitCondition()){
         return 0;
     }
-
 
     if(depth == 0){
         return position.getEvaluation();

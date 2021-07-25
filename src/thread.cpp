@@ -81,16 +81,16 @@ string Thread::search() {
 
         /** This thread is the first to complete the search at this depth, so print and store the information */
         printinformation(milliseconds, score, PVline, searchInfo.stats, iterativeDepth);
+        searchInfoMutex.unlock();
 
         searchInfo.depth = iterativeDepth;
         searchInfo.searchingAt[iterativeDepth + 1]++;
-        copyline(&PVline, &searchInfo.PVline);
+        searchInfo.PVline = PVline;
 
-        searchInfoMutex.unlock();
 
         if(abs(score) >= 1000000) {
             // this indicates that mate is found
-            exitFlag.store(true);
+            timeFlag.store(true);
             break;
         }
     }
@@ -102,7 +102,7 @@ string Thread::search() {
 }
 
 
-void Thread::printinformation(long milliseconds, int score, LINE line, STATS stats, int depth) {
+void printinformation(long milliseconds, int score, LINE line, STATS stats, int depth) {
     string pv[100];
 
     std::cout << "info depth " << depth;

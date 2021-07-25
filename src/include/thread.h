@@ -11,6 +11,7 @@
 
 extern SearchInfo searchInfo;
 
+void printinformation(long milliseconds, int score, LINE line, STATS stats, int depth);
 
 class Thread {
 public:
@@ -26,7 +27,6 @@ private:
 
     Settings settings;
 
-    void printinformation(long milliseconds, int score, LINE line, STATS stats, int depth);
 };
 
 

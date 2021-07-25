@@ -12,9 +12,13 @@
 #include "mutex"
 
 extern std::atomic_bool timeFlag;
-extern std::atomic_bool exitFlag;
 
-extern bool exitCondition();
+inline bool exitCondition() {
+    if(timeFlag.load()){
+        return true;
+    }
+    return false;
+}
 
 class ThreadManager {
 
