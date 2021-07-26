@@ -46,7 +46,7 @@ public:
     explicit Position(string FEN);
 
     void generateHelpBitboards();
-    void GenerateMoves(moveList &movelist);
+    void GenerateMoves(moveList &movelist, bool onlyCaptures = false);
 
 
     void doMove(unsigned moveL);
@@ -70,9 +70,11 @@ public:
 
 private:
 
-    void GeneratePawnMoves(moveList &movelist);
-    void GenerateKnightMoves(moveList &movelist);
-    void GenerateSliderMoves(moveList &movelist);
+    void GeneratePawnMoves(moveList &movelist, bool onlyCaptures = false);
+    void GenerateKnightMoves(moveList &movelist, bool onlyCaptures = false);
+    void GenerateSliderMoves(moveList &movelist, bool onlycaptures = false);
+    void GenerateKingMoves(moveList &movelist, bool onlycaptures = false);
+    void GenerateCastlingMoves(moveList &movelist);
 
     void bitboardsToLegalMovelist(moveList &movelist, uint64_t origin, uint64_t destinations, uint64_t captureDestinations, Pieces piece,
                                   bool kingMoveFlag = false, bool enPassantMoveFlag = false, bool promotionMoveFlag = false); // flags
@@ -83,9 +85,7 @@ private:
 
     void MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour);
 
-    void GenerateKingMoves(moveList &movelist);
 
-    void GenerateCastlingMoves(moveList &movelist);
 
     void CastlingToMovelist(moveList &movelist, unsigned int castlingType, uint64_t empty, uint64_t nonattacked);
 
@@ -106,10 +106,6 @@ private:
     int calculateMobility(bool turn);
 
     int staticExchangeEvaluation(uint64_t squareBB, bool side);
-
-    void SEEmovePiece(uint64_t originBB, uint64_t destinationBB);
-
-    void SEEmovePiece(uint64_t originBB, unsigned int typeOrigin, uint64_t destinationBB, unsigned int typeDestination);
 
     int getPieceType(bool side, const uint64_t pieceBB);
 

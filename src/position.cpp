@@ -348,7 +348,7 @@ void Position::prettyPrint() {
 }
 
 
-void Position::GenerateMoves(moveList &movelist) {
+void Position::GenerateMoves(moveList &movelist, bool onlyCaptures) {
     this->isIncheck = squareAttackedBy(bitboards[this->turn][KING], !this->turn);
     if(!isIncheck) {
         this->helpBitboards[PINNED_PIECES] = pinnedPieces(bitboards[this->turn][KING], this->turn);
@@ -356,18 +356,18 @@ void Position::GenerateMoves(moveList &movelist) {
     else{
         this->helpBitboards[PINNED_PIECES] = 0; // as pinnedPieces function only works when the king is not in check TODO:??
     }
-    GeneratePawnMoves(movelist);
-    if(!isIncheck) {
+    GeneratePawnMoves(movelist, onlyCaptures);
+    if(!isIncheck && !onlyCaptures) {
         GenerateCastlingMoves(movelist);
     }
-    GenerateKnightMoves(movelist);
-    GenerateSliderMoves(movelist);
-    GenerateKingMoves(movelist);
+    GenerateKnightMoves(movelist, onlyCaptures);
+    GenerateSliderMoves(movelist, onlyCaptures);
+    GenerateKingMoves(movelist, onlyCaptures);
 
 }
 
 
-inline void Position::GeneratePawnMoves(moveList &movelist) {
+inline void Position::GeneratePawnMoves(moveList &movelist, bool onlyCaptures) {
     uint64_t pawns;
 
     pawns = bitboards[this->turn][PAWNS];
@@ -375,7 +375,7 @@ inline void Position::GeneratePawnMoves(moveList &movelist) {
     unsigned pieceIndex;
     uint64_t pieceBB;
     while(pawns != 0){
-        uint64_t currentPawnMoves, currentPawnCaptureMoves = 0, enPassantMove;
+        uint64_t currentPawnMoves = 0, currentPawnCaptureMoves = 0, enPassantMove;
         bool promotionMoveFlag = false;
 
         pieceIndex = debruijnSerialization(pawns);
@@ -383,12 +383,15 @@ inline void Position::GeneratePawnMoves(moveList &movelist) {
         pawns &= ~pieceBB;
 
         if(this->turn == WHITE){ // pawns going NORTH, so right shift
-            currentPawnMoves = pieceBB >> N;
-            currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // make sure destination square is empty
+            if(!onlyCaptures) {
+                currentPawnMoves = pieceBB >> N;
+                currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // make sure destination square is empty
 
-            if(currentPawnMoves && is2ndRank(pieceBB)){ //check for double pawn moves, if single pawn moves exists and pawn is on 2nd rank
-                currentPawnMoves |= pieceBB >> NN;
-                currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // again make sure destination square is empty
+                if (currentPawnMoves && is2ndRank(
+                        pieceBB)) { //check for double pawn moves, if single pawn moves exists and pawn is on 2nd rank
+                    currentPawnMoves |= pieceBB >> NN;
+                    currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // again make sure destination square is empty
+                }
             }
 
             // generate capture moves
@@ -405,12 +408,15 @@ inline void Position::GeneratePawnMoves(moveList &movelist) {
 
         }
         else{ //black's turn, pawns going south so left shift
-            currentPawnMoves = pieceBB << S;
-            currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // make sure destination square is empty
+            if(!onlyCaptures) {
+                currentPawnMoves = pieceBB << S;
+                currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // make sure destination square is empty
 
-            if(currentPawnMoves && is7thRank(pieceBB)){ //check for double pawn moves, if single pawn moves exists and pawn is on 7th rank
-                currentPawnMoves |= pieceBB << SS;
-                currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // again make sure destination square is empty
+                if (currentPawnMoves && is7thRank(
+                        pieceBB)) { //check for double pawn moves, if single pawn moves exists and pawn is on 7th rank
+                    currentPawnMoves |= pieceBB << SS;
+                    currentPawnMoves &= ~helpBitboards[OCCUPIED_SQUARES]; // again make sure destination square is empty
+                }
             }
 
             // generate capture moves
@@ -440,7 +446,7 @@ inline void Position::GeneratePawnMoves(moveList &movelist) {
 
 
 
-inline void Position::GenerateKnightMoves(moveList &movelist) {
+inline void Position::GenerateKnightMoves(moveList &movelist, bool onlyCaptures) {
 
     uint64_t knights;
     knights = bitboards[this->turn][KNIGHTS];
@@ -466,9 +472,13 @@ inline void Position::GenerateKnightMoves(moveList &movelist) {
         // use knightmoves AND opponent pieces to get capture moves (storing capturemoves differently is efficient for the search tree)
         currentKnightCaptures = currentKnightMoves & bitboards[!this->turn][PIECES];
 
-
-        // remove capturemoves from the normal moves bitboard
-        currentKnightMoves  &= ~currentKnightCaptures;
+        if(onlyCaptures){
+            currentKnightMoves = 0;
+        }
+        else{
+            // remove capturemoves from the normal moves bitboard
+            currentKnightMoves  &= ~currentKnightCaptures;
+        }
 
         bitboardsToLegalMovelist(movelist, pieceBB, currentKnightMoves, currentKnightCaptures, knight);
     }
@@ -476,7 +486,7 @@ inline void Position::GenerateKnightMoves(moveList &movelist) {
 
 
 
-inline void Position::GenerateSliderMoves(moveList &movelist){
+inline void Position::GenerateSliderMoves(moveList &movelist, bool onlyCaptures){
     int score = 0;
 
     unsigned pieceIndex;
@@ -517,21 +527,31 @@ inline void Position::GenerateSliderMoves(moveList &movelist){
 
             // divide in capture and normal moves
             currentPieceCaptures = currentPieceMoves & bitboards[!this->turn][PIECES];
-            currentPieceMoves &= ~currentPieceCaptures;
+            if(onlyCaptures){
+                currentPieceMoves = 0;
+            }
+            else{
+                currentPieceMoves &= ~currentPieceCaptures;
+            }
 
             bitboardsToLegalMovelist(movelist, pieceBB, currentPieceMoves, currentPieceCaptures, piece);
         }
     }
 }
 
-inline void Position::GenerateKingMoves(moveList &movelist){
+inline void Position::GenerateKingMoves(moveList &movelist, bool onlyCaptures){
     uint64_t king = bitboards[this->turn][KING];
 
     uint64_t kingMoves = kingAttacks(king);
 
     kingMoves &= ~bitboards[this->turn][PIECES];
     uint64_t kingCaptureMoves = kingMoves & bitboards[!this->turn][PIECES];
-    kingMoves &= ~kingCaptureMoves;
+    if(onlyCaptures){
+        kingMoves = 0;
+    }
+    else{
+        kingMoves &= ~kingCaptureMoves;
+    }
 
     bitboardsToLegalMovelist(movelist, king, kingMoves, kingCaptureMoves, definitions::king, true);
 
@@ -577,7 +597,7 @@ inline void Position::CastlingToMovelist(moveList &movelist, unsigned castlingTy
         }
         move = CASTLING_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
         move |= castlingType << ORIGIN_SQUARE_SHIFT; // put castling type into origin square bits as they are not used
-        movelist.moves[movelist.moveLength].second = 28; // score of castling move
+        movelist.moves[movelist.moveLength].second = CASTLING_SCORE; // score of castling move
         movelist.moves[movelist.moveLength++].first = move;
     }
 }
@@ -813,11 +833,11 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
                 move = baseMove | promotionType << PROMOTION_TYPE_SHIFT;
                 if(destinationBB & captureDestinations){
                     move |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
-                    movelist.moves[movelist.moveLength].second = score + 250;
+                    movelist.moves[movelist.moveLength].second = score + PROMOTION_CAPTURE_SCORE;
                     movelist.moves[movelist.moveLength++].first = move;
                 }
                 else {
-                    movelist.moves[movelist.moveLength].second = score + 150;
+                    movelist.moves[movelist.moveLength].second = score + PROMOTION_SCORE;
                     movelist.moves[movelist.moveLength++].first = move;
                 }
 

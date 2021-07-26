@@ -257,16 +257,23 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
     }
 
     moveList movelist;
-    position.GenerateMoves(movelist);
-
-    Position::sortMoves(movelist);
+    position.GenerateMoves(movelist, true);
 
     // go over all capture moves to avoid horizon effect on tactical moves.
     for(int i = 0; i < movelist.moveLength; i++){
-        if(!(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK) || movelist.moves[i].second < 0){
-            continue;
+        if(movelist.moves[i].second < 0){
+            break;
         }
-        stats->quiescentNodes += 1;
+
+        /** Check highest possible SEE */
+        int highestSEE = 0;
+        if(movelist.moves[i].second > CAPTURE_SCORE){
+            highestSEE = movelist.moves[0].second - CAPTURE_SCORE;
+        }
+        if(stand_pat < alpha - highestSEE - 50){
+            return alpha;
+        }
+
         stats->totalNodes += 1;
         position.doMove(movelist.moves[i].first);
         int score = -Quiescence(-beta, -alpha, stats, depth-1);
