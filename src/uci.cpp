@@ -61,7 +61,7 @@ void UCI::start() {
 
     Settings settings;
     settings.depth = MAX_DEPTH;
-    settings.threads = 5; //TODO: Make this configureable
+    settings.threads = 4; //TODO: Make this configureable
     this->threadManager = ThreadManager(settings);
 
     // give the ready signal
@@ -147,7 +147,7 @@ void UCI::mainLoop(){
         if(input.substr(0, input.find(' ')) == "go"){
             input.erase(0, input.find(' ') + 1);
 
-            int time = 10000;
+            int time = 10000000;
 
             if(input.substr(0, input.find(' ')) == "movetime"){
                 input.erase(0, input.find(' ') + 1);

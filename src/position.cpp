@@ -349,7 +349,7 @@ void Position::prettyPrint() {
 
 
 void Position::GenerateMoves(moveList &movelist) {
-    this->isIncheck = squareAttacked(bitboards[this->turn][KING], this->turn);
+    this->isIncheck = squareAttackedBy(bitboards[this->turn][KING], !this->turn);
     if(!isIncheck) {
         this->helpBitboards[PINNED_PIECES] = pinnedPieces(bitboards[this->turn][KING], this->turn);
     }
@@ -431,7 +431,7 @@ inline void Position::GeneratePawnMoves(moveList &movelist) {
         }
 
         // update movelist
-        bitboardsToLegalMovelist(movelist, pieceBB, currentPawnMoves, currentPawnCaptureMoves, pawn,false, false, promotionMoveFlag);
+        if(currentPawnMoves || currentPawnCaptureMoves) bitboardsToLegalMovelist(movelist, pieceBB, currentPawnMoves, currentPawnCaptureMoves, pawn,false, false, promotionMoveFlag);
 
 
 
@@ -570,7 +570,7 @@ inline void Position::CastlingToMovelist(moveList &movelist, unsigned castlingTy
         while(nonattacked){
             nonAttackedInt = debruijnSerialization(nonattacked);
             uint64_t nonAttackedBB = 1uLL << nonAttackedInt;
-            if(squareAttacked(nonAttackedBB, this->turn)){
+            if(squareAttackedBy(nonAttackedBB, !this->turn)){
                 return;
             }
             nonattacked &= ~nonAttackedBB;
@@ -629,34 +629,84 @@ inline uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
     return pinnedPieces;
 }
 
-// checks if the square of $colour is attacked
-inline bool Position::squareAttacked(uint64_t square, bool colour){
+/**
+ * Checks if the square is is attacked by $colour. It returns the smallest attacker index + 1, and 0 otherwise.
+ * (because PAWNS is an enum value of 0, so add 1 to everything to make this function act as a
+ * boolean 'squareAttacked' function as well).
+ * Optionally, an attacker bitboard address can be given, to which the function will return the bitboard of the attacker(s).
+ * @param square Square bitboard
+ * @param colour Colour of the attacking side
+ * @param attacker Optional attacker
+ * @return
+ */
+inline int Position::squareAttackedBy(uint64_t square, bool colour, uint64_t *attacker){ // TODO: clean up this function
     unsigned squareIndex = debruijnSerialization(square);
-    square = 1uLL << squareIndex; // as the square bit gets removed in debruijnSerialization function
+    uint64_t att = 0;
 
-    //check knight attacks
-    if(knightAttacks(square) & bitboards[!colour][KNIGHTS]) return true;
-
-    // check bishop attacks (+ queen diagonal attack)
-    if(sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], int(squareIndex)) & (bitboards[!colour][BISHOPS] | bitboards[!colour][QUEENS])) return true;
-
-    // check rook attacks (+ queen straight line attack)
-    if(sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], int(squareIndex)) & (bitboards[!colour][ROOKS] | bitboards[!colour][QUEENS])) return true;
-
-    // check pawn attacks
-    if(colour == WHITE){ // pawns going south (because black does attacking), so squareAttacked "attacks" north, so right shift
-        if(notAFile(square) && (square >> NW & bitboards[BLACK][PAWNS])) return true;
-        if(notHFile(square) && (square >> NE & bitboards[BLACK][PAWNS])) return true;
+    /** Check pawn attacks */
+    if(colour == BLACK){ // pawns going south (because black does attacking), so squareAttacked "attacks" north, so right shift
+        if(notAFile(square)) att = (square >> NW & bitboards[BLACK][PAWNS]);
+        if(att) {
+            if(attacker != nullptr) *attacker = att;
+            return PAWNS + 1;
+        }
+        if(notHFile(square)) att = (square >> NE & bitboards[BLACK][PAWNS]);
+        if(att) {
+            if (attacker != nullptr) *attacker = att;
+            return PAWNS + 1;
+        }
     }
     else{
-        if(notAFile(square) && (square << SW & bitboards[WHITE][PAWNS])) return true;
-        if(notHFile(square) && (square << SE & bitboards[WHITE][PAWNS])) return true;
+        if(notAFile(square)) att = (square << SW & bitboards[WHITE][PAWNS]);
+        if(att) {
+            if (attacker != nullptr) *attacker = att;
+            return PAWNS + 1;
+        }
+        if(notHFile(square)) att = (square << SE & bitboards[WHITE][PAWNS]);
+        if(att) {
+            if (attacker != nullptr) *attacker = att;
+            return PAWNS + 1;
+        }
     }
 
-    // check opposing king attacks
-    if(kingAttacks(square) & bitboards[!colour][KING]) return true;
+    /** Check knight attacks */
+    att = knightAttacks(square) & bitboards[colour][KNIGHTS];
+    if(att) {
+        if(attacker != nullptr) *attacker = att;
+        return KNIGHTS + 1;
+    }
 
-    return false;
+    /** Check bishop attacks */
+    uint64_t bishopAttacks = sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], int(squareIndex));
+    att = bishopAttacks & bitboards[colour][BISHOPS];
+    if(att) {
+        if(attacker != nullptr) *attacker = att;
+        return BISHOPS + 1;
+    }
+
+    /** Check rook attacks */
+    uint64_t rookAttacks = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], int(squareIndex));
+    att = rookAttacks & bitboards[colour][ROOKS];
+    if(att) {
+        if(attacker != nullptr) *attacker = att;
+        return ROOKS + 1;
+    }
+
+    /** Check queen attacks */
+    att = (rookAttacks | bishopAttacks) & bitboards[colour][QUEENS];
+    if(att) {
+        if(attacker != nullptr) *attacker = att;
+        return QUEENS + 1;
+    }
+
+    /** check opposing king attacks */
+    att = kingAttacks(square) & bitboards[colour][KING];
+    if(att) {
+        if(attacker != nullptr) *attacker = att;
+        return KING + 1;
+    }
+
+    return 0;
 
 }
 
@@ -743,7 +793,7 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
         if(isIncheck || enPassantMoveFlag){
             doMove(move);
             // check if the king is attacked after this moves
-            if(squareAttacked(bitboards[!this->turn][KING], !this->turn)){
+            if(squareAttackedBy(bitboards[!this->turn][KING], this->turn)){
                 undoMove();
                 continue;
             }
@@ -751,7 +801,7 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
         }
 
         if(kingMoveFlag){
-            if(squareAttacked(destinationBB, this->turn)){
+            if(squareAttackedBy(destinationBB, !this->turn)){
                 continue;
             }
         }
@@ -778,10 +828,19 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
             if (captureBB && !enPassantMoveFlag) { // capture moves
                 move |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
 
-                movelist.moves[movelist.moveLength].second = score
-                        + getPieceValue(!this->turn, captureBB)
-                        - getPieceValue(this->turn, origin) +
-                        CAPTURE_SCORE; // offset to sort captures first
+                int SEE = staticExchangeEvaluationCapture(origin, destinationBB, this->turn);
+                int capturebonus;
+                if(SEE > 0){
+                    capturebonus = CAPTURE_SCORE;
+                }
+                else if(SEE == 0){
+                    capturebonus = CAPTURE_SCORE/2;
+                }
+                else{
+                    capturebonus = -CAPTURE_SCORE;
+                }
+
+                movelist.moves[movelist.moveLength].second = score + capturebonus + SEE;
                 movelist.moves[movelist.moveLength++].first = move;
             } else {
                 movelist.moves[movelist.moveLength].second = score;
@@ -791,11 +850,71 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
     }
 }
 
+/**
+ * Statically evaluate a capture. Difference with SEE is that the first capture is mandatory.
+ * @param squareBB
+ * @param side
+ * @return
+ */
+int Position::staticExchangeEvaluationCapture(uint64_t from, uint64_t to, bool side){
+    int attackerType = getPieceType(side, from);
 
-/*
+    /** Get the type and value of the piece that is captured */
+    int takenPieceType = getPieceType(!side, to);
+    int takenPieceValue = PIECEWEIGHTS[takenPieceType];
+
+    /** Capture the piece (without updating hash and everything) */
+    bitboards[!side][takenPieceType] &= ~to;
+    bitboards[side][attackerType] &= ~from;
+    bitboards[side][attackerType] |= to;
+
+    /** Recursively call SEE */
+    int value = takenPieceValue - staticExchangeEvaluation(to, !side);
+
+    /** Undo the captures */
+    bitboards[!side][takenPieceType] |= to;
+    bitboards[side][attackerType] &= ~to;
+    bitboards[side][attackerType] |= from;
+
+    return value;
+}
+
+
+int Position::staticExchangeEvaluation(uint64_t squareBB, bool side){
+    int value = 0;
+    uint64_t attacker;
+    int attackerType = squareAttackedBy(squareBB, side, &attacker);
+    if(attackerType){
+        attackerType -= 1; /** To get the correct index, as squareAttacked offsets everything with 1 */
+
+        /** Get the position of the attacker */
+        uint64_t singleAttackerIndex = debruijnSerialization(attacker);
+        uint64_t singleAttackerBB = 1ull << singleAttackerIndex;
+
+        /** Get the type and value of the piece that is captured */
+        int takenPieceType = getPieceType(!side, squareBB);
+        int takenPieceValue = PIECEWEIGHTS[takenPieceType];
+
+        /** Capture the piece (without updating hash and everything) */
+        bitboards[!side][takenPieceType] &= ~squareBB;
+        bitboards[side][attackerType] &= ~singleAttackerBB;
+        bitboards[side][attackerType] |= squareBB;
+
+        /** Recursively call SEE */
+        value = max(0, takenPieceValue - staticExchangeEvaluation(squareBB, !side));
+
+        /** Undo the captures */
+        bitboards[!side][takenPieceType] |= squareBB;
+        bitboards[side][attackerType] &= ~squareBB;
+        bitboards[side][attackerType] |= singleAttackerBB;
+    }
+    return value;
+}
+
+/**
  * This method checks which piece occupies originInt, and moves that piece to destinationInt. It does NOT check captures.
  * It DOES set the en passant bit in case of double pawn moves
- * It also sets removes castling rights in case of king moves
+ * It also sets removes castling rights in case of king moves, and the hash and eval are updated.
  * @param originInt origin bitboard
  * @param destinationInt destination bitboard
  * @param colour specify which colour moves (speeds up the search for the piece)
@@ -1038,7 +1157,9 @@ void Position::doMove(const unsigned move){
     generateHelpBitboards();
 }
 
-// removes the piece and updates hashes and evaluation
+/**
+ *  Removes the piece and updates hashes and evaluation
+ */
 inline void Position::removePiece(const unsigned pieceType, const uint64_t pieceBB, const bool colour, const unsigned pieceInt){
     bitboards[colour][pieceType] &= ~pieceBB;
 
@@ -1343,7 +1464,7 @@ int Position::Evaluate() {
 
 
             score += PSTs[0][pieceIndex][pieceInt];
-            }
+        }
     }
 
     // for black
@@ -1386,13 +1507,12 @@ int Position::getLazyEvaluation(){
 
 int Position::getEvaluation(){
     int mobilityBonus = calculateMobility(this->turn) - calculateMobility(!this->turn);
-    int pinnedPenalty = -popCount(bitboards[this->turn][PINNED_PIECES]);
 
     if(this->turn){
-        return positionEvaluations[halfMoveNumber] + mobilityBonus + pinnedPenalty + 20;
+        return positionEvaluations[halfMoveNumber] + mobilityBonus + 20;
     }
     else{
-        return -positionEvaluations[halfMoveNumber] - mobilityBonus -pinnedPenalty - 20;
+        return -positionEvaluations[halfMoveNumber] - mobilityBonus - 20;
     }
 }
 
@@ -1429,16 +1549,26 @@ inline int Position::getPieceValue(bool side, const uint64_t pieceBB) {
     return 0;
 }
 
-
+inline int Position::getPieceType(bool side, const uint64_t pieceBB) {
+    int i = 0;
+    for(uint64_t &bb : bitboards[side]){
+        if(bb & pieceBB){
+            return i;
+        }
+        i++;
+    }
+    printf("PIECE NOT FOUND");
+    return -1;
+}
 
 #include <cstdlib>     /* qsort */
 
-int compare(const pair<int, unsigned> & t1, const pair<int, unsigned> & t2){
+int compare(const pair<unsigned, int> & t1, const pair<unsigned, int> & t2){
     return (t1.second <= t2.second);
 }
 
 void Position::sortMoves(moveList &list) {
-    qsort(list.moves, list.moveLength, sizeof(pair<int, unsigned>), reinterpret_cast<__compar_fn_t>(compare));
+    qsort(list.moves, list.moveLength, sizeof(pair<unsigned, int>), reinterpret_cast<__compar_fn_t>(compare));
 }
 
 int Position::calculateMobilityBonus(int currentMobility, unsigned destinationInt, Pieces piece) {

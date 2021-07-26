@@ -78,7 +78,7 @@ private:
                                   bool kingMoveFlag = false, bool enPassantMoveFlag = false, bool promotionMoveFlag = false); // flags
 
 
-    bool squareAttacked(uint64_t square, bool colour);
+    int squareAttackedBy(uint64_t square, bool colour, uint64_t * attacker = nullptr);
     uint64_t pinnedPieces(uint64_t pinnedOrigin, bool colour);
 
     void MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour);
@@ -104,6 +104,16 @@ private:
     static int popCount(uint64_t destinations);
 
     int calculateMobility(bool turn);
+
+    int staticExchangeEvaluation(uint64_t squareBB, bool side);
+
+    void SEEmovePiece(uint64_t originBB, uint64_t destinationBB);
+
+    void SEEmovePiece(uint64_t originBB, unsigned int typeOrigin, uint64_t destinationBB, unsigned int typeDestination);
+
+    int getPieceType(bool side, const uint64_t pieceBB);
+
+    int staticExchangeEvaluationCapture(uint64_t from, uint64_t to, bool side);
 };
 
 #endif

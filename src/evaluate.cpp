@@ -282,7 +282,6 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
     // do proper eval
     stand_pat = position.getEvaluation();
 
-
     if(stand_pat >= beta){
         return beta;
     }
@@ -298,9 +297,11 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
     moveList movelist;
     position.GenerateMoves(movelist);
 
+    Position::sortMoves(movelist);
+
     // go over all capture moves to avoid horizon effect on tactical moves.
     for(int i = 0; i < movelist.moveLength; i++){
-        if(!(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK)){
+        if(!(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK) || movelist.moves[i].second < 0){
             continue;
         }
         stats->quiescentNodes += 1;
