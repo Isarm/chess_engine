@@ -830,11 +830,8 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
 
                 int SEE = staticExchangeEvaluationCapture(origin, destinationBB, this->turn);
                 int capturebonus;
-                if(SEE > 0){
+                if(SEE >= 0){
                     capturebonus = CAPTURE_SCORE;
-                }
-                else if(SEE == 0){
-                    capturebonus = CAPTURE_SCORE/2;
                 }
                 else{
                     capturebonus = -CAPTURE_SCORE;
@@ -1505,8 +1502,11 @@ int Position::getLazyEvaluation(){
 
 }
 
+
+
 int Position::getEvaluation(){
     int mobilityBonus = calculateMobility(this->turn) - calculateMobility(!this->turn);
+
 
     if(this->turn){
         return positionEvaluations[halfMoveNumber] + mobilityBonus + 20;

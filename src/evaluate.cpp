@@ -96,47 +96,50 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
     uint64_t currentPositionHash = position.positionHashes[position.halfMoveNumber];
 
     if(TT.contains(currentPositionHash, entry)){
-        stats->transpositionHits++;
-        // this means that the values are useful for this search
-        if(entry.depth >= ply){
-            switch (entry.typeOfNode) {
-                case EXACT_PV:
-                    if(entry.score <= alpha){
-                        return alpha;
-                    }
-                    if(entry.score >= beta){
-                        return beta;
-                    }
+        /** The halfmovenumber should be the same, otherwise it will have trouble detecting 3fold repetitions */
+        if(entry.age == position.halfMoveNumber) {
+            stats->transpositionHits++;
+            // this means that the values are useful for this search
+            if (entry.depth >= ply) {
+                switch (entry.typeOfNode) {
+                    case EXACT_PV:
+                        if (entry.score <= alpha) {
+                            return alpha;
+                        }
+                        if (entry.score >= beta) {
+                            return beta;
+                        }
 
-                    position.doMove(entry.bestMove);
-                    if(position.isDraw()){
+                        position.doMove(entry.bestMove);
+                        if (position.isDraw()) {
+                            position.undoMove();
+                            break;
+                        }
                         position.undoMove();
+                        pline->principalVariation[0] = entry.bestMove;
+                        pline->nmoves = 1;
+                        return entry.score; // return the exact score of this position
+                    case UPPER_BOUND_ALPHA:
+                        if (entry.score < alpha) {
+                            return alpha; // we know for sure that the evaluation of this position will be lower than alpha,
+                        }
                         break;
-                    }
-                    position.undoMove();
-                    pline->principalVariation[0] = entry.bestMove;
-                    pline->nmoves = 1;
-                    return entry.score; // return the exact score of this position
-                case UPPER_BOUND_ALPHA:
-                    if(entry.score < alpha){
-                        return alpha; // we know for sure that the evaluation of this position will be lower than alpha,
-                    }
-                    break;
-                case LOWER_BOUND_BETA:
-                    if(entry.score >= beta){
-                        return beta; // we have a lower bound, which is higher than beta
-                    }
-                    break;
-                default:
-                    cout << "Incorrect entry in TT" << "\n";
-                    break;
+                    case LOWER_BOUND_BETA:
+                        if (entry.score >= beta) {
+                            return beta; // we have a lower bound, which is higher than beta
+                        }
+                        break;
+                    default:
+                        cout << "Incorrect entry in TT" << "\n";
+                        break;
 
+                }
             }
-        }
-        // if the ply is not deep enough, or the bounds above are not strong enough, the best moves can still be used
-        // to improve move ordering in the search below. Note that alpha nodes have no valid best moves.
-        if(entry.typeOfNode != UPPER_BOUND_ALPHA) {
-            bestMove = entry.bestMove;
+            // if the ply is not deep enough, or the bounds above are not strong enough, the best moves can still be used
+            // to improve move ordering in the search below. Note that alpha nodes have no valid best moves.
+            if (entry.typeOfNode != UPPER_BOUND_ALPHA) {
+                bestMove = entry.bestMove;
+            }
         }
     }
 
