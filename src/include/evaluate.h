@@ -25,7 +25,7 @@ private:
 
     int Quiescence(int alpha, int beta, STATS *pStats, int depth = 50);
 
-    void scoreMoves(moveList &list, int left, bool side);
+    void scoreMoves(moveList &list, int left, bool side, uint64_t bestmove = 0);
 
 
     unsigned int killerMoves[MAX_DEPTH][KILLER_MOVE_SLOTS] = {};

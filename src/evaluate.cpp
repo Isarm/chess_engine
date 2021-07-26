@@ -146,7 +146,7 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
     // generate list of moves
     moveList movelist;
     position.GenerateMoves(movelist);
-    scoreMoves(movelist, ply, position.turn);
+    scoreMoves(movelist, ply, position.turn, bestMove);
     Position::sortMoves(movelist);
 
     // check for stalemate or checkmate in case of no moves left:
@@ -163,50 +163,9 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         }
     }
 
-
-    /** if there was a transposition found, first evaluate that move */
-    bool legal = false;
-    if(bestMove != 0) {
-        /** first check if this moves exists (this can go wrong in case of transposition table collisions */
-        for (pair<unsigned, int> move : movelist.moves) {
-            if ((uint64_t) move.first == bestMove) {
-                legal = true;
-                break;
-            }
-        }
-    }
-    if(legal){
-        stats->totalNodes += 1;
-        position.doMove(bestMove);
-
-        //check if this moves has lead to a draw (3fold rep/50move rule); as then the search can be stopped
-        int score;
-        if(position.isDraw()){
-            position.undoMove();
-            score = 0;
-        }
-        else {
-            score = -AlphaBeta(ply - 1, -beta, -alpha, &line, stats, LINE());
-            position.undoMove();
-        }
-
-        if(score >= beta){
-            stats->betaCutoffs += 1;
-            return beta; // beta cutoff
-        }
-
-        if(score > alpha){ // principal variation found
-            alpha = score;
-            pline->principalVariation[0] = bestMove;
-            memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
-            pline->nmoves = line.nmoves + 1;
-        }
-    }
-
-
-    // then the normal moves
+    /** Go through the movelist */
     for(int i = 0; i < movelist.moveLength; i++){
-        if(movelist.moves[i].first == bestMove || movelist.moves[i].first == iterativeDeepeningMove){
+        if(movelist.moves[i].first == iterativeDeepeningMove){
             continue; // as this has already been evaluated above
         }
         stats->totalNodes += 1;
@@ -324,8 +283,11 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
 }
 
 
-void Evaluate::scoreMoves(moveList &list, int ply, bool side) {
+void Evaluate::scoreMoves(moveList &list, int ply, bool side, uint64_t bestMove) {
     for(int i = 0; i < list.moveLength; i++){
+        if(list.moves[i].first == bestMove){
+            list.moves[i].second += 2000000;
+        }
         if(isKiller(ply, list.moves[i].first)){
             list.moves[i].second += KILLER_BONUS;
         }
