@@ -230,14 +230,14 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
     }
 
     // define stand_pat (adapted from chessprogramming wiki quiescence search)
-    // first do lazy evaluation (with a safety margin of 50 centipawns)
+    // first do lazy evaluation (with a safety margin of 150 centipawns)
     int stand_pat = position.getLazyEvaluation();
 
     if(stand_pat >= beta + 50){
         return beta;
     }
 
-    if(stand_pat < alpha - 960){
+    if(stand_pat < alpha - 930){
         return alpha;
     }
 

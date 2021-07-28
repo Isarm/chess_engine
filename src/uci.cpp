@@ -95,6 +95,12 @@ void UCI::mainLoop(){
             // nothing for now
         }
 
+        if(input == "isready"){
+            input.clear();
+            std::cout << "readyok\n";
+            std::cout.flush();
+        }
+
         if(input == "stop"){
             if(threadStarted){
                 timeFlag.store(true);
@@ -179,7 +185,14 @@ void UCI::mainLoop(){
 
 void UCI::timer(int ms){
     timeFlag.store(false);
-    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+    auto t1 = std::chrono::high_resolution_clock::now();
+    while(true){
+        auto t2 = std::chrono::high_resolution_clock::now();
+        long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        if(milliseconds > ms || timeFlag.load()){
+            break;
+        }
+    }
     timeFlag.store(true);
 }
 

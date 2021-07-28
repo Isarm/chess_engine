@@ -439,8 +439,6 @@ inline void Position::GeneratePawnMoves(moveList &movelist, bool onlyCaptures) {
         // update movelist
         if(currentPawnMoves || currentPawnCaptureMoves) bitboardsToLegalMovelist(movelist, pieceBB, currentPawnMoves, currentPawnCaptureMoves, pawn,false, false, promotionMoveFlag);
 
-
-
     }
 }
 
@@ -1513,26 +1511,28 @@ int Position::Evaluate() {
 }
 
 int Position::getLazyEvaluation(){
+    filesAndPawns = calculateFileAndPawnScore(this->turn) - calculateFileAndPawnScore(!this->turn);
     if(this->turn){
-        return positionEvaluations[halfMoveNumber] + 20;
+        return positionEvaluations[halfMoveNumber] + filesAndPawns + 10;
     }
     else{
-        return -positionEvaluations[halfMoveNumber] - 20;
+        return -positionEvaluations[halfMoveNumber] - filesAndPawns - 10;
     }
 
 }
 
-
-
+/**
+ * DO NOT CALL GET_EVALUATION WITHOUG CALLING LAZY EVALUATION FIRST.
+ * @return
+ */
 int Position::getEvaluation(){
     int mobilityBonus = calculateMobility(this->turn) - calculateMobility(!this->turn);
 
-
     if(this->turn){
-        return positionEvaluations[halfMoveNumber] + mobilityBonus + 20;
+        return positionEvaluations[halfMoveNumber] + mobilityBonus + filesAndPawns + 10;
     }
     else{
-        return -positionEvaluations[halfMoveNumber] - mobilityBonus - 20;
+        return -positionEvaluations[halfMoveNumber] - mobilityBonus - filesAndPawns - 10;
     }
 }
 
@@ -1636,12 +1636,12 @@ int Position::popCount(uint64_t x) {
     return count;
 }
 
-int Position::calculateMobility(bool turn) {
+int Position::calculateMobility(bool side) {
     unsigned mobility = 0;
 
     int mobilityPieces[4] = {BISHOPS, KNIGHTS, ROOKS, QUEENS};
     for(int &i : mobilityPieces){
-        uint64_t pieces = bitboards[turn][i];
+        uint64_t pieces = bitboards[side][i];
 
         unsigned pieceIndex;
         uint64_t pieceBB;
@@ -1674,4 +1674,42 @@ int Position::calculateMobility(bool turn) {
         }
     }
     return (int)((float)(mobility * 5) *  max(0.0, double(1 - 2 * endGameFraction)) );
+}
+
+/**
+ * Calculate rook on open file bonus and pawn structure deficits
+ * @param turn
+ * @return
+ */
+int Position::calculateFileAndPawnScore(bool side) {
+    int score = 0;
+
+    /** Loop over files */
+    for(int i = 0; i < 8; i++){
+        uint64_t pawnsOnFile = FILES[i] & bitboards[side][PAWNS];
+        if(pawnsOnFile){
+            int pawnCount = popCount(pawnsOnFile);
+
+            if(!(ISOLATED[i] & bitboards[side][PAWNS])){
+                /** The pawns are isolated */
+                score -= ISOLATED_PENALTY; // penalty for isolated pawns
+                score -= (pawnCount - 1) * ISOLATED_DOUBLED_PENALTY; // penalty for every extra pawn on that file
+            } else{
+                /** Non isolated pawns can still get a small penalty for being doubled */
+                score -= (pawnCount - 1) * DOUBLED_PENALTY;
+            }
+        } else if(bitboards[side][ROOKS] & FILES[i]){
+            /** If there are no pawns on the file, but there are rooks, they are on a (semi) open file */
+            int rookCount = popCount(bitboards[side][ROOKS] & FILES[i]);
+
+            if(!(bitboards[!side][PAWNS] & FILES[i])){
+                /** Open file */
+                score += rookCount * ROOK_ON_OPEN_FILE;
+            }
+            else{
+                score += rookCount * ROOK_ON_SEMI_OPEN_FILE;
+            }
+        }
+    }
+    return score;
 }

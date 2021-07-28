@@ -204,6 +204,13 @@ namespace definitions {
     constexpr int PROMOTION_CAPTURE_SCORE = 1200000;
     constexpr int PROMOTION_SCORE = 1100000;
 
+    constexpr int ISOLATED_PENALTY = 30;
+    constexpr int ISOLATED_DOUBLED_PENALTY = 50;
+    constexpr int DOUBLED_PENALTY = 25;
+
+    constexpr int ROOK_ON_SEMI_OPEN_FILE = 10;
+    constexpr int ROOK_ON_OPEN_FILE = 25;
+
     typedef struct{
         LINE PVline = {
                 0,0, {}

@@ -69,6 +69,7 @@ public:
     static void sortMoves(moveList &list);
 
 private:
+    int filesAndPawns = 0;
 
     void GeneratePawnMoves(moveList &movelist, bool onlyCaptures = false);
     void GenerateKnightMoves(moveList &movelist, bool onlyCaptures = false);
@@ -103,13 +104,15 @@ private:
 
     static int popCount(uint64_t destinations);
 
-    int calculateMobility(bool turn);
+    int calculateMobility(bool side);
 
     int staticExchangeEvaluation(uint64_t squareBB, bool side);
 
     int getPieceType(bool side, const uint64_t pieceBB);
 
     int staticExchangeEvaluationCapture(uint64_t from, uint64_t to, bool side);
+
+    int calculateFileAndPawnScore(bool turn);
 };
 
 #endif

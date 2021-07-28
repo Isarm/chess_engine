@@ -16,15 +16,24 @@ void hashTest();
 
 void benchmarks();
 
+void fileAndStructureTest();
+
 using namespace std;
 
 
 void testmain(int argc, char *argv[]){
-    perft(argc, argv);
+//    perft(argc, argv);
 //    perftDebug();
 //    drawTest();
 //    hashTest();
 //    benchmarks();
+    fileAndStructureTest();
+}
+
+void fileAndStructureTest() {
+    Position position = Position("4k3/ppp1p1pp/8/4P3/1P2P2P/P1P1P1PP/8/4KR1R w K - 0 1");
+    position.getLazyEvaluation();
+
 }
 
 void benchmarks() {
