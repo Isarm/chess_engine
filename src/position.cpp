@@ -9,9 +9,7 @@
 #include "useful.h"
 #include "slider_attacks.h"
 #include <algorithm>
-#include <chrono>
 #include "lookupTables.h"
-#include "benchmarks.h"
 
 
 using namespace std;
@@ -462,7 +460,7 @@ inline void Position::GenerateKnightMoves(moveList &movelist, bool onlyCaptures)
 
         knights &= ~pieceBB; //remove knight from knights bitboard
 
-        currentKnightMoves = knightAttacks(pieceBB); //get the knight attacks (moveGenHelpFunctions.h)
+        currentKnightMoves = getKnightAttacks(pieceIndex); //get the knight attacks (moveGenHelpFunctions.h)
 
 
         // use knightmoves AND NOT white pieces to remove blocked squares
@@ -540,8 +538,9 @@ inline void Position::GenerateSliderMoves(moveList &movelist, bool onlyCaptures)
 
 inline void Position::GenerateKingMoves(moveList &movelist, bool onlyCaptures){
     uint64_t king = bitboards[this->turn][KING];
+    unsigned kingIndex = debruijnSerialization(king);
 
-    uint64_t kingMoves = kingAttacks(king);
+    uint64_t kingMoves = getKingAttacks(kingIndex);
 
     kingMoves &= ~bitboards[this->turn][PIECES];
     uint64_t kingCaptureMoves = kingMoves & bitboards[!this->turn][PIECES];
@@ -689,7 +688,7 @@ inline int Position::squareAttackedBy(uint64_t square, bool colour, uint64_t *at
     }
 
     /** Check knight attacks */
-    att = knightAttacks(square) & bitboards[colour][KNIGHTS];
+    att = getKnightAttacks(squareIndex) & bitboards[colour][KNIGHTS];
     if(att) {
         if(attacker != nullptr) *attacker = att;
         return KNIGHTS + 1;
@@ -719,7 +718,7 @@ inline int Position::squareAttackedBy(uint64_t square, bool colour, uint64_t *at
     }
 
     /** check opposing king attacks */
-    att = kingAttacks(square) & bitboards[colour][KING];
+    att = getKingAttacks(squareIndex) & bitboards[colour][KING];
     if(att) {
         if(attacker != nullptr) *attacker = att;
         return KING + 1;
@@ -1618,7 +1617,7 @@ int Position::calculateMobilityBonus(int currentMobility, unsigned destinationIn
             currentMobility /= QUEEN_MOBILITY_SCALING;
             break;
         case definitions::knight:
-            attacks = knightAttacks(1ull << destinationInt);
+            attacks = getKnightAttacks(destinationInt);
             mobilityBonus = popCount(attacks) / KNIGHT_MOBILITY_SCALING;
             currentMobility /= KNIGHT_MOBILITY_SCALING;
             break;
@@ -1669,7 +1668,7 @@ int Position::calculateMobility(bool side) {
                     mobility += popCount(attacks) / QUEEN_MOBILITY_SCALING;
                     break;
                 case KNIGHTS:
-                    attacks = knightAttacks(pieceBB);
+                    attacks = getKnightAttacks(pieceIndex);
                     mobility += popCount(attacks) / KNIGHT_MOBILITY_SCALING;
                     break;
             }

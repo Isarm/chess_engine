@@ -22,12 +22,12 @@ using namespace std;
 
 
 void testmain(int argc, char *argv[]){
-//    perft(argc, argv);
+    perft(argc, argv);
 //    perftDebug();
 //    drawTest();
 //    hashTest();
 //    benchmarks();
-    fileAndStructureTest();
+//    fileAndStructureTest();
 }
 
 void fileAndStructureTest() {

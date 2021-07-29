@@ -11,3 +11,6 @@ uint64_t zobristBlackToMove;
 uint64_t zobristEnPassantFile[8];
 
 int rayDirectionsTable[64][64];
+
+uint64_t knightAttacksLUT[64];
+uint64_t kingAttacksLUT[64];

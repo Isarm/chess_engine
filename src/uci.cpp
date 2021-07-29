@@ -59,8 +59,6 @@ void UCI::start() {
 
         }
     }
-    rayDirectionLookupInitialize(); // initialize ray lookup table;
-    zobristPieceTableInitialize(); // initialize zobrist hash table
 
     Settings settings;
     settings.depth = MAX_DEPTH;

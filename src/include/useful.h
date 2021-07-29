@@ -43,35 +43,6 @@ inline static bool is8thRank(const uint64_t bb) {
     return uint64_t(0x00000000000000FF) & bb;
 }
 
-inline uint64_t knightAttacks(const uint64_t knight) {
-    uint64_t currentKnightMoves = 0;
-    if (notAFile(knight)) {
-        currentKnightMoves |= ((knight >> NNW) | (knight << SSW));
-    }
-    if (notABFile(knight)) {
-        currentKnightMoves |= ((knight >> NWW) | (knight << SWW));
-    }
-    if (notHFile(knight)) {
-        currentKnightMoves |= ((knight >> NNE) | (knight << SSE));
-    }
-    if (notGHFile(knight)) {
-        currentKnightMoves |= ((knight >> NEE) | (knight << SEE));
-    }
-    return currentKnightMoves;
-}
-
-inline uint64_t kingAttacks(const uint64_t king){
-    uint64_t kingAttacks = 0;
-    if(notAFile(king)){
-        kingAttacks |= (king >> NW) | (king >> W) | (king << SW);
-    }
-    if(notHFile(king)) {
-        kingAttacks |= (king >> NE) | (king << E) | (king << SE);
-    }
-    kingAttacks |= (king >> N) | (king << S);
-
-    return kingAttacks;
-}
 
 // from the chess programming wiki
 // for the debruijn bit serialization method
@@ -89,14 +60,10 @@ const int index64[64] = {
 };
 
 
-
 inline unsigned debruijnSerialization(const uint64_t pieces) {
     uint64_t LS1B = pieces & -pieces; // only keeps the 1st LSB bit so that the DeBruijn bitscan can be used
     return index64[(LS1B * debruijn64) >> 58u];
 }
-
-
-
 
 
 inline string moveToStrNotation(const unsigned move){
@@ -129,8 +96,6 @@ inline string moveToStrNotation(const unsigned move){
            str[4] = types[promotionType];
 
     }
-
-
     return string(str);
 
 };

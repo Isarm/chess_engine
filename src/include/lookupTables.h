@@ -18,6 +18,11 @@ extern uint64_t zobristCastlingRightsTable[16];
 extern uint64_t zobristBlackToMove;
 extern uint64_t zobristEnPassantFile[8];
 
+extern uint64_t knightAttacksLUT[64];
+extern uint64_t kingAttacksLUT[64];
+
+extern int rayDirectionsTable[64][64];
+
 inline void zobristPieceTableInitialize(){
     /* Random number generator */
     std::default_random_engine generator{static_cast<long long unsigned>(0xc9558c91601b5d95)};
@@ -42,9 +47,6 @@ inline void zobristPieceTableInitialize(){
 
 }
 
-// lookup table for direction from square a to square b
-extern int rayDirectionsTable[64][64];
-
 inline void rayDirectionLookupInitialize() {
     for (int i = 0; i < 64; i++) {
         for(int j = i + 1; j%8 != 0; j++) rayDirectionsTable[i][j] = HORIZONTAL_RAY;
@@ -65,7 +67,55 @@ inline int rayDirectionLookup(const unsigned a, const unsigned b) {
     return rayDirectionsTable[a][b];
 }
 
+inline uint64_t knightAttacks(const uint64_t knight) {
+    uint64_t currentKnightMoves = 0;
+    if (notAFile(knight)) {
+        currentKnightMoves |= ((knight >> NNW) | (knight << SSW));
+    }
+    if (notABFile(knight)) {
+        currentKnightMoves |= ((knight >> NWW) | (knight << SWW));
+    }
+    if (notHFile(knight)) {
+        currentKnightMoves |= ((knight >> NNE) | (knight << SSE));
+    }
+    if (notGHFile(knight)) {
+        currentKnightMoves |= ((knight >> NEE) | (knight << SEE));
+    }
+    return currentKnightMoves;
+}
 
+inline void knightAttacksLUTinitialize(){
+    for (int i = 0; i < 64; ++i) {
+        knightAttacksLUT[i] = knightAttacks(1ull << i);
+    }
+}
+
+inline uint64_t getKnightAttacks(const unsigned knight) {
+    return knightAttacksLUT[knight];
+}
+
+inline uint64_t kingAttacks(const uint64_t king){
+    uint64_t kingAttacks = 0;
+    if(notAFile(king)){
+        kingAttacks |= (king >> NW) | (king >> W) | (king << SW);
+    }
+    if(notHFile(king)) {
+        kingAttacks |= (king >> NE) | (king << E) | (king << SE);
+    }
+    kingAttacks |= (king >> N) | (king << S);
+
+    return kingAttacks;
+}
+
+inline void kingAttacksLUTinitialize(){
+    for (int i = 0; i < 64; ++i) {
+        kingAttacksLUT[i] = kingAttacks(1ull << i);
+    }
+}
+
+inline uint64_t getKingAttacks(const unsigned king){
+    return kingAttacksLUT[king];
+}
 
 #define ENGINE_ZOBRISTTABLES_H
 
