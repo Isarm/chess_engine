@@ -256,15 +256,16 @@ Position::Position(string FEN) {
     sliderAttacks = SliderAttacks();
     sliderAttacks.Initialize(); // initialize slider attacks
 
-    rayDirectionLookupInitialize(); // initialize ray lookup table;
-
-    zobristPieceTableInitialize(); // initialize zobrist hash table
-
     positionHashes[halfMoveNumber] = calculateHash();
 
     positionEvaluations[halfMoveNumber] = Evaluate();
 }
 
+/**
+ * Calculates the complete hash of the position. It is only used at initialization, as the hash is updated
+ * incrementally when traversing the search tree.
+ * @return
+ */
 uint64_t Position::calculateHash() {
     uint64_t posHash = 0;
 // calculate the posHash of the current position;
