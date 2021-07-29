@@ -366,7 +366,7 @@ void Position::GenerateMoves(moveList &movelist, bool onlyCaptures) {
 }
 
 
-inline void Position::GeneratePawnMoves(moveList &movelist, bool onlyCaptures) {
+inline void Position::GeneratePawnMoves(moveList &movelist, const bool onlyCaptures) {
     uint64_t pawns;
 
     pawns = bitboards[this->turn][PAWNS];
@@ -443,7 +443,7 @@ inline void Position::GeneratePawnMoves(moveList &movelist, bool onlyCaptures) {
 
 
 
-inline void Position::GenerateKnightMoves(moveList &movelist, bool onlyCaptures) {
+inline void Position::GenerateKnightMoves(moveList &movelist, const bool onlyCaptures) {
 
     uint64_t knights;
     knights = bitboards[this->turn][KNIGHTS];
@@ -488,7 +488,7 @@ inline void Position::GenerateSliderMoves(moveList &movelist, bool onlyCaptures)
 
     unsigned pieceIndex;
     uint64_t pieceBB, currentPieceMoves, currentPieceCaptures;
-    int sliders[] = {BISHOPS, ROOKS, QUEENS}; // sliders to loop over
+    const int sliders[] = {BISHOPS, ROOKS, QUEENS}; // sliders to loop over
     for(int currentSlider: sliders) {
         uint64_t currentPiece;
         currentPiece = bitboards[this->turn][currentSlider];
@@ -536,9 +536,9 @@ inline void Position::GenerateSliderMoves(moveList &movelist, bool onlyCaptures)
     }
 }
 
-inline void Position::GenerateKingMoves(moveList &movelist, bool onlyCaptures){
-    uint64_t king = bitboards[this->turn][KING];
-    unsigned kingIndex = debruijnSerialization(king);
+inline void Position::GenerateKingMoves(moveList &movelist, const bool onlyCaptures){
+    const uint64_t king = bitboards[this->turn][KING];
+    const unsigned kingIndex = debruijnSerialization(king);
 
     uint64_t kingMoves = getKingAttacks(kingIndex);
 
@@ -579,7 +579,7 @@ void Position::GenerateCastlingMoves(moveList &movelist) {
 /*
  * Checks legality of castling moves and puts into movelist if legal
  */
-inline void Position::CastlingToMovelist(moveList &movelist, unsigned castlingType, uint64_t empty, uint64_t nonattacked){
+inline void Position::CastlingToMovelist(moveList &movelist, const unsigned castlingType, const uint64_t empty, uint64_t nonattacked){
 
     if(!(empty & helpBitboards[OCCUPIED_SQUARES])) { // check if the squares are empty
         unsigned nonAttackedInt;
@@ -602,7 +602,7 @@ inline void Position::CastlingToMovelist(moveList &movelist, unsigned castlingTy
 
 // pinnedOrigin is the location that will be checked for pins (e.g. pinnedOrigin is king for legality check)
 // pinned pieces are of colour $colour
-inline uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
+inline uint64_t Position::pinnedPieces(const uint64_t pinnedOrigin, const bool colour){
 
     int squareIndex = (int) debruijnSerialization(pinnedOrigin);
     uint64_t pinnedPieces = 0;
@@ -657,7 +657,7 @@ inline uint64_t Position::pinnedPieces(uint64_t pinnedOrigin, bool colour){
  * @param attacker Optional attacker
  * @return
  */
-inline int Position::squareAttackedBy(uint64_t square, bool colour, uint64_t *attacker){ // TODO: clean up this function
+inline int Position::squareAttackedBy(uint64_t square, const bool colour, uint64_t *attacker){ // TODO: clean up this function
     unsigned squareIndex = debruijnSerialization(square);
     uint64_t att = 0;
 
@@ -728,6 +728,12 @@ inline int Position::squareAttackedBy(uint64_t square, bool colour, uint64_t *at
 
 }
 
+
+const int moveScores[6] = {
+        5, 4, 3, 2, 1, 0
+        // pawn, knight, bishop, rook, queen, king
+};
+
 /** This function converts a origin bitboard and destinations bitboard into a movelist (appends to the variable movelist).
  * The function assumes the moves are pseudo legal, and performs a legality check to make sure that the king is not
  * left in check after the moves has been made.
@@ -741,35 +747,13 @@ inline int Position::squareAttackedBy(uint64_t square, bool colour, uint64_t *at
  *
  */
 
-void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origin, const uint64_t destinations, const uint64_t captureDestinations, const Pieces piece, bool kingMoveFlag, bool enPassantMoveFlag, bool promotionMoveFlag) {
-
-
+void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origin, const uint64_t destinations, const uint64_t captureDestinations, const Pieces piece,
+                                        const bool kingMoveFlag, const bool enPassantMoveFlag, const bool promotionMoveFlag) {
     unsigned originInt, destinationInt, move;
     uint64_t destinationBB;
     originInt = debruijnSerialization(origin);
 
-    /** TODO: put this in a proper place */
-    int score = 0;
-    switch (piece) {
-        case pawn:
-            score = 5;
-            break;
-        case knight:
-            score = 4;
-            break;
-        case bishop:
-            score = 3;
-            break;
-        case rook:
-            score = 2;
-            break;
-        case queen:
-            score = 1;
-            break;
-        case king:
-            score = 0;
-            break;
-    }
+    int score = moveScores[piece];
 
     // check if the piece is pinned
     bool pinnedFlag = false;
@@ -871,12 +855,12 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
  * @param side
  * @return
  */
-int Position::staticExchangeEvaluationCapture(uint64_t from, uint64_t to, bool side){
-    int attackerType = getPieceType(side, from);
+int Position::staticExchangeEvaluationCapture(const uint64_t from, const uint64_t to, const bool side){
+    const int attackerType = getPieceType(side, from);
 
     /** Get the type and value of the piece that is captured */
-    int takenPieceType = getPieceType(!side, to);
-    int takenPieceValue = PIECEWEIGHTS[takenPieceType];
+    const int takenPieceType = getPieceType(!side, to);
+    const int takenPieceValue = PIECEWEIGHTS[takenPieceType];
 
     /** Capture the piece (without updating hash and everything) */
     bitboards[!side][takenPieceType] &= ~to;
@@ -884,7 +868,7 @@ int Position::staticExchangeEvaluationCapture(uint64_t from, uint64_t to, bool s
     bitboards[side][attackerType] |= to;
 
     /** Recursively call SEE */
-    int value = takenPieceValue - staticExchangeEvaluation(to, !side);
+    const int value = takenPieceValue - staticExchangeEvaluation(to, !side);
 
     /** Undo the captures */
     bitboards[!side][takenPieceType] |= to;
@@ -895,7 +879,7 @@ int Position::staticExchangeEvaluationCapture(uint64_t from, uint64_t to, bool s
 }
 
 
-int Position::staticExchangeEvaluation(uint64_t squareBB, bool side){
+int Position::staticExchangeEvaluation(const uint64_t squareBB, const bool side){
     int value = 0;
     uint64_t attacker;
     int attackerType = squareAttackedBy(squareBB, side, &attacker);
@@ -903,12 +887,12 @@ int Position::staticExchangeEvaluation(uint64_t squareBB, bool side){
         attackerType -= 1; /** To get the correct index, as squareAttacked offsets everything with 1 */
 
         /** Get the position of the attacker */
-        uint64_t singleAttackerIndex = debruijnSerialization(attacker);
-        uint64_t singleAttackerBB = 1ull << singleAttackerIndex;
+        const uint64_t singleAttackerIndex = debruijnSerialization(attacker);
+        const uint64_t singleAttackerBB = 1ull << singleAttackerIndex;
 
         /** Get the type and value of the piece that is captured */
-        int takenPieceType = getPieceType(!side, squareBB);
-        int takenPieceValue = PIECEWEIGHTS[takenPieceType];
+        const int takenPieceType = getPieceType(!side, squareBB);
+        const int takenPieceValue = PIECEWEIGHTS[takenPieceType];
 
         /** Capture the piece (without updating hash and everything) */
         bitboards[!side][takenPieceType] &= ~squareBB;
