@@ -1511,7 +1511,8 @@ int Position::Evaluate() {
 }
 
 int Position::getLazyEvaluation(){
-    filesAndPawns = calculateFileAndPawnScore(this->turn) - calculateFileAndPawnScore(!this->turn);
+//    filesAndPawns = calculateFileAndPawnScore(this->turn) - calculateFileAndPawnScore(!this->turn);
+
     if(this->turn){
         return positionEvaluations[halfMoveNumber] + filesAndPawns + 10;
     }
