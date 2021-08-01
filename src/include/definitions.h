@@ -176,9 +176,9 @@ namespace definitions {
     };
 
     struct LINE {
-        int depth;
-        int nmoves;
-        unsigned principalVariation[100];
+        int depth = 0;
+        int nmoves = 0;
+        unsigned principalVariation[100] = {};
     };
 
     struct STATS {

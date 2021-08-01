@@ -1494,7 +1494,6 @@ int Position::getLazyEvaluation(){
     else{
         return -positionEvaluations[halfMoveNumber] - filesAndPawns - 10;
     }
-
 }
 
 /**

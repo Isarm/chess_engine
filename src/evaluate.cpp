@@ -40,7 +40,6 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         return 0;
     }
 
-    LINE line;
     if(ply == 0){
         pline->nmoves = 0;
         // do a quiescent search for the leaf nodes, to reduce the horizon effect
@@ -67,6 +66,7 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
 
         //check if this iterativeDeepeningMove has lead to a draw (3fold rep/50move rule); as then the search can be stopped
         int score;
+        LINE line;
         if(position.isDraw()){
             position.undoMove();
             score = 0;
@@ -163,8 +163,11 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         }
     }
 
+    bool searchPV = alphaStart == alpha;
+
     /** Go through the movelist */
     for(int i = 0; i < movelist.moveLength; i++){
+        LINE line;
         if(movelist.moves[i].first == iterativeDeepeningMove){
             continue; // as this has already been evaluated above
         }
@@ -180,7 +183,18 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
             score = 0;
         }
         else {
-            score = -AlphaBeta(ply - 1, -beta, -alpha, &line, stats);
+            /** Principal variation search */
+            if(searchPV){
+                score = -AlphaBeta(ply - 1, -beta, -alpha, &line, stats);
+            }else{
+                /** Null window  search */
+                score = -AlphaBeta(ply - 1, -alpha - 1, -alpha, &line, stats);
+                if(score > alpha){
+                    line = LINE();
+                    /** Do a research with the full window */
+                    score = -AlphaBeta(ply - 1, -beta, -alpha, &line, stats);
+                }
+            }
             position.undoMove();
         }
 
@@ -198,6 +212,7 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         }
 
         if(score > alpha){ // principal variation found
+            searchPV = false;
             alpha = score;
             pline->principalVariation[0] = movelist.moves[i].first;
             memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
@@ -299,7 +314,6 @@ void Evaluate::scoreMoves(moveList &list, int ply, bool side, uint64_t bestMove)
             list.moves[i].second += KILLER_BONUS;
         }
         list.moves[i].second += getButterflyScore(ply, list.moves[i].first, side);
-
     }
 }
 
