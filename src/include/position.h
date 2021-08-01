@@ -2,6 +2,7 @@
 #include <iostream>
 #include "definitions.h"
 #include "slider_attacks.h"
+#include "LookupTables.h"
 
 using namespace std;
 using namespace definitions;
@@ -10,7 +11,6 @@ using namespace definitions;
 #define POSITION_H
 
 extern const int PIECEWEIGHTS[6];
-
 
 class Position{
 public:
@@ -69,6 +69,7 @@ public:
     static void sortMoves(moveList &list);
 
 private:
+    LookupTables LUTs;
     int filesAndPawns = 0;
 
     void GeneratePawnMoves(moveList &movelist, bool onlyCaptures = false);

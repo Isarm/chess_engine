@@ -9,7 +9,7 @@
 #include "useful.h"
 #include "slider_attacks.h"
 #include <algorithm>
-#include "lookupTables.h"
+#include "LookupTables.h"
 
 
 using namespace std;
@@ -250,6 +250,8 @@ Position::Position(string FEN) {
         this->fullMoveNumber = 0;
     }
 
+    LUTs = LookupTables();
+
     sliderAttacks = SliderAttacks();
     sliderAttacks.Initialize(); // initialize slider attacks
 
@@ -257,7 +259,6 @@ Position::Position(string FEN) {
     positionHashes[halfMoveNumber] = calculateHash();
 
     positionEvaluations[halfMoveNumber] = Evaluate();
-
 }
 
 /**
@@ -273,19 +274,19 @@ uint64_t Position::calculateHash() {
             uint64_t bb = bitboards[colour][piece];
             while (bb) {
                 unsigned int pieceIndex = debruijnSerialization(bb);
-                posHash ^= zobristPieceTable[colour][piece][pieceIndex];
+                posHash ^= LUTs.zobristPieceTable[colour][piece][pieceIndex];
                 uint64_t pieceBB = 1ull << pieceIndex;
                 bb &= ~pieceBB;
             }
         }
     }
-    posHash ^= zobristCastlingRightsTable[castlingRights];
+    posHash ^= LUTs.zobristCastlingRightsTable[castlingRights];
     if (this->turn == BLACK) {
-        posHash ^= zobristBlackToMove;
+        posHash ^= LUTs.zobristBlackToMove;
     }
     if (bitboards[!this->turn][EN_PASSANT_SQUARES]) {
         unsigned int enPassantSquare = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
-        posHash ^= zobristEnPassantFile[enPassantSquare % 8];
+        posHash ^= LUTs.zobristEnPassantFile[enPassantSquare % 8];
     }
     return posHash;
 }
@@ -460,7 +461,7 @@ inline void Position::GenerateKnightMoves(moveList &movelist, const bool onlyCap
 
         knights &= ~pieceBB; //remove knight from knights bitboard
 
-        currentKnightMoves = getKnightAttacks(pieceIndex); //get the knight attacks (moveGenHelpFunctions.h)
+        currentKnightMoves = LUTs.getKnightAttacks(pieceIndex); //get the knight attacks (moveGenHelpFunctions.h)
 
 
         // use knightmoves AND NOT white pieces to remove blocked squares
@@ -540,7 +541,7 @@ inline void Position::GenerateKingMoves(moveList &movelist, const bool onlyCaptu
     const uint64_t king = bitboards[this->turn][KING];
     const unsigned kingIndex = debruijnSerialization(king);
 
-    uint64_t kingMoves = getKingAttacks(kingIndex);
+    uint64_t kingMoves = LUTs.getKingAttacks(kingIndex);
 
     kingMoves &= ~bitboards[this->turn][PIECES];
     uint64_t kingCaptureMoves = kingMoves & bitboards[!this->turn][PIECES];
@@ -688,7 +689,7 @@ inline int Position::squareAttackedBy(uint64_t square, const bool colour, uint64
     }
 
     /** Check knight attacks */
-    att = getKnightAttacks(squareIndex) & bitboards[colour][KNIGHTS];
+    att = LUTs.getKnightAttacks(squareIndex) & bitboards[colour][KNIGHTS];
     if(att) {
         if(attacker != nullptr) *attacker = att;
         return KNIGHTS + 1;
@@ -718,7 +719,7 @@ inline int Position::squareAttackedBy(uint64_t square, const bool colour, uint64
     }
 
     /** check opposing king attacks */
-    att = getKingAttacks(squareIndex) & bitboards[colour][KING];
+    att = LUTs.getKingAttacks(squareIndex) & bitboards[colour][KING];
     if(att) {
         if(attacker != nullptr) *attacker = att;
         return KING + 1;
@@ -776,7 +777,7 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
         if(pinnedFlag){
             unsigned kingInt = debruijnSerialization(bitboards[this->turn][KING]);
             // if the piece does not moves in the same line as the king, the moves is illegal, thus continue with the next moves
-            if(rayDirectionLookup(kingInt, originInt) != rayDirectionLookup(originInt, destinationInt)) {
+            if(LUTs.rayDirectionLookup(kingInt, originInt) != LUTs.rayDirectionLookup(originInt, destinationInt)) {
                 continue;
             }
         }
@@ -930,13 +931,13 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
     // note that in case of moving the rook, the removal of castling rights is handled in the doMove function.
     if (pieceToMove == KING) {
         if (colour == WHITE) {
-            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
             castlingRights &= ~WHITE_CASTLING_RIGHTS;
-            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
         } else {
-            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
             castlingRights &= ~BLACK_CASTLING_RIGHTS;
-            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
         }
     }
 
@@ -946,13 +947,13 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
             if ((originBB >> NN) & destinationBB) {
                 bitboards[WHITE][EN_PASSANT_SQUARES] = originBB >> N;
                 // update hash
-                positionHashes[halfMoveNumber] ^= zobristEnPassantFile[debruijnSerialization(originBB >> N) % 8];
+                positionHashes[halfMoveNumber] ^= LUTs.zobristEnPassantFile[debruijnSerialization(originBB >> N) % 8];
             }
         } else {
             if ((originBB << SS) & destinationBB) {
                 bitboards[BLACK][EN_PASSANT_SQUARES] = originBB << S;
                 // update hash
-                positionHashes[halfMoveNumber] ^= zobristEnPassantFile[debruijnSerialization(originBB << S) % 8];
+                positionHashes[halfMoveNumber] ^= LUTs.zobristEnPassantFile[debruijnSerialization(originBB << S) % 8];
             }
         }
     }
@@ -1039,14 +1040,14 @@ void Position::doMove(const unsigned move){
             }
             if(this->turn == WHITE){
                 // update hash and castling rights
-                positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+                positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
                 castlingRights &= ~WHITE_CASTLING_RIGHTS;
-                positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+                positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
             }
             else{
-                positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+                positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
                 castlingRights &= ~BLACK_CASTLING_RIGHTS;
-                positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+                positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
             }
             break;
         case PROMOTION_FLAG:
@@ -1102,24 +1103,24 @@ void Position::doMove(const unsigned move){
     // reset castling rights in case the rook has moved or has been captured. (and update hash)
     if(castlingRights) {
         if (!(bitboards[WHITE][ROOKS] & (1uLL << SQ_H1))) {
-            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
             castlingRights &= ~WHITE_KINGSIDE_CASTLING_RIGHTS;
-            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
         }
         if (!(bitboards[WHITE][ROOKS] & (1uLL << SQ_A1))) {
-            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
             castlingRights &= ~WHITE_QUEENSIDE_CASTLING_RIGHTS;
-            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
         }
         if (!(bitboards[BLACK][ROOKS] & (1uLL << SQ_H8))) {
-            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
             castlingRights &= ~BLACK_KINGSIDE_CASTLING_RIGHTS;
-            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
         }
         if (!(bitboards[BLACK][ROOKS] & (1uLL << SQ_A8))) {
-            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
             castlingRights &= ~BLACK_QUEENSIDE_CASTLING_RIGHTS;
-            positionHashes[halfMoveNumber] ^= zobristCastlingRightsTable[castlingRights];
+            positionHashes[halfMoveNumber] ^= LUTs.zobristCastlingRightsTable[castlingRights];
         }
     }
 
@@ -1128,7 +1129,7 @@ void Position::doMove(const unsigned move){
     if(bitboards[!this->turn][EN_PASSANT_SQUARES]) {
         enPassantInt = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
         moveL |= enPassantInt << EN_PASSANT_DESTINATION_SQUARE_SHIFT;
-        positionHashes[halfMoveNumber] ^= zobristEnPassantFile[enPassantInt % 8];
+        positionHashes[halfMoveNumber] ^= LUTs.zobristEnPassantFile[enPassantInt % 8];
 
         // reset possible en passant destination
         bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
@@ -1139,7 +1140,7 @@ void Position::doMove(const unsigned move){
 
     // change turn and update hash
     this->turn = !this->turn;
-    positionHashes[halfMoveNumber] ^= zobristBlackToMove;
+    positionHashes[halfMoveNumber] ^= LUTs.zobristBlackToMove;
 
     // change ratio of PST usage: lower value for allPiecesValue indicates further in endgame
     endGameFraction = min(1.0, (6400.0 - float(allPiecesValue))/3800.0);
@@ -1158,7 +1159,7 @@ inline void Position::removePiece(const unsigned pieceType, const uint64_t piece
     }
 
     //update hash and eval
-    positionHashes[halfMoveNumber] ^= zobristPieceTable[colour][pieceType][pieceInt];
+    positionHashes[halfMoveNumber] ^= LUTs.zobristPieceTable[colour][pieceType][pieceInt];
     if(colour) {
         positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[pieceType];
         positionEvaluations[halfMoveNumber] -= int((1 - endGameFraction) * float(PSTs[0][pieceType][pieceInt]));
@@ -1179,7 +1180,7 @@ inline void Position::addPiece(const unsigned pieceType, const uint64_t pieceBB,
     }
 
     //update hash and eval
-    positionHashes[halfMoveNumber] ^= zobristPieceTable[colour][pieceType][pieceInt];
+    positionHashes[halfMoveNumber] ^= LUTs.zobristPieceTable[colour][pieceType][pieceInt];
     if(colour) {
         positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[pieceType];
         positionEvaluations[halfMoveNumber] += int((1 - endGameFraction) * float(PSTs[0][pieceType][pieceInt]));
@@ -1607,7 +1608,7 @@ int Position::calculateMobility(bool side) {
                     mobility += popCount(attacks) / QUEEN_MOBILITY_SCALING;
                     break;
                 case KNIGHTS:
-                    attacks = getKnightAttacks(pieceIndex);
+                    attacks = LUTs.getKnightAttacks(pieceIndex);
                     mobility += popCount(attacks) / KNIGHT_MOBILITY_SCALING;
                     break;
             }

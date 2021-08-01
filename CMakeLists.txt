@@ -9,24 +9,41 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "-pthread ${OPTIMIZATION_FLAGS}" )
 
 include_directories(src/include
-                magic-bits/src)
+                    src/
+                    magic-bits/src)
 
-add_executable(engine
+
+set(PROJECT_HEADERS
         src/include/bitboard.h
+        src/include/LookupTables.h
         src/include/definitions.h
         src/include/position.h
         src/include/uci.h
-        src/include/lookupTables.h
+        src/include/useful.h
+        src/include/threadManager.h
+        magic-bits/src/slider_attacks.h
+        src/include/tests.h
+        src/include/evaluate.h
+        src/include/transpositionTable.h
+        src/include/thread.h
+        )
+set(PROJECT_SOURCES
+        src/main.cpp
+        src/LookupTables.cpp
         src/bitboard.cpp
         src/main.cpp
         src/position.cpp
         src/uci.cpp
-        src/include/useful.h
-        src/lookupTables.cpp
         src/benchmarks.cpp
         src/threadManager.cpp
-        src/include/threadManager.h
-        #magic-bits
-        magic-bits/src/slider_attacks.h
-        magic-bits/src/slider_attacks.cpp src/tests.cpp src/include/tests.h src/evaluate.cpp src/include/evaluate.h src/transpositionTable.cpp src/include/transpositionTable.h src/include/lookupTables.h src/thread.cpp src/include/thread.h)
+        magic-bits/src/slider_attacks.cpp
+        src/tests.cpp
+        src/evaluate.cpp
+        src/transpositionTable.cpp
+        src/thread.cpp
+        )
+
+add_executable(engine ${PROJECT_SOURCES} ${PROJECT_HEADERS})
+
+
 

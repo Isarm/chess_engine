@@ -13,7 +13,6 @@
 #include "useful.h"
 #include "transpositionTable.h"
 #include <algorithm>
-#include "lookupTables.h"
 #include "uci.h"
 #include "threadManager.h"
 

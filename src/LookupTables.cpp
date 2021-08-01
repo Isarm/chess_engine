@@ -1,29 +1,18 @@
 //
-// Created by isar on 07/02/2021.
+// Created by isar on 01/08/2021.
 //
 
+#include "LookupTables.h"
 
-#ifndef ENGINE_ZOBRISTTABLES_H
 
+LookupTables::LookupTables() {
+    zobristPieceTableInitialize();
+    kingAttacksLUTinitialize();
+    knightAttacksLUTinitialize();
+    rayDirectionLookupInitialize();
+}
 
-#include <cstdint>
-#include <random>
-#include "definitions.h"
-#include "useful.h"
-
-using namespace definitions;
-
-extern uint64_t zobristPieceTable[2][6][64];
-extern uint64_t zobristCastlingRightsTable[16];
-extern uint64_t zobristBlackToMove;
-extern uint64_t zobristEnPassantFile[8];
-
-extern uint64_t knightAttacksLUT[64];
-extern uint64_t kingAttacksLUT[64];
-
-extern int rayDirectionsTable[64][64];
-
-inline void zobristPieceTableInitialize(){
+void LookupTables::zobristPieceTableInitialize(){
     /* Random number generator */
     std::default_random_engine generator{static_cast<long long unsigned>(0xc9558c91601b5d95)};
     // use constant seed, such that hashes don't change between different runs, makes for easy debugging
@@ -47,7 +36,7 @@ inline void zobristPieceTableInitialize(){
 
 }
 
-inline void rayDirectionLookupInitialize() {
+void LookupTables::rayDirectionLookupInitialize() {
     for (int i = 0; i < 64; i++) {
         for(int j = i + 1; j%8 != 0; j++) rayDirectionsTable[i][j] = HORIZONTAL_RAY;
         for(int j = i - 1; (j%8 != 7 && j%8 != -1); j--) rayDirectionsTable[i][j] = HORIZONTAL_RAY;
@@ -63,11 +52,11 @@ inline void rayDirectionLookupInitialize() {
     }
 }
 
-inline int rayDirectionLookup(const unsigned a, const unsigned b) {
+int LookupTables::rayDirectionLookup(const unsigned a, const unsigned b) {
     return rayDirectionsTable[a][b];
 }
 
-inline uint64_t knightAttacks(const uint64_t knight) {
+inline uint64_t LookupTables::knightAttacks(const uint64_t knight) {
     uint64_t currentKnightMoves = 0;
     if (notAFile(knight)) {
         currentKnightMoves |= ((knight >> NNW) | (knight << SSW));
@@ -84,17 +73,17 @@ inline uint64_t knightAttacks(const uint64_t knight) {
     return currentKnightMoves;
 }
 
-inline void knightAttacksLUTinitialize(){
+void LookupTables::knightAttacksLUTinitialize(){
     for (int i = 0; i < 64; ++i) {
         knightAttacksLUT[i] = knightAttacks(1ull << i);
     }
 }
 
-inline uint64_t getKnightAttacks(const unsigned knight) {
+uint64_t LookupTables::getKnightAttacks(const unsigned knight) {
     return knightAttacksLUT[knight];
 }
 
-inline uint64_t kingAttacks(const uint64_t king){
+uint64_t LookupTables::kingAttacks(const uint64_t king){
     uint64_t kingAttacks = 0;
     if(notAFile(king)){
         kingAttacks |= (king >> NW) | (king >> W) | (king << SW);
@@ -107,16 +96,13 @@ inline uint64_t kingAttacks(const uint64_t king){
     return kingAttacks;
 }
 
-inline void kingAttacksLUTinitialize(){
+void LookupTables::kingAttacksLUTinitialize(){
     for (int i = 0; i < 64; ++i) {
         kingAttacksLUT[i] = kingAttacks(1ull << i);
     }
 }
 
-inline uint64_t getKingAttacks(const unsigned king){
+uint64_t LookupTables::getKingAttacks(const unsigned king){
     return kingAttacksLUT[king];
 }
 
-#define ENGINE_ZOBRISTTABLES_H
-
-#endif //ENGINE_ZOBRISTTABLES_H

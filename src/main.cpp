@@ -1,5 +1,4 @@
 #include <iostream>
-#include <lookupTables.h>
 
 using namespace std;
 
@@ -9,12 +8,6 @@ using namespace std;
 bool debug = 0;
 
 int main(int argc, char *argv[]) {
-    rayDirectionLookupInitialize(); // initialize ray lookup table;
-    zobristPieceTableInitialize(); // initialize zobrist hash table
-    knightAttacksLUTinitialize();
-    kingAttacksLUTinitialize();
-
-
     if(!debug) {
         cout << "Engine initialized v1.400\n";
 
