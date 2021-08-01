@@ -33,7 +33,7 @@ string Thread::search() {
     for(int iterativeDepth = 1; iterativeDepth <= settings.depth; iterativeDepth++) {
         PVline = {};
         while(true) {
-            score = evaluate.AlphaBeta(iterativeDepth, alpha, beta, &PVline, &stats, previousBestLine);
+            score = evaluate.AlphaBeta(iterativeDepth, alpha, beta, &PVline, &stats, 0, previousBestLine);
             if((score > alpha && score < beta) || abs(score) >= 1000000){
                 break;
             }
@@ -88,7 +88,7 @@ string Thread::search() {
         searchInfo.PVline = PVline;
 
 
-        if(abs(score) >= 1000000) {
+        if(abs(score) >= 990000) {
             // this indicates that mate is found
             timeFlag.store(true);
             break;
@@ -113,13 +113,13 @@ void printinformation(long milliseconds, int score, LINE line, STATS stats, int 
         std::cout << " nps " << int(1000 * float(stats.totalNodes) / float(milliseconds));
     }
     std::cout << " score ";
-    if (score >= 1000000) {
+    if (score >= 990000) {
         // this indicates that mate is found
-        int mateIn = int((depth - score + 1000001) / 2);
+        int mateIn = int((1000001 - score) / 2);
         std::cout << "mate " << mateIn << " pv ";
-    } else if (score <= -1000000) {
+    } else if (score <= -990000) {
         // this indicates that the engine is getting mated
-        int mateIn = -int((depth + score + 1000001) / 2);
+        int mateIn = -int((1000001 + score) / 2);
         std::cout << "mate " << mateIn << " pv ";
     } else {
         std::cout << "cp " << score << " pv ";

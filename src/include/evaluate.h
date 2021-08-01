@@ -19,13 +19,13 @@ public:
     Evaluate(string fen, vector<string> moves);
 
 
-    int AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine = {});
+    int AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, int depth, LINE iterativeDeepeningLine = {});
 
 private:
 
-    int Quiescence(int alpha, int beta, STATS *pStats, int depth = 50);
+    int Quiescence(int alpha, int beta, STATS *pStats);
 
-    void scoreMoves(moveList &list, int left, bool side, uint64_t bestmove = 0);
+    void scoreMoves(moveList &list, int left, bool side, uint64_t bestmove = 0, uint64_t iterativeDeepeningMove = 0);
 
 
     unsigned int killerMoves[MAX_DEPTH][KILLER_MOVE_SLOTS] = {};

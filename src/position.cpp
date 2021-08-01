@@ -249,14 +249,15 @@ Position::Position(string FEN) {
         this->halfMoveNumber50 = 0;
         this->fullMoveNumber = 0;
     }
-    generateHelpBitboards();
 
     sliderAttacks = SliderAttacks();
     sliderAttacks.Initialize(); // initialize slider attacks
 
+    generateHelpBitboards();
     positionHashes[halfMoveNumber] = calculateHash();
 
     positionEvaluations[halfMoveNumber] = Evaluate();
+
 }
 
 /**
@@ -298,7 +299,7 @@ void Position::generateHelpBitboards() {
         bitboards[WHITE][PIECES] |= bitboards[WHITE][i];
     }
     helpBitboards[OCCUPIED_SQUARES] = bitboards[BLACK][PIECES] | bitboards[WHITE][PIECES];
-
+    this->isIncheck = squareAttackedBy(bitboards[this->turn][KING], !this->turn);
 }
 
 void Position::prettyPrint() {
@@ -348,7 +349,6 @@ void Position::prettyPrint() {
 
 
 void Position::GenerateMoves(moveList &movelist, bool onlyCaptures) {
-    this->isIncheck = squareAttackedBy(bitboards[this->turn][KING], !this->turn);
     if(!isIncheck) {
         this->helpBitboards[PINNED_PIECES] = pinnedPieces(bitboards[this->turn][KING], this->turn);
     }

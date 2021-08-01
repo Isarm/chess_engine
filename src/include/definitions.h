@@ -176,7 +176,6 @@ namespace definitions {
     };
 
     struct LINE {
-        int depth = 0;
         int nmoves = 0;
         unsigned principalVariation[100] = {};
     };
@@ -189,7 +188,7 @@ namespace definitions {
     };
 
 
-    constexpr unsigned MAX_DEPTH = 30;
+    constexpr unsigned MAX_DEPTH = 128;
     constexpr unsigned KILLER_MOVE_SLOTS = 3;
 
     constexpr double BISHOP_MOBILITY_SCALING = 1.5;

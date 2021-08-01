@@ -30,7 +30,7 @@ Evaluate::Evaluate(string fen, vector<string> moves) {
 }
 
 
-int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, LINE iterativeDeepeningLine) {
+int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, int depth, LINE iterativeDeepeningLine) {
     /**
      * This has become quite ugly with a lot of repetition
      */
@@ -47,48 +47,11 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
     }
 
     unsigned iterativeDeepeningMove = 0;
-    if(iterativeDeepeningLine.nmoves > 0){
-        // get the best iterativeDeepeningMove from the iterative deepening best line
-        iterativeDeepeningMove = iterativeDeepeningLine.principalVariation[0];
-
-        // remove this iterativeDeepeningMove from the iterative deepening line
-        iterativeDeepeningLine.nmoves--;
-        LINE newBestLine{};
-        if(iterativeDeepeningLine.nmoves > 0) { // continue further along this variation
-            // copy remaining moves to newbestline
-            memcpy(newBestLine.principalVariation, iterativeDeepeningLine.principalVariation + 1, iterativeDeepeningLine.nmoves * sizeof(unsigned));
-            newBestLine.nmoves = iterativeDeepeningLine.nmoves;
-        }
-        // if no further moves are left in the variation, newBestLine will be initialized with 0s, so the alphabeta
-        // that is called below will ignore this and continue along as normal.
-
-        position.doMove(iterativeDeepeningMove);
-
-        //check if this iterativeDeepeningMove has lead to a draw (3fold rep/50move rule); as then the search can be stopped
-        int score;
-        LINE line;
-        if(position.isDraw()){
-            position.undoMove();
-            score = 0;
-        }
-        else {
-            score = -AlphaBeta(ply - 1, -beta, -alpha, &line, stats, newBestLine);
-            position.undoMove();
-        }
-
-        if(score >= beta){
-            stats->betaCutoffs += 1;
-            return beta; // beta cutoff
-        }
-
-        if(score > alpha){
-            // PV is found
-            alpha = score;
-            pline->principalVariation[0] = iterativeDeepeningMove;
-            memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
-            pline->nmoves = line.nmoves + 1;
-        }
+    if(iterativeDeepeningLine.nmoves > depth){
+        // get the iterativeDeepeningMove from the iterative deepening line
+        iterativeDeepeningMove = iterativeDeepeningLine.principalVariation[depth];
     }
+
 
     // check if the position has been evaluated before with the transposition table
     uint64_t bestMove = 0;
@@ -146,7 +109,7 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
     // generate list of moves
     moveList movelist;
     position.GenerateMoves(movelist);
-    scoreMoves(movelist, ply, position.turn, bestMove);
+    scoreMoves(movelist, depth, position.turn, bestMove, iterativeDeepeningMove);
     Position::sortMoves(movelist);
 
     // check for stalemate or checkmate in case of no moves left:
@@ -154,8 +117,8 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         if(position.isIncheck){
             pline->nmoves = 0;
             // high score that cant be reached by evaluation function, thus indicating mate.
-            // subtract ply, indicating that higher ply (so faster mate) is better.
-            return -1000000 - ply;
+            // add depth, indicating that lower depth (so faster mate) is better.
+            return -1000000 + depth;
 
         }
         else{
@@ -163,14 +126,12 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         }
     }
 
+    /** Search for principal variation if alpha has not yet been increased */
     bool searchPV = alphaStart == alpha;
 
     /** Go through the movelist */
     for(int i = 0; i < movelist.moveLength; i++){
         LINE line;
-        if(movelist.moves[i].first == iterativeDeepeningMove){
-            continue; // as this has already been evaluated above
-        }
         stats->totalNodes += 1;
         position.doMove(movelist.moves[i].first);
 
@@ -184,15 +145,21 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         }
         else {
             /** Principal variation search */
-            if(searchPV){
-                score = -AlphaBeta(ply - 1, -beta, -alpha, &line, stats);
+            if(searchPV || position.isIncheck){
+                int extensions = position.isIncheck;
+                score = -AlphaBeta(ply - 1 + extensions, -beta, -alpha, &line, stats, depth + 1);
             }else{
-                /** Null window  search */
-                score = -AlphaBeta(ply - 1, -alpha - 1, -alpha, &line, stats);
+                /** Late move reductions */
+                int LMR = 0;
+                if (i > 4 && depth > 3 && !(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK)){
+                    LMR = 1;
+                }
+                /** Null window search */
+                score = -AlphaBeta(max(0, ply - 1 - LMR), -alpha - 1, -alpha, &line, stats, depth + 1);
                 if(score > alpha){
                     line = LINE();
-                    /** Do a research with the full window */
-                    score = -AlphaBeta(ply - 1, -beta, -alpha, &line, stats);
+                    /** Do a research with the full window and depth if the null window ends above alpha*/
+                    score = -AlphaBeta(ply - 1, -beta, -alpha, &line, stats, depth + 1);
                 }
             }
             position.undoMove();
@@ -235,13 +202,9 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
     return alpha;
 }
 
-int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
+int Evaluate::Quiescence(int alpha, int beta, STATS *stats) {
     if(exitCondition()){
         return 0;
-    }
-
-    if(depth == 0){
-        return position.getEvaluation();
     }
 
     // define stand_pat (adapted from chessprogramming wiki quiescence search)
@@ -291,7 +254,7 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
 
         stats->totalNodes += 1;
         position.doMove(movelist.moves[i].first);
-        int score = -Quiescence(-beta, -alpha, stats, depth-1);
+        int score = -Quiescence(-beta, -alpha, stats);
         position.undoMove();
 
         if(score >= beta){
@@ -305,8 +268,11 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, int depth) {
 }
 
 
-void Evaluate::scoreMoves(moveList &list, int ply, bool side, uint64_t bestMove) {
+void Evaluate::scoreMoves(moveList &list, int ply, bool side, uint64_t bestMove, uint64_t iterativeDeepeningMove) {
     for(int i = 0; i < list.moveLength; i++){
+        if(list.moves[i].first == iterativeDeepeningMove){
+            list.moves[i].second += 3000000;
+        }
         if(list.moves[i].first == bestMove){
             list.moves[i].second += 2000000;
         }
