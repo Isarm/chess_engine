@@ -25,15 +25,15 @@ private:
 
     int Quiescence(int alpha, int beta, STATS *pStats);
 
-    void scoreMoves(moveList &list, int left, bool side, uint64_t bestmove = 0, uint64_t iterativeDeepeningMove = 0);
+    void scoreMoves(moveList &list, int ply, int depth, bool side, uint64_t bestmove = 0, uint64_t iterativeDeepeningMove = 0);
 
 
     unsigned int killerMoves[MAX_DEPTH][KILLER_MOVE_SLOTS] = {};
     uint64_t butterflyTable[2][64][64] = {};
 
-    void addKillerMove(unsigned int ply, unsigned int move);
+    void addKillerMove(unsigned int depth, unsigned int move);
 
-    bool isKiller(unsigned int ply, unsigned int move);
+    bool isKiller(unsigned int depth, unsigned int move);
 
     void updateButterflyTable(unsigned int ply, unsigned int move, bool side);
 

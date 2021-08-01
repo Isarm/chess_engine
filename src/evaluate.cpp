@@ -108,7 +108,7 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
     // generate list of moves
     moveList movelist;
     position.GenerateMoves(movelist);
-    scoreMoves(movelist, depth, position.turn, bestMove, iterativeDeepeningMove);
+    scoreMoves(movelist, ply, depth, position.turn, bestMove, iterativeDeepeningMove);
     Position::sortMoves(movelist);
 
     // check for stalemate or checkmate in case of no moves left:
@@ -170,7 +170,7 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
             if(!drawFlag) {
                 TT.addEntry(score, movelist.moves[i].first, ply, LOWER_BOUND_BETA,
                             position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
-                addKillerMove(ply, movelist.moves[i].first);
+                addKillerMove(depth, movelist.moves[i].first);
                 if(!(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK)){
                     updateButterflyTable(ply, movelist.moves[i].first, position.turn);
                 }
@@ -236,6 +236,7 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats) {
 
     moveList movelist;
     position.GenerateMoves(movelist, true);
+    Position::sortMoves(movelist);
 
     // go over all capture moves to avoid horizon effect on tactical moves.
     for(int i = 0; i < movelist.moveLength; i++){
@@ -268,7 +269,7 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats) {
 }
 
 
-void Evaluate::scoreMoves(moveList &list, int ply, bool side, uint64_t bestMove, uint64_t iterativeDeepeningMove) {
+void Evaluate::scoreMoves(moveList &list, int ply, int depth, bool side, uint64_t bestMove, uint64_t iterativeDeepeningMove) {
     for(int i = 0; i < list.moveLength; i++){
         if(list.moves[i].first == iterativeDeepeningMove){
             list.moves[i].second += 3000000;
@@ -276,7 +277,7 @@ void Evaluate::scoreMoves(moveList &list, int ply, bool side, uint64_t bestMove,
         if(list.moves[i].first == bestMove){
             list.moves[i].second += 2000000;
         }
-        if(isKiller(ply, list.moves[i].first)){
+        if(isKiller(depth, list.moves[i].first)){
             list.moves[i].second += KILLER_BONUS;
         }
         list.moves[i].second += getButterflyScore(ply, list.moves[i].first, side);
@@ -284,16 +285,16 @@ void Evaluate::scoreMoves(moveList &list, int ply, bool side, uint64_t bestMove,
 }
 
 
-inline void Evaluate::addKillerMove(unsigned ply, unsigned move){
+inline void Evaluate::addKillerMove(unsigned depth, unsigned move){
     /** shift old killer moves */
     for (int i = KILLER_MOVE_SLOTS - 2; i >= 0; i--)
-        killerMoves[ply][i + 1] = killerMoves[ply][i];
+        killerMoves[depth][i + 1] = killerMoves[depth][i];
     /** add new */
-    killerMoves[ply][0] = move;
+    killerMoves[depth][0] = move;
 }
 
-inline bool Evaluate::isKiller(unsigned ply, unsigned move){
-    for(unsigned &kmove : killerMoves[ply]){
+inline bool Evaluate::isKiller(unsigned depth, unsigned move){
+    for(unsigned &kmove : killerMoves[depth]){
         if((kmove & (ORIGIN_SQUARE_MASK | DESTINATION_SQUARE_MASK)) == (move & (ORIGIN_SQUARE_MASK | DESTINATION_SQUARE_MASK))){
             return true;
         }
