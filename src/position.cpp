@@ -729,11 +729,6 @@ inline int Position::squareAttackedBy(uint64_t square, const bool colour, uint64
 }
 
 
-const int moveScores[6] = {
-        5, 4, 3, 2, 1, 0
-        // pawn, knight, bishop, rook, queen, king
-};
-
 /** This function converts a origin bitboard and destinations bitboard into a movelist (appends to the variable movelist).
  * The function assumes the moves are pseudo legal, and performs a legality check to make sure that the king is not
  * left in check after the moves has been made.
@@ -753,7 +748,7 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
     uint64_t destinationBB;
     originInt = debruijnSerialization(origin);
 
-    int score = moveScores[piece];
+    int score = 0;
 
     // check if the piece is pinned
     bool pinnedFlag = false;
@@ -762,16 +757,12 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
     // combine destinations and loop over them (check can be made later to see if it is a capture moves)
     uint64_t allDestinations = destinations | captureDestinations;
 
-//    int currentMobility = popCount(allDestinations);
-
     while(allDestinations != 0){
         // get integer of destination position
         destinationInt = debruijnSerialization(allDestinations);
         destinationBB = 1uLL << destinationInt;
 
         allDestinations &= ~destinationBB;
-
-//        int mobilityBonus = calculateMobilityBonus(currentMobility, destinationInt, piece);
 
         // generate the moves
         move = originInt << ORIGIN_SQUARE_SHIFT;
@@ -1576,41 +1567,6 @@ void Position::sortMoves(moveList &list) {
     qsort(list.moves, list.moveLength, sizeof(pair<unsigned, int>), reinterpret_cast<__compar_fn_t>(compare));
 }
 
-int Position::calculateMobilityBonus(int currentMobility, unsigned destinationInt, Pieces piece) {
-    /** Only do this in the opening */
-    if(endGameFraction > 0.3){
-        return 0;
-    }
-
-    uint64_t attacks;
-    int mobilityBonus;
-    switch (piece) {
-        case definitions::bishop:
-            attacks = sliderAttacks.BishopAttacks(helpBitboards[OCCUPIED_SQUARES], destinationInt);
-            mobilityBonus = popCount(attacks) / BISHOP_MOBILITY_SCALING;
-            currentMobility /= BISHOP_MOBILITY_SCALING;
-            break;
-        case definitions::rook:
-            attacks = sliderAttacks.RookAttacks(helpBitboards[OCCUPIED_SQUARES], destinationInt);
-            mobilityBonus = popCount(attacks) / ROOK_MOBILITY_SCALING;
-            currentMobility /= ROOK_MOBILITY_SCALING;
-            break;
-        case definitions::queen:
-            attacks = sliderAttacks.QueenAttacks(helpBitboards[OCCUPIED_SQUARES], destinationInt);
-            mobilityBonus = popCount(attacks) / QUEEN_MOBILITY_SCALING;
-            currentMobility /= QUEEN_MOBILITY_SCALING;
-            break;
-        case definitions::knight:
-            attacks = getKnightAttacks(destinationInt);
-            mobilityBonus = popCount(attacks) / KNIGHT_MOBILITY_SCALING;
-            currentMobility /= KNIGHT_MOBILITY_SCALING;
-            break;
-        default:
-            return 0;
-    }
-
-    return (int) ((float)(mobilityBonus - currentMobility));
-}
 
 int Position::popCount(uint64_t x) {
     int count = 0;
