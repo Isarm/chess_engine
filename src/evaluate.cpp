@@ -145,12 +145,13 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         else {
             /** Principal variation search */
             if(searchPV || position.isIncheck){
+                // TODO: Move this to quiescence and properly handle long useless checking sequences.
                 int extensions = position.isIncheck;
-                score = -AlphaBeta(ply - 1 + extensions, -beta, -alpha, &line, stats, depth + 1);
+                score = -AlphaBeta(ply - 1, -beta, -alpha, &line, stats, depth + 1);
             }else{
                 /** Late move reductions */
                 int LMR = 0;
-                if (i > 4 && depth > 3 && !(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK)){
+                if (i > 4 && depth > 2 && !(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK)){
                     LMR = 1;
                 }
                 /** Null window search */

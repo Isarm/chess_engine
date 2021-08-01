@@ -52,9 +52,6 @@ void LookupTables::rayDirectionLookupInitialize() {
     }
 }
 
-int LookupTables::rayDirectionLookup(const unsigned a, const unsigned b) {
-    return rayDirectionsTable[a][b];
-}
 
 inline uint64_t LookupTables::knightAttacks(const uint64_t knight) {
     uint64_t currentKnightMoves = 0;
@@ -79,9 +76,6 @@ void LookupTables::knightAttacksLUTinitialize(){
     }
 }
 
-uint64_t LookupTables::getKnightAttacks(const unsigned knight) {
-    return knightAttacksLUT[knight];
-}
 
 uint64_t LookupTables::kingAttacks(const uint64_t king){
     uint64_t kingAttacks = 0;
@@ -101,8 +95,3 @@ void LookupTables::kingAttacksLUTinitialize(){
         kingAttacksLUT[i] = kingAttacks(1ull << i);
     }
 }
-
-uint64_t LookupTables::getKingAttacks(const unsigned king){
-    return kingAttacksLUT[king];
-}
-

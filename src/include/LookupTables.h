@@ -14,32 +14,38 @@ class LookupTables {
 public:
     LookupTables();
 
-    uint64_t getKingAttacks(unsigned int king);
-    uint64_t getKnightAttacks(unsigned int knight);
-
     // zobrist piece table for [colour][piece][index]
-    uint64_t zobristPieceTable[2][6][64];
-    uint64_t zobristCastlingRightsTable[16];
-    uint64_t zobristBlackToMove;
-    uint64_t zobristEnPassantFile[8];
+    uint64_t zobristPieceTable[2][6][64]{};
+    uint64_t zobristCastlingRightsTable[16]{};
+    uint64_t zobristBlackToMove{};
+    uint64_t zobristEnPassantFile[8]{};
 
-    int rayDirectionsTable[64][64];
+    int rayDirectionsTable[64][64]{};
 
-    uint64_t knightAttacksLUT[64];
-    uint64_t kingAttacksLUT[64];
+    uint64_t knightAttacksLUT[64]{};
+    uint64_t kingAttacksLUT[64]{};
 
-    int rayDirectionLookup(unsigned int a, unsigned int b);
+    inline int rayDirectionLookup(const unsigned a, const unsigned b) {
+        return rayDirectionsTable[a][b];
+    }
+    inline uint64_t getKnightAttacks(const unsigned knight) {
+        return knightAttacksLUT[knight];
+    }
+    inline uint64_t getKingAttacks(const unsigned king){
+        return kingAttacksLUT[king];
+    }
+
 
 private:
     void zobristPieceTableInitialize();
 
     void rayDirectionLookupInitialize();
 
-    uint64_t knightAttacks(uint64_t knight);
+    static uint64_t knightAttacks(uint64_t knight);
 
     void knightAttacksLUTinitialize();
 
-    uint64_t kingAttacks(uint64_t king);
+    static uint64_t kingAttacks(uint64_t king);
 
     void kingAttacksLUTinitialize();
 

@@ -292,7 +292,6 @@ uint64_t Position::calculateHash() {
 }
 
 void Position::generateHelpBitboards() {
-
     bitboards[BLACK][PIECES] = 0;
     bitboards[WHITE][PIECES] = 0;
     for(int i = 0; i < 6; i++){
