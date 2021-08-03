@@ -45,13 +45,16 @@ public:
 
     explicit Position(string FEN);
 
-    void generateHelpBitboards();
+    void generateHelpBitboardsAndIsInCheck();
     void GenerateMoves(moveList &movelist, bool onlyCaptures = false);
 
 
     void doMove(unsigned moveL);
     void doMove(const string&);
     void undoMove();
+
+    void doNullMove();
+    void undoNullMove();
 
     void prettyPrint();
 
@@ -114,6 +117,7 @@ private:
     int staticExchangeEvaluationCapture(uint64_t from, uint64_t to, bool side);
 
     int calculateFileAndPawnScore(bool turn);
+
 };
 
 #endif

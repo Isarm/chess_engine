@@ -23,7 +23,7 @@ public:
 
 private:
 
-    int Quiescence(int alpha, int beta, STATS *pStats);
+    int Quiescence(int alpha, int beta, STATS *pStats, bool evasion = false, int depth = 0);
 
     void scoreMoves(moveList &list, int ply, int depth, bool side, uint64_t bestmove = 0, uint64_t iterativeDeepeningMove = 0);
 

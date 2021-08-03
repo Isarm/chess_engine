@@ -255,7 +255,7 @@ Position::Position(string FEN) {
     sliderAttacks = SliderAttacks();
     sliderAttacks.Initialize(); // initialize slider attacks
 
-    generateHelpBitboards();
+    generateHelpBitboardsAndIsInCheck();
     positionHashes[halfMoveNumber] = calculateHash();
 
     positionEvaluations[halfMoveNumber] = Evaluate();
@@ -291,7 +291,7 @@ uint64_t Position::calculateHash() {
     return posHash;
 }
 
-void Position::generateHelpBitboards() {
+void Position::generateHelpBitboardsAndIsInCheck() {
     bitboards[BLACK][PIECES] = 0;
     bitboards[WHITE][PIECES] = 0;
     for(int i = 0; i < 6; i++){
@@ -1007,7 +1007,7 @@ void Position::doMove(const unsigned move){
     originBB = 1uLL << originInt;
     destinationBB = 1uLL << destinationInt;
 
-    // store the castling rights of before the moves
+    // store the castling rights of before the moves TODO: Put this in a stack
     moveL |= uint64_t(castlingRights) << CASTLING_RIGHTS_BEFORE_MOVE_SHIFT;
 
     // used for the promotion special moves case
@@ -1055,7 +1055,6 @@ void Position::doMove(const unsigned move){
 
             // remove the pawn
             removePiece(PAWNS, originBB, this->turn, originInt);
-
 
             // place promoted piece and update hash and eval
             promotionType = promotionIndices[(move & PROMOTION_TYPE_MASK) >> PROMOTION_TYPE_SHIFT];
@@ -1124,7 +1123,7 @@ void Position::doMove(const unsigned move){
     }
 
 
-    // store en passant destination info and update hash if there was an en passant square
+    // store en passant destination info and update hash if there was an en passant square TODO: put this in a stack
     if(bitboards[!this->turn][EN_PASSANT_SQUARES]) {
         enPassantInt = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
         moveL |= enPassantInt << EN_PASSANT_DESTINATION_SQUARE_SHIFT;
@@ -1144,7 +1143,7 @@ void Position::doMove(const unsigned move){
     // change ratio of PST usage: lower value for allPiecesValue indicates further in endgame
     endGameFraction = min(1.0, (6400.0 - float(allPiecesValue))/3800.0);
 
-    generateHelpBitboards();
+    generateHelpBitboardsAndIsInCheck();
 }
 
 /**
@@ -1230,6 +1229,72 @@ void Position::doMove(const string& move) {
     }
 
     doMove(moveUnsigned);
+}
+
+void Position::doNullMove(){
+    // increment halfmovenumber counters
+    halfMoveNumber50++;
+    halfMoveNumber++;
+    halfMovesSinceIrrepr++;
+
+    positionHashes[halfMoveNumber] = positionHashes[halfMoveNumber - 1];
+    positionEvaluations[halfMoveNumber] = positionEvaluations[halfMoveNumber - 1];
+    allPiecesValues[halfMoveNumber] = allPiecesValue;
+
+    uint64_t move = 0;
+
+    // store en passant destination info and update hash if there was an en passant square TODO: put this in a stack
+    if(bitboards[!this->turn][EN_PASSANT_SQUARES]) {
+        uint64_t enPassantInt = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
+        move |= enPassantInt << EN_PASSANT_DESTINATION_SQUARE_SHIFT;
+        positionHashes[halfMoveNumber] ^= LUTs.zobristEnPassantFile[enPassantInt % 8];
+
+        // reset possible en passant destination
+        bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
+    }
+
+    // put into previous moves list
+    this->previousMoves[this->halfMoveNumber - 1] = move;
+
+    // change turn and update hash
+    this->turn = !this->turn;
+    positionHashes[halfMoveNumber] ^= LUTs.zobristBlackToMove;
+
+    /** Do this check here, such that the generateHelpBitboardsAndIsInCheck function does not have to be called */
+    this->isIncheck = squareAttackedBy(bitboards[this->turn][KING], !this->turn);
+}
+
+
+
+void Position::undoNullMove(){
+    // get the move
+    uint64_t move = this->previousMoves[this->halfMoveNumber - 1];
+    // revert back to 0
+    this->previousMoves[this->halfMoveNumber - 1] = 0;
+
+    // restore en passant destination square
+    unsigned enPassantInt = (EN_PASSANT_DESTINATION_SQUARE_MASK & move) >> EN_PASSANT_DESTINATION_SQUARE_SHIFT;
+    if(enPassantInt) {
+        bitboards[this->turn][EN_PASSANT_SQUARES] = 1uLL << enPassantInt;
+    }
+
+    // reset en passant destination square of other side
+    bitboards[!this->turn][EN_PASSANT_SQUARES] = 0;
+
+    // decrement halfmovenumber counters
+    halfMoveNumber50--;
+    halfMoveNumber--;
+    halfMovesSinceIrrepr--;
+
+    // change turn
+    this->turn = !this->turn;
+
+    /** Do this check here, such that the generateHelpBitboardsAndIsInCheck function does not have to be called */
+    this->isIncheck = squareAttackedBy(bitboards[this->turn][KING], !this->turn);
+
+    // reset hash and eval of undone position
+    positionHashes[halfMoveNumber + 1] = 0ull;
+    positionEvaluations[halfMoveNumber + 1] = 0ull;
 }
 
 
@@ -1372,7 +1437,7 @@ void Position::undoMove() {
     endGameFraction = min(1.0, (6400.0 - float(allPiecesValue))/3200.0);
 
     this->turn = !this->turn;
-    generateHelpBitboards();
+    generateHelpBitboardsAndIsInCheck();
 
     // reset hash and eval of undone position
     positionHashes[halfMoveNumber + 1] = 0;

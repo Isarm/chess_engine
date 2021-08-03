@@ -15,6 +15,7 @@
 #include <algorithm>
 #include "uci.h"
 #include "threadManager.h"
+#include "bitboard.h"
 
 
 Evaluate::Evaluate() = default;
@@ -42,7 +43,7 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
     if(ply == 0){
         pline->nmoves = 0;
         // do a quiescent search for the leaf nodes, to reduce the horizon effect
-        return Quiescence(alpha, beta, stats);
+        return Quiescence(alpha, beta, stats, false, depth);
     }
 
     unsigned iterativeDeepeningMove = 0;
@@ -105,6 +106,28 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         }
     }
 
+
+    /** Null move pruning */
+    int R;
+    if(position.endGameFraction < 0.7){
+        R = 3;
+    }
+    else if(position.endGameFraction < 0.9){
+        R = 2;
+    }
+    else{
+        R = 0;
+    }
+
+    if(!position.isIncheck && R > 0){
+        position.doNullMove();
+        LINE line {};
+        int score = -AlphaBeta(max(0, ply - 1 - R), -beta, -beta + 1, &line, stats, depth + 1);
+        position.undoNullMove();
+        if(score >= beta){
+            return beta;
+        }
+    }
     // generate list of moves
     moveList movelist;
     position.GenerateMoves(movelist);
@@ -125,17 +148,19 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         }
     }
 
+
+
     /** Search for principal variation if alpha has not yet been increased */
     bool searchPV = alphaStart == alpha;
 
     /** Go through the movelist */
     for(int i = 0; i < movelist.moveLength; i++){
-        LINE line;
+        LINE line {};
+        int score;
         stats->totalNodes += 1;
         position.doMove(movelist.moves[i].first);
 
         //check if this moves has lead to a draw (3fold rep/50move rule); as then the search can be stopped
-        int score;
         bool drawFlag = false;
         if(position.isDraw()){
             position.undoMove();
@@ -145,13 +170,11 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         else {
             /** Principal variation search */
             if(searchPV || position.isIncheck){
-                // TODO: Move this to quiescence and properly handle long useless checking sequences.
-                int extensions = position.isIncheck;
                 score = -AlphaBeta(ply - 1, -beta, -alpha, &line, stats, depth + 1);
             }else{
                 /** Late move reductions */
                 int LMR = 0;
-                if (i > 4 && depth > 2 && !(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK)){
+                if (i > 3 && depth > 2 && !(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK)){
                     LMR = 1;
                 }
                 /** Null window search */
@@ -202,27 +225,29 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
     return alpha;
 }
 
-int Evaluate::Quiescence(int alpha, int beta, STATS *stats) {
+int Evaluate::Quiescence(int alpha, int beta, STATS *stats, bool evasion, int depth) {
     if(exitCondition()){
         return 0;
     }
+
+    bool check = position.isIncheck;
 
     // define stand_pat (adapted from chessprogramming wiki quiescence search)
     // first do lazy evaluation (with a safety margin of 150 centipawns)
     int stand_pat = position.getLazyEvaluation();
 
-    if(stand_pat >= beta + 50){
+    if(stand_pat >= beta + 50 && !check){
         return beta;
     }
 
-    if(stand_pat < alpha - 930){
+    if(stand_pat < alpha - 960){
         return alpha;
     }
 
     // do proper eval
     stand_pat = position.getEvaluation();
 
-    if(stand_pat >= beta){
+    if(stand_pat >= beta && !check){
         return beta;
     }
 
@@ -231,16 +256,22 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats) {
     }
 
     if(alpha < stand_pat){
-        alpha = stand_pat; // raise alpha to establish lower bound on postion
+        alpha = stand_pat; // raise alpha to establish lower bound on position
     }
 
     moveList movelist;
-    position.GenerateMoves(movelist, true);
+    /** if it is not an evasion or check, only evaluate captures, otherwise evaluate all moves */
+    position.GenerateMoves(movelist, !check);
     Position::sortMoves(movelist);
 
-    // go over all capture moves to avoid horizon effect on tactical moves.
+    // check for checkmate in case of no moves left and if the side was evading
+    if(movelist.moveLength == 0 && position.isIncheck){
+        return -1000000 + depth;
+    }
+
+    // go over all ((good) capture) moves to avoid horizon effect on tactical moves.
     for(int i = 0; i < movelist.moveLength; i++){
-        if(movelist.moves[i].second < 0){
+        if(movelist.moves[i].second < 0 && !check){
             break;
         }
 
@@ -249,13 +280,13 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats) {
         if(movelist.moves[i].second > CAPTURE_SCORE){
             highestSEE = movelist.moves[0].second - CAPTURE_SCORE;
         }
-        if(stand_pat < alpha - highestSEE - 50){
+        if(stand_pat < alpha - highestSEE - 50 && !check){
             return alpha;
         }
 
         stats->totalNodes += 1;
         position.doMove(movelist.moves[i].first);
-        int score = -Quiescence(-beta, -alpha, stats);
+        int score = -Quiescence(-beta, -alpha, stats, false, depth + 1);
         position.undoMove();
 
         if(score >= beta){
