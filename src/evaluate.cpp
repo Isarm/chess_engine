@@ -146,6 +146,13 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
 
     /** Go through the movelist */
     for(int i = 0; i < movelist.moveLength; i++){
+
+        /** Futility pruning */
+        bool fprune = ply == 1 && i > 3;
+        if(fprune && movelist.moves[i].second + 100 < alpha){
+            continue;
+        }
+
         LINE line {};
         int score;
         stats->totalNodes += 1;
@@ -166,7 +173,11 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
                 /** Late move reductions */
                 int LMR = 0;
                 if (i > 3 && depth > 2 && !(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK)){
-                    LMR = 1;
+                    if(i < 7){
+                        LMR = 1;
+                    } else{
+                        LMR = i / 3;
+                    }
                 }
                 /** Null window search */
                 score = -AlphaBeta(max(0, ply - 1 - LMR), -alpha - 1, -alpha, &line, stats, depth + 1);

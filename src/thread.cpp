@@ -49,8 +49,8 @@ string Thread::search() {
         }
 
         /** aspiration window */
-        alpha = score - 50;
-        beta = score + 50;
+        alpha = score - 30;
+        beta = score + 30;
 
         /** if the timeFlag is set, it exited the evaluation prematurely, so take the previous best line */
         if(timeFlag.load()){

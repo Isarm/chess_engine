@@ -9,7 +9,7 @@ bool debug = 0;
 
 int main(int argc, char *argv[]) {
     if(!debug) {
-        cout << "Engine initialized v1.400\n";
+        cout << "Engine initialized v2.00\n";
 
         // get first input
         string input;
