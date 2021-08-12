@@ -18,7 +18,6 @@ public:
     Evaluate();
     Evaluate(string fen, vector<string> moves);
 
-
     int AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats, int depth, LINE iterativeDeepeningLine = {});
 
 private:

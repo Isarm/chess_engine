@@ -56,7 +56,7 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
     // check if the position has been evaluated before with the transposition table
     uint64_t bestMove = 0;
     Entry entry;
-    uint64_t currentPositionHash = position.positionHashes[position.halfMoveNumber];
+    uint64_t currentPositionHash = position.getPositionHash();
 
     if(TT.contains(currentPositionHash, entry)){
         /** The halfmovenumber should be the same, otherwise it will have trouble detecting 3fold repetitions */
@@ -108,18 +108,9 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
 
 
     /** Null move pruning */
-    int R;
-    if(position.endGameFraction < 0.7){
-        R = 3;
-    }
-    else if(position.endGameFraction < 0.9){
-        R = 2;
-    }
-    else{
-        R = 0;
-    }
+    int R = 3; // TODO: Zugzwang
 
-    if(!position.isIncheck && R > 0){
+    if(!position.isIncheck){
         position.doNullMove();
         LINE line {};
         int score = -AlphaBeta(max(0, ply - 1 - R), -beta, -beta + 1, &line, stats, depth + 1);
@@ -192,7 +183,7 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
             stats->betaCutoffs += 1;
             if(!drawFlag) {
                 TT.addEntry(score, movelist.moves[i].first, ply, LOWER_BOUND_BETA,
-                            position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
+                            position.getPositionHash(), position.halfMoveNumber);
                 addKillerMove(depth, movelist.moves[i].first);
                 if(!(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK)){
                     updateButterflyTable(ply, movelist.moves[i].first, position.turn);
@@ -213,13 +204,13 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
     if(alpha > alphaStart) { // this means that the PV is an exact score moves
         if(alpha != 0) { // if alpha is 0 there are some weird draw variations that you do not want in your TT
             TT.addEntry(alpha, pline->principalVariation[0], ply, EXACT_PV,
-                        position.positionHashes[position.halfMoveNumber],
+                        position.getPositionHash(),
                         position.halfMoveNumber);
         }
     }
     else{
         // for an alpha cutoff, there is no known best moves so this is left as 0.
-        TT.addEntry(alpha, 0, ply, UPPER_BOUND_ALPHA, position.positionHashes[position.halfMoveNumber], position.halfMoveNumber);
+        TT.addEntry(alpha, 0, ply, UPPER_BOUND_ALPHA, position.getPositionHash(), position.halfMoveNumber);
     }
 
     return alpha;

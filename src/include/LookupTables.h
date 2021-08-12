@@ -12,18 +12,11 @@
 
 class LookupTables {
 public:
-    LookupTables();
-
-    // zobrist piece table for [colour][piece][index]
     uint64_t zobristPieceTable[2][6][64]{};
     uint64_t zobristCastlingRightsTable[16]{};
     uint64_t zobristBlackToMove{};
     uint64_t zobristEnPassantFile[8]{};
-
-    int rayDirectionsTable[64][64]{};
-
-    uint64_t knightAttacksLUT[64]{};
-    uint64_t kingAttacksLUT[64]{};
+    LookupTables();
 
     inline int rayDirectionLookup(const unsigned a, const unsigned b) {
         return rayDirectionsTable[a][b];
@@ -36,7 +29,12 @@ public:
     }
 
 
-private:
+private:    // zobrist piece table for [colour][piece][index]
+
+    int rayDirectionsTable[64][64]{};
+
+    uint64_t knightAttacksLUT[64]{};
+    uint64_t kingAttacksLUT[64]{};
     void zobristPieceTableInitialize();
 
     void rayDirectionLookupInitialize();

@@ -14,40 +14,11 @@ extern const int PIECEWEIGHTS[6];
 
 class Position{
 public:
-
-    bool turn = WHITE;
-
-    // used to determine when an endgame occurs.
-    // all the values of the pieces (no pawns) are added together, and if they are lower than a certain threshold,
-    // the isEndGame flag will be set to true.
-    int allPiecesValue = 0;
-    int allPiecesValues[1024];
-    float endGameFraction = 0;
-
-    bool isIncheck = false;
-
-    unsigned castlingRights = 0;
-    uint64_t bitboards[2][8] = {0};
-    uint64_t helpBitboards[2] = {0};
-
-    uint64_t positionHashes[1024] = {0};
-
-    int positionEvaluations[1024] = {0};
-
-    unsigned halfMovesSinceIrrepr = 0;
-
-    uint64_t previousMoves[1024] = {0};
-    unsigned halfMoveNumber50 = 0;
-    unsigned halfMoveNumber = 0;
-    unsigned fullMoveNumber;
-
-    SliderAttacks sliderAttacks;
+    uint64_t getPositionHash();
 
     explicit Position(string FEN);
 
-    void generateHelpBitboardsAndIsInCheck();
     void GenerateMoves(moveList &movelist, bool onlyCaptures = false);
-
 
     void doMove(unsigned moveL);
     void doMove(const string&);
@@ -63,7 +34,6 @@ public:
     int Evaluate();
 
     bool isDraw();
-    uint64_t calculateHash();
 
     int getEvaluation();
 
@@ -71,7 +41,36 @@ public:
 
     static void sortMoves(moveList &list);
 
+    unsigned halfMoveNumber = 0;
+    bool isIncheck = false;
+    bool turn = WHITE;
 private:
+
+    // used to determine when an endgame occurs.
+    // all the values of the pieces (no pawns) are added together, and if they are lower than a certain threshold,
+    // the isEndGame flag will be set to true.
+    int allPiecesValue = 0;
+    int allPiecesValues[1024];
+    float endGameFraction = 0;
+
+    unsigned castlingRights = 0;
+    uint64_t bitboards[2][8] = {0};
+    uint64_t helpBitboards[2] = {0};
+
+    uint64_t positionHashes[1024] = {0};
+
+    int positionEvaluations[1024] = {0};
+
+    unsigned halfMovesSinceIrrepr = 0;
+
+    uint64_t previousMoves[1024] = {0};
+    unsigned halfMoveNumber50 = 0;
+    unsigned fullMoveNumber;
+
+    SliderAttacks sliderAttacks;
+
+    void generateHelpBitboardsAndIsInCheck();
+    uint64_t calculateHash();
     LookupTables LUTs;
     int filesAndPawns = 0;
 
@@ -85,7 +84,7 @@ private:
                                   bool kingMoveFlag = false, bool enPassantMoveFlag = false, bool promotionMoveFlag = false); // flags
 
 
-    int squareAttackedBy(uint64_t square, bool colour, uint64_t * attacker = nullptr);
+    short squareAttackedBy(uint64_t square, const bool colour, uint64_t * attacker = nullptr);
     uint64_t pinnedPieces(uint64_t pinnedOrigin, bool colour);
 
     void MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour);
@@ -112,7 +111,7 @@ private:
 
     int staticExchangeEvaluation(uint64_t squareBB, bool side);
 
-    int getPieceType(bool side, const uint64_t pieceBB);
+    short getPieceType(bool side, const uint64_t pieceBB);
 
     int staticExchangeEvaluationCapture(uint64_t from, uint64_t to, bool side);
 

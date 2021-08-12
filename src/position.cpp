@@ -269,11 +269,11 @@ Position::Position(string FEN) {
 uint64_t Position::calculateHash() {
     uint64_t posHash = 0;
 // calculate the posHash of the current position;
-    for (int colour = 0; colour < 2; colour++) {
-        for (int piece = 0; piece < 6; piece++) {
+    for (short colour = 0; colour < 2; colour++) {
+        for (short piece = 0; piece < 6; piece++) {
             uint64_t bb = bitboards[colour][piece];
             while (bb) {
-                unsigned int pieceIndex = debruijnSerialization(bb);
+                unsigned short pieceIndex = debruijnSerialization(bb);
                 posHash ^= LUTs.zobristPieceTable[colour][piece][pieceIndex];
                 uint64_t pieceBB = 1ull << pieceIndex;
                 bb &= ~pieceBB;
@@ -285,7 +285,7 @@ uint64_t Position::calculateHash() {
         posHash ^= LUTs.zobristBlackToMove;
     }
     if (bitboards[!this->turn][EN_PASSANT_SQUARES]) {
-        unsigned int enPassantSquare = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
+        unsigned short enPassantSquare = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
         posHash ^= LUTs.zobristEnPassantFile[enPassantSquare % 8];
     }
     return posHash;
@@ -294,7 +294,7 @@ uint64_t Position::calculateHash() {
 void Position::generateHelpBitboardsAndIsInCheck() {
     bitboards[BLACK][PIECES] = 0;
     bitboards[WHITE][PIECES] = 0;
-    for(int i = 0; i < 6; i++){
+    for(short i = 0; i < 6; i++){
         bitboards[BLACK][PIECES] |= bitboards[BLACK][i];
         bitboards[WHITE][PIECES] |= bitboards[WHITE][i];
     }
@@ -303,7 +303,6 @@ void Position::generateHelpBitboardsAndIsInCheck() {
 }
 
 void Position::prettyPrint() {
-
     char printArray[64] = {};
     unsigned index;
     uint64_t BB;
@@ -371,7 +370,7 @@ inline void Position::GeneratePawnMoves(moveList &movelist, const bool onlyCaptu
 
     pawns = bitboards[this->turn][PAWNS];
 
-    unsigned pieceIndex;
+    unsigned short pieceIndex;
     uint64_t pieceBB;
     while(pawns != 0){
         uint64_t currentPawnMoves = 0, currentPawnCaptureMoves = 0, enPassantMove;
@@ -448,7 +447,7 @@ inline void Position::GenerateKnightMoves(moveList &movelist, const bool onlyCap
     uint64_t knights;
     knights = bitboards[this->turn][KNIGHTS];
 
-    unsigned pieceIndex;
+    unsigned short pieceIndex;
     uint64_t pieceBB, currentKnightMoves, currentKnightCaptures; //pieceBitboard
 
     while (knights != 0) {
@@ -460,7 +459,7 @@ inline void Position::GenerateKnightMoves(moveList &movelist, const bool onlyCap
 
         knights &= ~pieceBB; //remove knight from knights bitboard
 
-        currentKnightMoves = LUTs.getKnightAttacks(pieceIndex); //get the knight attacks (moveGenHelpFunctions.h)
+        currentKnightMoves = LUTs.getKnightAttacks(pieceIndex); //get the knight attacks
 
 
         // use knightmoves AND NOT white pieces to remove blocked squares
@@ -484,11 +483,9 @@ inline void Position::GenerateKnightMoves(moveList &movelist, const bool onlyCap
 
 
 inline void Position::GenerateSliderMoves(moveList &movelist, bool onlyCaptures){
-    int score = 0;
-
-    unsigned pieceIndex;
+    unsigned short pieceIndex;
     uint64_t pieceBB, currentPieceMoves, currentPieceCaptures;
-    const int sliders[] = {BISHOPS, ROOKS, QUEENS}; // sliders to loop over
+    const short sliders[] = {BISHOPS, ROOKS, QUEENS}; // sliders to loop over
     for(int currentSlider: sliders) {
         uint64_t currentPiece;
         currentPiece = bitboards[this->turn][currentSlider];
@@ -538,7 +535,7 @@ inline void Position::GenerateSliderMoves(moveList &movelist, bool onlyCaptures)
 
 inline void Position::GenerateKingMoves(moveList &movelist, const bool onlyCaptures){
     const uint64_t king = bitboards[this->turn][KING];
-    const unsigned kingIndex = debruijnSerialization(king);
+    const unsigned short kingIndex = debruijnSerialization(king);
 
     uint64_t kingMoves = LUTs.getKingAttacks(kingIndex);
 
@@ -557,7 +554,6 @@ inline void Position::GenerateKingMoves(moveList &movelist, const bool onlyCaptu
 
 
 void Position::GenerateCastlingMoves(moveList &movelist) {
-
     if(this->turn == WHITE) {
         if (castlingRights & WHITE_KINGSIDE_CASTLING_RIGHTS) {
             CastlingToMovelist(movelist, WHITE_KINGSIDE_CASTLING_RIGHTS, WHITE_KINGSIDE_CASTLING_EMPTY_AND_NONATTACKED_SQUARES, WHITE_KINGSIDE_CASTLING_EMPTY_AND_NONATTACKED_SQUARES);
@@ -582,7 +578,7 @@ void Position::GenerateCastlingMoves(moveList &movelist) {
 inline void Position::CastlingToMovelist(moveList &movelist, const unsigned castlingType, const uint64_t empty, uint64_t nonattacked){
 
     if(!(empty & helpBitboards[OCCUPIED_SQUARES])) { // check if the squares are empty
-        unsigned nonAttackedInt;
+        unsigned short nonAttackedInt;
         unsigned move;
         // loop over the squares that should be non attacked
         while(nonattacked){
@@ -604,7 +600,7 @@ inline void Position::CastlingToMovelist(moveList &movelist, const unsigned cast
 // pinned pieces are of colour $colour
 inline uint64_t Position::pinnedPieces(const uint64_t pinnedOrigin, const bool colour){
 
-    int squareIndex = (int) debruijnSerialization(pinnedOrigin);
+    unsigned short squareIndex = debruijnSerialization(pinnedOrigin);
     uint64_t pinnedPieces = 0;
 
     // check bishop/queen diagonal pins
@@ -657,7 +653,7 @@ inline uint64_t Position::pinnedPieces(const uint64_t pinnedOrigin, const bool c
  * @param attacker Optional attacker
  * @return
  */
-inline int Position::squareAttackedBy(uint64_t square, const bool colour, uint64_t *attacker){ // TODO: clean up this function
+inline short Position::squareAttackedBy(uint64_t square, const bool colour, uint64_t *attacker){ // TODO: clean up this function
     unsigned squareIndex = debruijnSerialization(square);
     uint64_t att = 0;
 
@@ -725,7 +721,6 @@ inline int Position::squareAttackedBy(uint64_t square, const bool colour, uint64
     }
 
     return 0;
-
 }
 
 
@@ -741,10 +736,10 @@ inline int Position::squareAttackedBy(uint64_t square, const bool colour, uint64
  * bit 16    === capturemoveflag
  *
  */
-
 void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origin, const uint64_t destinations, const uint64_t captureDestinations, const Pieces piece,
                                         const bool kingMoveFlag, const bool enPassantMoveFlag, const bool promotionMoveFlag) {
-    unsigned originInt, destinationInt, move;
+    unsigned short originInt, destinationInt;
+    unsigned int move;
     uint64_t destinationBB;
     originInt = debruijnSerialization(origin);
 
@@ -813,7 +808,6 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
                     movelist.moves[movelist.moveLength].second = score + PROMOTION_SCORE;
                     movelist.moves[movelist.moveLength++].first = move;
                 }
-
             }
         }
         else {
@@ -847,10 +841,10 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
  * @return
  */
 int Position::staticExchangeEvaluationCapture(const uint64_t from, const uint64_t to, const bool side){
-    const int attackerType = getPieceType(side, from);
+    const short attackerType = getPieceType(side, from);
 
     /** Get the type and value of the piece that is captured */
-    const int takenPieceType = getPieceType(!side, to);
+    const short takenPieceType = getPieceType(!side, to);
     const int takenPieceValue = PIECEWEIGHTS[takenPieceType];
 
     /** Capture the piece (without updating hash and everything) */
@@ -873,12 +867,12 @@ int Position::staticExchangeEvaluationCapture(const uint64_t from, const uint64_
 int Position::staticExchangeEvaluation(const uint64_t squareBB, const bool side){
     int value = 0;
     uint64_t attacker;
-    int attackerType = squareAttackedBy(squareBB, side, &attacker);
+    short attackerType = squareAttackedBy(squareBB, side, &attacker);
     if(attackerType){
         attackerType -= 1; /** To get the correct index, as squareAttacked offsets everything with 1 */
 
         /** Get the position of the attacker */
-        const uint64_t singleAttackerIndex = debruijnSerialization(attacker);
+        const unsigned short singleAttackerIndex = debruijnSerialization(attacker);
         const uint64_t singleAttackerBB = 1ull << singleAttackerIndex;
 
         /** Get the type and value of the piece that is captured */
@@ -912,8 +906,8 @@ int Position::staticExchangeEvaluation(const uint64_t squareBB, const bool side)
 void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour) {
 
     // find the piece that is moved.
-    int pieceToMove = -1;
-    for (int i = 0; i < 6; i++) {
+    short pieceToMove = -1;
+    for (short i = 0; i < 6; i++) {
         if (bitboards[colour][i] & originBB) {
             pieceToMove = i;
             break;
@@ -958,11 +952,11 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
     }
 
     // remove origin piece
-    unsigned originInt = debruijnSerialization(originBB);
+    unsigned short originInt = debruijnSerialization(originBB);
     removePiece(pieceToMove, originBB, colour, originInt);
 
     // add destination piece
-    unsigned destinationint = debruijnSerialization(destinationBB);
+    unsigned short destinationint = debruijnSerialization(destinationBB);
     addPiece(pieceToMove, destinationBB, colour, destinationint);
 }
 
@@ -1478,7 +1472,6 @@ perftCounts Position::PERFT(int depth, bool tree){
         }
 
         return pfcount;
-
     }
 
     for(int i = 0; i < movelist.moveLength; i++){
@@ -1498,7 +1491,11 @@ perftCounts Position::PERFT(int depth, bool tree){
     return pfcount;
 }
 
-
+/**
+ * Calculates evaluation from scratch. This function is slow, and because PST scores are updated incrementally,
+ * this function is only called at the start.
+ * @return
+ */
 int Position::Evaluate() {
     // score in centipawns (positive is good for white, negative good for black)
     int score = 0;
@@ -1516,7 +1513,6 @@ int Position::Evaluate() {
 
             // calculate score
             score += PIECEWEIGHTS[pieceIndex];
-
 
             score += PSTs[0][pieceIndex][pieceInt];
         }
@@ -1562,7 +1558,7 @@ int Position::getLazyEvaluation(){
 }
 
 /**
- * DO NOT CALL GET_EVALUATION WITHOUG CALLING LAZY EVALUATION FIRST.
+ * DO NOT CALL GET_EVALUATION WITHOUT CALLING LAZY EVALUATION FIRST.
  * @return
  */
 int Position::getEvaluation(){
@@ -1609,8 +1605,8 @@ inline int Position::getPieceValue(bool side, const uint64_t pieceBB) {
     return 0;
 }
 
-inline int Position::getPieceType(bool side, const uint64_t pieceBB) {
-    int i = 0;
+inline short Position::getPieceType(bool side, const uint64_t pieceBB) {
+    short i = 0;
     for(uint64_t &bb : bitboards[side]){
         if(bb & pieceBB){
             return i;
@@ -1717,4 +1713,9 @@ int Position::calculateFileAndPawnScore(bool side) {
         }
     }
     return score;
+}
+
+
+uint64_t Position::getPositionHash(){
+    return positionHashes[halfMoveNumber];
 }
