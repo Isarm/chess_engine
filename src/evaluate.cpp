@@ -40,6 +40,8 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         return 0;
     }
 
+    stats->totalNodes++;
+
     if(ply == 0){
         pline->nmoves = 0;
         // do a quiescent search for the leaf nodes, to reduce the horizon effect
@@ -110,7 +112,7 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
     /** Null move pruning */
     int R = 3; // TODO: Zugzwang
 
-    if(!position.isIncheck){
+    if(!position.isIncheck && position.getLazyEvaluation() >= beta - 50){
         position.doNullMove();
         LINE line {};
         int score = -AlphaBeta(max(0, ply - 1 - R), -beta, -beta + 1, &line, stats, depth + 1);
@@ -146,7 +148,6 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
 
     /** Go through the movelist */
     for(int i = 0; i < movelist.moveLength; i++){
-
         /** Futility pruning */
         bool fprune = ply == 1 && i > 3;
         if(fprune && movelist.moves[i].second + 100 < alpha){
@@ -155,7 +156,6 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
 
         LINE line {};
         int score;
-        stats->totalNodes += 1;
         position.doMove(movelist.moves[i].first);
 
         //check if this moves has lead to a draw (3fold rep/50move rule); as then the search can be stopped
@@ -173,7 +173,7 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
                 /** Late move reductions */
                 int LMR = 0;
                 if (i > 3 && depth > 2 && !(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK)){
-                    if(i < 7){
+                    if(i < 6){
                         LMR = 1;
                     } else{
                         LMR = i / 3;
@@ -231,6 +231,8 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, bool evasion, int de
     if(exitCondition()){
         return 0;
     }
+    stats->quiescentNodes++;
+    stats->totalNodes++;
 
     bool check = position.isIncheck;
 
@@ -273,20 +275,22 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, bool evasion, int de
 
     // go over all ((good) capture) moves to avoid horizon effect on tactical moves.
     for(int i = 0; i < movelist.moveLength; i++){
+        /** Prune moves with bad SEE */
         if(movelist.moves[i].second < 0 && !check){
             break;
         }
 
-        /** Check highest possible SEE */
-        int highestSEE = 0;
+        /** Check SEE */
+        int SEE = 0;
         if(movelist.moves[i].second > CAPTURE_SCORE){
-            highestSEE = movelist.moves[0].second - CAPTURE_SCORE;
+            SEE = movelist.moves[i].second - CAPTURE_SCORE;
         }
-        if(stand_pat < alpha - highestSEE - 50 && !check){
+        /** If stand pat is below alpha - safety margin - SEE then return early
+         * Note that SEE will only decrease with the next moves in the movelist. */
+        if(stand_pat < alpha - SEE - 50 && !check){
             return alpha;
         }
 
-        stats->totalNodes += 1;
         position.doMove(movelist.moves[i].first);
         int score = -Quiescence(-beta, -alpha, stats, false, depth + 1);
         position.undoMove();

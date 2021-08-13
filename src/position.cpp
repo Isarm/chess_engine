@@ -765,6 +765,7 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
 
         if(enPassantMoveFlag){
             move |= EN_PASSANT_FLAG << SPECIAL_MOVE_FLAG_SHIFT;
+            move |= 1ull << CAPTURE_MOVE_FLAG_SHIFT;
         }
 
         // check if piece is pinned and check legality of moves.
@@ -816,12 +817,9 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
                 move |= 1uLL << CAPTURE_MOVE_FLAG_SHIFT;
 
                 int SEE = staticExchangeEvaluationCapture(origin, destinationBB, this->turn);
-                int capturebonus;
+                int capturebonus = 0;
                 if(SEE >= 0){
                     capturebonus = CAPTURE_SCORE;
-                }
-                else{
-                    capturebonus = -CAPTURE_SCORE;
                 }
 
                 movelist.moves[movelist.moveLength].second = score + capturebonus + SEE;

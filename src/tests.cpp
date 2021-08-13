@@ -138,7 +138,6 @@ void perft(int argc, char *argv[]){
             if (i != ' ') {
                 singleMove.push_back(i);
             } else {
-                printf("%s\n", singleMove.c_str());
                 position.doMove(singleMove);
                 singleMove = "";
             }

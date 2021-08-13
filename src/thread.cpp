@@ -65,6 +65,7 @@ string Thread::search() {
         searchInfoMutex.lock();
 
         searchInfo.stats.totalNodes += stats.totalNodes;
+        searchInfo.stats.quiescentNodes += stats.quiescentNodes;
         stats.totalNodes = 0;
 
         /** A different thread has found a line at this depth already */
