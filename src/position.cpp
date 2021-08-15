@@ -29,14 +29,14 @@ const int PIECEWEIGHTS[6] = {
 const int PSTs[2][6][64] = {
 { /** OPENING - MIDGAME */
     { /** PAWNS */
-    0,  0,  0,  0,  0,  0,  0,  0,
-    50, 50, 50, 50, 50, 50, 50, 50,
-    10, 10, 20, 30, 30, 20, 10, 10,
-    5,  5, 10, 25, 25, 10,  5,  5,
-    0,  0,  0, 22, 22,  0,  0,  0,
-    0, -5,-10,  0,  0,-10, -5,  0,
-    5, 10, 10,-20,-30, 10, 10,  5,
-    0,  0,  0,  0,  0,  0,  0,  0
+      0,  0,  0,  0,  0,  0,  0,  0,
+     -7,  6, -2,-11,  4,-14, 10,  9,
+      3,-11, -6, 22, -8, -5,-14,-11,
+     11, -4,-11,  2, 11,  0,-12,  5,
+     -3,-20,  8, 19, 39, 17,  2, -5,
+     -9,-15, 11, 15, 31, 23,  6,-20,
+      2,  4, 11, 18, 16, 24,  9, -3,
+      0,  0,  0,  0,  0,  0,  0,  0
     },
     { /** KNIGHTS */
     -201,-83,-56,-26,-26,-56,-83,-201,
@@ -91,64 +91,64 @@ const int PSTs[2][6][64] = {
 },
 { /** ENDGAME */
     { /** PAWNS */
-    0,  0,  0,  0,  0,  0,  0,  0,
-    50, 50, 50, 50, 50, 50, 50, 50,
-    40, 40, 40, 40, 40, 40, 40, 40,
-    30, 30, 30, 30, 30, 30, 30, 30,
-    20, 20, 20, 20, 20, 20, 20, 20,
-    10, 10, 10, 10, 10, 10, 10, 10,
-    5,  5,  5,  5,  5,  5,  5,  5,
-    0,  0,  0,  0,  0,  0,  0,  0
+      0,  0,  0,  0,  0,  0,  0,  0,
+     -1,-14, 13, 22, 24, 17,  7,  7,
+     27, 18, 19, 29, 30,  9,  8, 14,
+     12,  6,  2, -6, -5, -4, 14,  9,
+      7,  1, -8, -2,-14,-13,-11, -6,
+     -9, -7,-10,  5,  2,  3, -8, -5,
+     -8, -6,  9,  5, 16,  6, -6,-18,
+      0,  0,  0,  0,  0,  0,  0,  0
     },
     { /** KNIGHTS */
-    -50,-40,-30,-30,-30,-30,-40,-50,
-    -40,-20,  0,  0,  0,  0,-20,-40,
-    -30,  0, 10, 15, 15, 10,  0,-30,
-    -30,  5, 15, 20, 20, 15,  5,-30,
-    -30,  0, 15, 20, 20, 15,  0,-30,
-    -30,  5, 10, 15, 15, 10,  5,-30,
-    -40,-20,  0,  5,  5,  0,-20,-40,
-    -50,-30,-30,-30,-30,-30,-30,-50,
+    -100,-88,-56,-17,-17,-56,-88,-100,
+    - 69,-50,-51, 12, 12,-51,-50,-69,
+     -51,-44,-16, 17, 17,-16,-44,-51,
+     -45,-16,  9, 39, 39,  9,-16,-45,
+     -35, -2, 13, 28, 28, 13, -2,-35,
+     -40,-27, -8, 29, 29, -8,-27,-40,
+     -67,-54,-18,  8,  8,-18,-54,-67,
+     -96,-65,-49,-21,-21,-49,-65,-96,
     },
     { /** BISHOPS */
-    -20,-10,-10,-10,-10,-10,-10,-20,
-    -10,  0,  0,  0,  0,  0,  0,-10,
-    -10,  0,  5, 10, 10,  5,  0,-10,
-    -10,  5,  5, 10, 10,  5,  5,-10,
-    -10,  0, 10, 10, 10, 10,  0,-10,
-    -10, 10, 10, 10, 10, 10, 10,-10,
-    -10,  5,  0,  0,  0,  0,  5,-10,
-    -20,-10,-10,-10,-10,-10,-10,-20,
+    -32,-29,-26,-17,-17,-23,-29,-32,
+    -22,-14, -1,  1,  1, -1,-14,-22,
+    -21,  4,  3,  4,  4,  3,  4,-21,
+    -12, -1,-10, 11, 11,-10, -1,-12,
+    -14, -4,  0, 12, 12,  0, -4,-14,
+    -11, -1, -1,  7,  7, -1, -1,-11,
+    -26, -9,-12,  1,  1,-12, -9,-26,
+    -40,-21,-26, -8, -8,-26,-21,-40,
     },
     { /** ROOKS */
-    0,  0,  0,  0,  0,  0,  0,  0,
-    5, 10, 10, 10, 10, 10, 10,  5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    0,  0,  0,  5,  5,  0,  0,  0
+     18,  0,  19, 13, 13, 19,  0, 18,
+      4,  5,  20, -5, -5, 20,  5,  4,
+      6,  1,  -7, 10, 10, -7,  1,  6,
+     -5,  8,   7, -6, -6,  7,  8, -5,
+     -6,  1,  -9,  7, -7, -9,  1, -6,
+      6, -8,  -2, -6, -6, -2, -8,  6,
+    -12, -9,  -1, -2, -2, -1, -9,-12,
+     -9, -13,-10, -9, -9,-10,-13, -9
     },
     { /** QUEENS */
-    -20,-10,-10, -5, -5,-10,-10,-20,
-    -10,  0,  0,  0,  0,  0,  0,-10,
-    -10,  0,  5,  5,  5,  5,  0,-10,
-    -5,  0,  5,  5,  5,  5,  0, -5,
-    0,  0,  5,  5,  5,  5,  0, -5,
-    -10,  5,  5,  5,  5,  5,  0,-10,
-    -10,  0,  5,  0,  0,  0,  0,-10,
-    -20,-10,-10, 5,  -10,-10,-10,-20
+    -74,-52,-43,-34,-34,-43,-52,-74,
+    -50,-27,-24, -8, -8,-24,-27,-50,
+    -38,-18,-11,  1,  1,-11,-18,-38,
+    -29, -6,  9, 21, 21,  9, -6,-29,
+    -23, -3, 13, 24, 24, 13, -3,-23,
+    -39,-18, -9,  3,  3, -9,-18,-39,
+    -54,-31,-22, -4, -4,-22,-31,-54,
+    -69,-57,-47,-26,-26,-47,-57,-69
     },
     { /** KING */
-    -50,-40,-30,-20,-20,-30,-40,-50,
-    -30,-20,-10,  0,  0,-10,-20,-30,
-    -30,-10, 20, 30, 30, 20,-10,-30,
-    -30,-10, 30, 40, 40, 30,-10,-30,
-    -30,-10, 30, 40, 40, 30,-10,-30,
-    -30,-10, 20, 30, 30, 20,-10,-30,
-    -30,-30,  0,  0,  0,  0,-30,-30,
-    -50,-30,-30,-30,-30,-30,-30,-5
+     11, 59, 73, 78, 78, 73, 59, 11,
+     47,121,116,131,131,116,121, 47,
+     92,172,184,191,191,184,172, 92,
+     96,166,199,199,199,199,166, 96,
+    103,156,172,172,172,172,156,103,
+     88,130,169,175,175,169,130, 88,
+     53,100,133,135,135,133,100, 53,
+      1, 45, 85, 76, 76, 85, 45,  1
     }
 }
 };
@@ -257,6 +257,8 @@ Position::Position(string FEN) {
     sliderAttacks.Initialize(); // initialize slider attacks
 
     generateHelpBitboardsAndIsInCheck();
+
+    endGameFraction = min(1.0, (6400.0 - double(allPiecesValue))/3800.0);
     positionHashes[halfMoveNumber] = calculateHash();
 
     positionEvaluations[halfMoveNumber] = Evaluate();
@@ -1135,7 +1137,7 @@ void Position::doMove(const unsigned move){
     positionHashes[halfMoveNumber] ^= LUTs.zobristBlackToMove;
 
     // change ratio of PST usage: lower value for allPiecesValue indicates further in endgame
-    endGameFraction = min(1.0, (6400.0 - float(allPiecesValue))/3800.0);
+    endGameFraction = min(1.0, (6400.0 - double(allPiecesValue))/3800.0);
 
     generateHelpBitboardsAndIsInCheck();
 }
@@ -1154,13 +1156,13 @@ inline void Position::removePiece(const unsigned pieceType, const uint64_t piece
     positionHashes[halfMoveNumber] ^= LUTs.zobristPieceTable[colour][pieceType][pieceInt];
     if(colour) {
         positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[pieceType];
-        positionEvaluations[halfMoveNumber] -= int((1 - endGameFraction) * float(PSTs[0][pieceType][pieceInt]));
-        positionEvaluations[halfMoveNumber] -= int(endGameFraction * float(PSTs[1][pieceType][pieceInt]));
+        positionEvaluations[halfMoveNumber] -= int((1 - endGameFraction) * double(PSTs[0][pieceType][pieceInt]));
+        positionEvaluations[halfMoveNumber] -= int(endGameFraction * double(PSTs[1][pieceType][pieceInt]));
     }
     else{
         positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[pieceType];
-        positionEvaluations[halfMoveNumber] += int((1 - endGameFraction) * float(PSTs[0][pieceType][INVERT[pieceInt]]));
-        positionEvaluations[halfMoveNumber] += int(endGameFraction * float(PSTs[1][pieceType][INVERT[pieceInt]]));
+        positionEvaluations[halfMoveNumber] += int((1 - endGameFraction) * double(PSTs[0][pieceType][INVERT[pieceInt]]));
+        positionEvaluations[halfMoveNumber] += int(endGameFraction * double(PSTs[1][pieceType][INVERT[pieceInt]]));
     }
 }
 
@@ -1175,13 +1177,13 @@ inline void Position::addPiece(const unsigned pieceType, const uint64_t pieceBB,
     positionHashes[halfMoveNumber] ^= LUTs.zobristPieceTable[colour][pieceType][pieceInt];
     if(colour) {
         positionEvaluations[halfMoveNumber] += PIECEWEIGHTS[pieceType];
-        positionEvaluations[halfMoveNumber] += int((1 - endGameFraction) * float(PSTs[0][pieceType][pieceInt]));
-        positionEvaluations[halfMoveNumber] += int(endGameFraction * float(PSTs[1][pieceType][pieceInt]));
+        positionEvaluations[halfMoveNumber] += int((1 - endGameFraction) * double(PSTs[0][pieceType][pieceInt]));
+        positionEvaluations[halfMoveNumber] += int(endGameFraction * double(PSTs[1][pieceType][pieceInt]));
     }
     else{
         positionEvaluations[halfMoveNumber] -= PIECEWEIGHTS[pieceType];
-        positionEvaluations[halfMoveNumber] -= int((1 - endGameFraction) * float(PSTs[0][pieceType][INVERT[pieceInt]]));
-        positionEvaluations[halfMoveNumber] -= int(endGameFraction * float(PSTs[1][pieceType][INVERT[pieceInt]]));
+        positionEvaluations[halfMoveNumber] -= int((1 - endGameFraction) * double(PSTs[0][pieceType][INVERT[pieceInt]]));
+        positionEvaluations[halfMoveNumber] -= int(endGameFraction * double(PSTs[1][pieceType][INVERT[pieceInt]]));
     }
 }
 
@@ -1428,7 +1430,7 @@ void Position::undoMove() {
 
     allPiecesValue = allPiecesValues[halfMoveNumber];
     // change ratio of PST tables
-    endGameFraction = min(1.0, (6400.0 - float(allPiecesValue))/3200.0);
+    endGameFraction = min(1.0, (6400.0 - double(allPiecesValue))/3200.0);
 
     this->turn = !this->turn;
     generateHelpBitboardsAndIsInCheck();
@@ -1514,7 +1516,8 @@ int Position::Evaluate() {
             // calculate score
             score += PIECEWEIGHTS[pieceIndex];
 
-            score += PSTs[0][pieceIndex][pieceInt];
+            score += int((1 - endGameFraction) * double(PSTs[0][pieceIndex][pieceInt]));
+            score += int(endGameFraction * double(PSTs[1][pieceIndex][pieceInt]));
         }
     }
 
@@ -1534,27 +1537,26 @@ int Position::Evaluate() {
             // calculate score
             score -= PIECEWEIGHTS[pieceIndex];
 
-            score -= PSTs[0][pieceIndex][pieceInt];
+            score -= int((1 - endGameFraction) * double(PSTs[0][pieceIndex][INVERT[pieceInt]]));
+            score -= int(endGameFraction * double(PSTs[1][pieceIndex][INVERT[pieceInt]]));
         }
     }
-    // for negamax, the score should always be maximizing for whomevers turn it is
-    if(this->turn){
-        return score;
-    }
-    else{
-        return -score;
-    }
+    return score;
 }
 
 int Position::getLazyEvaluation(){
     pawnStructure = getPawnStructureScore(this->turn) - getPawnStructureScore(!this->turn);
     kingSafety = getKingSafety(this->turn) - getKingSafety(!this->turn);
 
+    int score = pawnStructure + kingSafety + 10; // 10 is tempobonus
+    /** The positionEvaluations has scores where negative is good for black, and positive good for white.
+     * Invert this because for the search we always want to maximimize for the current side to move.
+     */
     if(this->turn){
-        return positionEvaluations[halfMoveNumber] +  pawnStructure + kingSafety + 10;
+        return positionEvaluations[halfMoveNumber] + score;
     }
     else{
-        return -positionEvaluations[halfMoveNumber] - pawnStructure - kingSafety - 10;
+        return -positionEvaluations[halfMoveNumber] + score;
     }
 }
 
@@ -1565,11 +1567,12 @@ int Position::getLazyEvaluation(){
 int Position::getEvaluation(){
     int mobilityBonus = calculateMobility(this->turn) - calculateMobility(!this->turn);
 
+    int score = mobilityBonus + pawnStructure + kingSafety + 10;
     if(this->turn){
-        return positionEvaluations[halfMoveNumber] + mobilityBonus + pawnStructure + kingSafety + 10;
+        return positionEvaluations[halfMoveNumber] + score;
     }
     else{
-        return -positionEvaluations[halfMoveNumber] - mobilityBonus - pawnStructure - kingSafety - 10;
+        return -positionEvaluations[halfMoveNumber] + score;
     }
 }
 
@@ -1675,7 +1678,7 @@ int Position::calculateMobility(bool side) {
             }
         }
     }
-    return (int)((float)(mobility * 5) *  max(0.0, double(1 - 2 * endGameFraction)) );
+    return (int)((double)(mobility * 5) *  max(0.0, double(1 - 2 * endGameFraction)) );
 }
 
 
@@ -1756,5 +1759,5 @@ int Position::getKingSafety(bool side) {
     if(endGameFraction > 0.8){
         return 0;
     }
-    return int((1.0 - endGameFraction) * float(KING_SAFETY_PAWN_MULTIPLIER * popCount(bitboards[side][PAWNS] & LUTs.kingPawnShield[side][kingindex])));
+    return int((1.0 - endGameFraction) * double(KING_SAFETY_PAWN_MULTIPLIER * popCount(bitboards[side][PAWNS] & LUTs.kingPawnShield[side][kingindex])));
 }

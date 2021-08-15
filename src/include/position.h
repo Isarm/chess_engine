@@ -52,7 +52,7 @@ private:
     // the isEndGame flag will be set to true.
     int allPiecesValue = 0;
     int allPiecesValues[1024];
-    float endGameFraction = 0;
+    double endGameFraction = 0;
 
     unsigned castlingRights = 0;
     uint64_t bitboards[2][8] = {0};

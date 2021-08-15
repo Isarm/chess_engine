@@ -35,7 +35,7 @@ void testmain(int argc, char *argv[]){
 //    benchmarks();
 //    fileAndStructureTest();
 //    testFrontSpans();
-    testKingPawnShield();
+//    testKingPawnShield();
     testPawnStructure();
 }
 
@@ -52,8 +52,9 @@ void testKingPawnShield() {
 
 void testPawnStructure() {
     Position position = Position("4k3/ppp1p3/p4pP1/6P1/8/2P3p1/PPP1P1pP/4K3 w - - 0 1");
+    position = Position("4R3/8/p2r1k2/1p2pp2/2p5/2P1K3/2P5/8 w - - 0 1");
     /** Walk through this with debugger */
-    position.getLazyEvaluation();
+    printf("%i\n", position.getLazyEvaluation());
 }
 
 void testFrontSpans() {
