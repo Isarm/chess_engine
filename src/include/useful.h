@@ -60,7 +60,7 @@ const int index64[64] = {
 };
 
 
-inline unsigned debruijnSerialization(const uint64_t pieces) {
+inline unsigned short debruijnSerialization(const uint64_t pieces) {
     uint64_t LS1B = pieces & -pieces; // only keeps the 1st LSB bit so that the DeBruijn bitscan can be used
     return index64[(LS1B * debruijn64) >> 58u];
 }
@@ -143,27 +143,27 @@ inline void copyline(LINE *from, LINE *to){
     }
 }
 
-const uint64_t FILES[8] = {
-        0x8080808080808080,
-        0x4040404040404040,
-        0x2020202020202020,
-        0x1010101010101010,
-        0x0808080808080808,
-        0x0404040404040404,
+const uint64_t FILE_MASK[8] = {
+        0x0101010101010101,
         0x0202020202020202,
-        0x0101010101010101
+        0x0404040404040404,
+        0x0808080808080808,
+        0x1010101010101010,
+        0x2020202020202020,
+        0x4040404040404040,
+        0x8080808080808080
 };
 
 
-const uint64_t ISOLATED[8] = {
-        0x4040404040404040,
-        0xA0A0A0A0A0A0A0A0,
-        0x5050505050505050,
-        0x2828282828282828,
-        0x1414141414141414,
-        0x0A0A0A0A0A0A0A0A,
-        0x0505050505050505,
+const uint64_t ISOLATED_MASK[8] = {
         0x0202020202020202,
+        0x0505050505050505,
+        0x0A0A0A0A0A0A0A0A,
+        0x1414141414141414,
+        0x2828282828282828,
+        0x5050505050505050,
+        0xA0A0A0A0A0A0A0A0,
+        0x4040404040404040
 };
 
 #endif //MOVEGENHELPFUNCTIONS_H

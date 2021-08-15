@@ -16,6 +16,8 @@ public:
     uint64_t zobristCastlingRightsTable[16]{};
     uint64_t zobristBlackToMove{};
     uint64_t zobristEnPassantFile[8]{};
+    uint64_t frontSpans[2][64]{};
+    uint64_t kingPawnShield[2][64]{};
     LookupTables();
 
     inline int rayDirectionLookup(const unsigned a, const unsigned b) {
@@ -47,6 +49,9 @@ private:    // zobrist piece table for [colour][piece][index]
 
     void kingAttacksLUTinitialize();
 
+    void frontSpansInitialize();
+
+    void kingPawnShieldInitialize();
 };
 
 

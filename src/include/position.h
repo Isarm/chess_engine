@@ -3,6 +3,7 @@
 #include "definitions.h"
 #include "slider_attacks.h"
 #include "LookupTables.h"
+#include <unordered_map>
 
 using namespace std;
 using namespace definitions;
@@ -65,14 +66,20 @@ private:
 
     uint64_t previousMoves[1024] = {0};
     unsigned halfMoveNumber50 = 0;
-    unsigned fullMoveNumber;
+    unsigned fullMoveNumber = 0;
+
+
+    /** Pawn hash tables for black and white */
+    std::unordered_map<uint64_t, int> pawnHashTable[2] =
+            {std::unordered_map<uint64_t, int>(1000),
+             std::unordered_map<uint64_t, int>(1000)};
 
     SliderAttacks sliderAttacks;
 
     void generateHelpBitboardsAndIsInCheck();
     uint64_t calculateHash();
     LookupTables LUTs;
-    int filesAndPawns = 0;
+    int pawnStructure = 0;
 
     void GeneratePawnMoves(moveList &movelist, bool onlyCaptures = false);
     void GenerateKnightMoves(moveList &movelist, bool onlyCaptures = false);
@@ -117,6 +124,13 @@ private:
 
     int calculateFileAndPawnScore(bool turn);
 
+    int getPawnStructureScore(bool side);
+
+    int evaluatePawnStructure(bool side);
+
+    int getKingSafety(bool side);
+
+    int kingSafety;
 };
 
 #endif

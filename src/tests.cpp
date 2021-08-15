@@ -18,16 +18,52 @@ void benchmarks();
 
 void fileAndStructureTest();
 
+void testFrontSpans();
+
+void testPawnStructure();
+
+void testKingPawnShield();
+
 using namespace std;
 
 
 void testmain(int argc, char *argv[]){
-    perft(argc, argv);
+//    perft(argc, argv);
 //    perftDebug();
 //    drawTest();
 //    hashTest();
 //    benchmarks();
 //    fileAndStructureTest();
+//    testFrontSpans();
+    testKingPawnShield();
+    testPawnStructure();
+}
+
+void testKingPawnShield() {
+    LookupTables lut = LookupTables();
+    for(int i = 0; i < 64; i++){
+        printf("WHITE:\n");
+        Bitboard::print(lut.kingPawnShield[WHITE][i]);
+        printf("BLACK:\n");
+        Bitboard::print(lut.kingPawnShield[BLACK][i]);
+    }
+
+}
+
+void testPawnStructure() {
+    Position position = Position("4k3/ppp1p3/p4pP1/6P1/8/2P3p1/PPP1P1pP/4K3 w - - 0 1");
+    /** Walk through this with debugger */
+    position.getLazyEvaluation();
+}
+
+void testFrontSpans() {
+    LookupTables lut = LookupTables();
+    for(int i = 0; i < 64; i++){
+        printf("WHITE:\n");
+        Bitboard::print(lut.frontSpans[WHITE][i]);
+        printf("BLACK:\n");
+        Bitboard::print(lut.frontSpans[BLACK][i]);
+    }
 }
 
 void fileAndStructureTest() {

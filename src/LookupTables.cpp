@@ -10,6 +10,8 @@ LookupTables::LookupTables() {
     kingAttacksLUTinitialize();
     knightAttacksLUTinitialize();
     rayDirectionLookupInitialize();
+    frontSpansInitialize();
+    kingPawnShieldInitialize();
 }
 
 void LookupTables::zobristPieceTableInitialize(){
@@ -95,3 +97,85 @@ void LookupTables::kingAttacksLUTinitialize(){
         kingAttacksLUT[i] = kingAttacks(1ull << i);
     }
 }
+
+void LookupTables::frontSpansInitialize(){
+    /** First do from white's point of view */
+    for(int i = 8; i < 64; i++){
+        if(i % 8 == 0){
+            /** A file */
+            frontSpans[WHITE][i] = frontSpans[WHITE][i - 8] | (1ull << (i - 8) | 1ull << (i - 7));
+        } else if (i % 8 == 7){
+            /** H file */
+            frontSpans[WHITE][i] = frontSpans[WHITE][i - 8] | (1ull << (i - 9) | 1ull << (i - 8));
+        } else{
+            frontSpans[WHITE][i] = frontSpans[WHITE][i - 8] | (1ull << (i - 9) | 1ull << (i - 8)) | 1ull << (i - 7);
+        }
+    }
+    /** Black's point of view */
+    for(int i = 55; i >= 0; i--){
+        if(i % 8 == 0){
+            /** A file */
+            frontSpans[BLACK][i] = frontSpans[BLACK][i + 8] | (1ull << (i + 8) | 1ull << (i + 9));
+        } else if (i % 8 == 7){
+            /** H file */
+            frontSpans[BLACK][i] = frontSpans[BLACK][i + 8] | (1ull << (i + 7) | 1ull << (i + 8));
+        } else{
+            frontSpans[BLACK][i] = frontSpans[BLACK][i + 8] | (1ull << (i + 9) | 1ull << (i + 8)) | 1ull << (i + 7);
+        }
+    }
+}
+
+void LookupTables::kingPawnShieldInitialize() {
+    /** White */
+    /** First row above king */
+    for(int i = 8; i < 64; i++){
+        if(i % 8 == 0){
+            /** A file */
+            kingPawnShield[WHITE][i] |= (1ull << (i - 8) | 1ull << (i - 7));
+        }
+        else if (i % 8 == 7){
+            /** H file */
+            kingPawnShield[WHITE][i] |= (1ull << (i - 9) | 1ull << (i - 8));
+        } else{
+            kingPawnShield[WHITE][i] |= (1ull << (i - 9) | 1ull << (i - 8)) | 1ull << (i - 7);
+        }
+    }
+    /** Second row above king */
+    for(int i = 16; i < 64; i++){
+        if(i % 8 == 0){
+            /** A file */
+            kingPawnShield[WHITE][i] |= (1ull << (i - 16) | 1ull << (i - 15));
+        }
+        else if (i % 8 == 7){
+            /** H file */
+            kingPawnShield[WHITE][i] |= (1ull << (i - 17) | 1ull << (i - 16));
+        } else{
+            kingPawnShield[WHITE][i] |= (1ull << (i - 17) | 1ull << (i - 16)) | 1ull << (i - 15);
+        }
+    }
+
+    /** Black */
+    for(int i = 55; i >= 0; i--){
+        if(i % 8 == 0){
+            /** A file */
+            kingPawnShield[BLACK][i] |= (1ull << (i + 8) | 1ull << (i + 9));
+        } else if (i % 8 == 7){
+            /** H file */
+            kingPawnShield[BLACK][i] |= (1ull << (i + 7) | 1ull << (i + 8));
+        } else{
+            kingPawnShield[BLACK][i] |= (1ull << (i + 9) | 1ull << (i + 8)) | 1ull << (i + 7);
+        }
+    }
+    for(int i = 47; i >= 0; i--){
+        if(i % 8 == 0){
+            /** A file */
+            kingPawnShield[BLACK][i] |= (1ull << (i + 16) | 1ull << (i + 17));
+        } else if (i % 8 == 7){
+            /** H file */
+            kingPawnShield[BLACK][i] |= (1ull << (i + 15) | 1ull << (i + 16));
+        } else{
+            kingPawnShield[BLACK][i] |= (1ull << (i + 17) | 1ull << (i + 16)) | 1ull << (i + 15);
+        }
+    }
+}
+

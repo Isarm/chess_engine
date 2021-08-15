@@ -958,16 +958,17 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
     addPiece(pieceToMove, destinationBB, colour, destinationint);
 }
 
-// doMove does the moves and stores moves information in the previesMoves array
-// other than the 15 bits used in the bitboardsToMoveList convention the following bits are used:
-// bit 17-19 captured piece
-// bit 20-25 captured piece index
-// bit 26-31 en passant square index
-// bit 32-35 castling rights before this moves
-// bit 36-42 halfmove number for the 50 moves rule (gets reset in case of pawn or capture moves)
-// bit 43-48 halfmoves since the last time an irreversible moves occured
-// in definitions.h the enum can be found for the shifts and the masks
 
+/** doMove does the moves and stores moves information in the previousMoves array
+ * other than the 15 bits used in the bitboardsToMoveList convention the following bits are used:
+ * bit 17-19 captured piece
+ * bit 20-25 captured piece index
+ * bit 26-31 en passant square index
+ * bit 32-35 castling rights before this move
+ * bit 36-42 halfmove number for the 50 move rule (gets reset in case of pawn or capture moves)
+ * bit 43-48 halfmoves since the last time an irreversible move occured
+ * @param move The move to be done
+ */
 void Position::doMove(const unsigned move){
     unsigned long long originInt, destinationInt, enPassantInt;
     uint64_t originBB, destinationBB;
@@ -1545,13 +1546,14 @@ int Position::Evaluate() {
 }
 
 int Position::getLazyEvaluation(){
-//    filesAndPawns = calculateFileAndPawnScore(this->turn) - calculateFileAndPawnScore(!this->turn);
+    pawnStructure = getPawnStructureScore(this->turn) - getPawnStructureScore(!this->turn);
+    kingSafety = getKingSafety(this->turn) - getKingSafety(!this->turn);
 
     if(this->turn){
-        return positionEvaluations[halfMoveNumber] + filesAndPawns + 10;
+        return positionEvaluations[halfMoveNumber] +  pawnStructure + kingSafety + 10;
     }
     else{
-        return -positionEvaluations[halfMoveNumber] - filesAndPawns - 10;
+        return -positionEvaluations[halfMoveNumber] - pawnStructure - kingSafety - 10;
     }
 }
 
@@ -1563,10 +1565,10 @@ int Position::getEvaluation(){
     int mobilityBonus = calculateMobility(this->turn) - calculateMobility(!this->turn);
 
     if(this->turn){
-        return positionEvaluations[halfMoveNumber] + mobilityBonus + filesAndPawns + 10;
+        return positionEvaluations[halfMoveNumber] + mobilityBonus + pawnStructure + kingSafety + 10;
     }
     else{
-        return -positionEvaluations[halfMoveNumber] - mobilityBonus - filesAndPawns - 10;
+        return -positionEvaluations[halfMoveNumber] - mobilityBonus - pawnStructure - kingSafety - 10;
     }
 }
 
@@ -1675,45 +1677,83 @@ int Position::calculateMobility(bool side) {
     return (int)((float)(mobility * 5) *  max(0.0, double(1 - 2 * endGameFraction)) );
 }
 
+
+uint64_t Position::getPositionHash(){
+    return positionHashes[halfMoveNumber];
+}
+
 /**
- * Calculate rook on open file bonus and pawn structure deficits
- * @param turn
- * @return
+ * Gets the pawn structure score of $side; by first checking hashtable, and if no entry exists manually evaluating.
+ * @param side
+ * @return Pawn structure score
  */
-int Position::calculateFileAndPawnScore(bool side) {
-    int score = 0;
-
-    /** Loop over files */
-    for(int i = 0; i < 8; i++){
-        uint64_t pawnsOnFile = FILES[i] & bitboards[side][PAWNS];
-        if(pawnsOnFile){
-            int pawnCount = popCount(pawnsOnFile);
-
-            if(!(ISOLATED[i] & bitboards[side][PAWNS])){
-                /** The pawns are isolated */
-                score -= ISOLATED_PENALTY; // penalty for isolated pawns
-                score -= (pawnCount - 1) * ISOLATED_DOUBLED_PENALTY; // penalty for every extra pawn on that file
-            } else{
-                /** Non isolated pawns can still get a small penalty for being doubled */
-                score -= (pawnCount - 1) * DOUBLED_PENALTY;
-            }
-        } else if(bitboards[side][ROOKS] & FILES[i]){
-            /** If there are no pawns on the file, but there are rooks, they are on a (semi) open file */
-            int rookCount = popCount(bitboards[side][ROOKS] & FILES[i]);
-
-            if(!(bitboards[!side][PAWNS] & FILES[i])){
-                /** Open file */
-                score += rookCount * ROOK_ON_OPEN_FILE;
-            }
-            else{
-                score += rookCount * ROOK_ON_SEMI_OPEN_FILE;
-            }
-        }
+int Position::getPawnStructureScore(bool side) {
+    auto tableHit = pawnHashTable[side].find(bitboards[side][PAWNS]);
+    if(tableHit != pawnHashTable[side].end()){
+        return tableHit->second;
     }
+
+    int score = evaluatePawnStructure(side);
+    pawnHashTable[side].insert({bitboards[side][PAWNS], score});
     return score;
 }
 
 
-uint64_t Position::getPositionHash(){
-    return positionHashes[halfMoveNumber];
+const int passedPawnScores[64] = {
+        0, 0, 0, 0, 0, 0, 0, 0,
+        120, 120, 120, 120, 120, 120, 120, 120,
+        80, 80, 80, 80, 80, 80, 80, 80,
+        50, 50, 50, 50, 50, 50, 50, 50,
+        25, 25, 25, 25, 25, 25, 25, 25,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+};
+/**
+ * Evaluates the pawn
+ * @param side
+ * @return
+ */
+int Position::evaluatePawnStructure(bool side) {
+    int score = 0;
+
+
+   /** Loop over all pawns */
+   uint64_t pawns = bitboards[side][PAWNS];
+
+   while(pawns){
+       unsigned short pawnIndex = debruijnSerialization(pawns);
+       uint64_t pawnBB = 1ull << pawnIndex;
+       pawns &= ~pawnBB;
+
+       /** Check if passed */
+       if(!(LUTs.frontSpans[side][pawnIndex] & bitboards[!side][PAWNS])){
+           score += PASSED_PAWN_BONUS;
+           if(side == WHITE){
+               score += passedPawnScores[pawnIndex];
+           } else{
+               score += passedPawnScores[INVERT[pawnIndex]];
+           }
+       }
+
+       /** Check if isolated */
+       unsigned short file = pawnIndex % 8;
+       if(!(bitboards[side][PAWNS] & ISOLATED_MASK[file])){
+           score -= ISOLATED_PENALTY;
+       }
+
+       /** Check if doubled */
+       if(pawns & FILE_MASK[file]){
+           score -= DOUBLED_PENALTY;
+       }
+   }
+   return score;
+}
+
+int Position::getKingSafety(bool side) {
+    int kingindex = debruijnSerialization(bitboards[side][KING]);
+    if(endGameFraction > 0.8){
+        return 0;
+    }
+    return int((1.0 - endGameFraction) * float(KING_SAFETY_PAWN_MULTIPLIER * popCount(bitboards[side][PAWNS] & LUTs.kingPawnShield[side][kingindex])));
 }
