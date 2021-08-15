@@ -189,12 +189,12 @@ namespace definitions {
 
 
     constexpr unsigned MAX_DEPTH = 128;
-    constexpr unsigned KILLER_MOVE_SLOTS = 3;
+    constexpr unsigned KILLER_MOVE_SLOTS = 2;
 
     constexpr double BISHOP_MOBILITY_SCALING = 1.5;
     constexpr double KNIGHT_MOBILITY_SCALING = 1;
     constexpr double ROOK_MOBILITY_SCALING = 2;
-    constexpr double QUEEN_MOBILITY_SCALING = 6;
+    constexpr double QUEEN_MOBILITY_SCALING = 5;
 
 
     constexpr int CAPTURE_SCORE = 1000000;

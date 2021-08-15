@@ -149,8 +149,8 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
     /** Go through the movelist */
     for(int i = 0; i < movelist.moveLength; i++){
         /** Futility pruning */
-        bool fprune = ply == 1 && i > 3;
-        if(fprune && movelist.moves[i].second + 100 < alpha){
+        bool fprune = ply == 1 && i > 3 && !position.isIncheck;
+        if(fprune && position.getLazyEvaluation() + movelist.moves[i].second + 80 < alpha){
             continue;
         }
 
@@ -195,8 +195,8 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
             if(!drawFlag) {
                 TT.addEntry(score, movelist.moves[i].first, ply, LOWER_BOUND_BETA,
                             position.getPositionHash(), position.halfMoveNumber);
-                addKillerMove(depth, movelist.moves[i].first);
                 if(!(movelist.moves[i].first & CAPTURE_MOVE_FLAG_MASK)){
+                    addKillerMove(depth, movelist.moves[i].first);
                     updateButterflyTable(ply, movelist.moves[i].first, position.turn);
                 }
             }
