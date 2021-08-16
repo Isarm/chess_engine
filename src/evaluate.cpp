@@ -249,7 +249,7 @@ int Evaluate::Quiescence(int alpha, int beta, STATS *stats, bool evasion, int de
     }
 
     // do proper eval
-    stand_pat = position.getEvaluation();
+    stand_pat = position.getFullEvaluation();
 
     if(stand_pat >= beta && !check){
         return beta;

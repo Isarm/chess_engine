@@ -30,7 +30,7 @@ using namespace std;
 
 
 void testmain(int argc, char *argv[]){
-//    perft(argc, argv);
+    perft(argc, argv);
 //    perftDebug();
 //    drawTest();
 //    hashTest();
@@ -39,18 +39,19 @@ void testmain(int argc, char *argv[]){
 //    testFrontSpans();
 //    testKingPawnShield();
 //    testPawnStructure();
-    testMirror();
+//    testMirror();
 }
 
 void testMirror() {
     Position position = Position("rnbqk2r/ppp2ppp/3pp3/P1PnP3/3P4/P7/4KPPP/RNBQ1BNR b kq - 0 1");
+    position.prettyPrint();
     printf("%i\n", position.getLazyEvaluation());
-    printf("%i\n\n", position.getEvaluation());
+    printf("%i\n\n", position.getFullEvaluation());
 
-
-    Position position2 = Position("RNBQK2R/PPP2PPP/3PP3/p1pNp3/3p4/p7/4kppp/rnbq1bnr w - - 0 1");
-    printf("%i\n", position2.getLazyEvaluation());
-    printf("%i\n\n", position2.getEvaluation());
+    position.mirror();
+    position.prettyPrint();
+    printf("%i\n", position.getLazyEvaluation());
+    printf("%i\n\n", position.getFullEvaluation());
 }
 
 void testKingPawnShield() {
@@ -144,7 +145,7 @@ void perft(int argc, char *argv[]){
     }
     else { // manual perft setup
         DEPTH = 5;
-        int positionN = 6;
+        int positionN = 1;
         // choose type of position (these are common PERFT test positions)
         switch (positionN) {
             case 1:

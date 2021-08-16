@@ -36,7 +36,7 @@ public:
 
     bool isDraw();
 
-    int getEvaluation();
+    int getFullEvaluation();
 
     int getLazyEvaluation();
 
@@ -45,6 +45,9 @@ public:
     unsigned halfMoveNumber = 0;
     bool isIncheck = false;
     bool turn = WHITE;
+
+    void mirror();
+
 private:
 
     // used to determine when an endgame occurs.
@@ -131,6 +134,7 @@ private:
     int getKingSafety(bool side);
 
     int kingSafety;
+
 };
 
 #endif

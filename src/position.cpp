@@ -1442,7 +1442,36 @@ void Position::undoMove() {
 }
 
 
+//#define EVALDEBUG
 perftCounts Position::PERFT(int depth, bool tree){
+
+#ifdef EVALDEBUG
+    prettyPrint();
+
+    int eval = positionEvaluations[halfMoveNumber];
+    int eval1 = getLazyEvaluation();
+    int eval2 = getFullEvaluation();
+    mirror();
+    if(positionEvaluations[halfMoveNumber] != -eval){
+        printf("EVAL ERROR");
+    }
+    if(getLazyEvaluation() != eval1){
+        printf("LAZY EVAL ERROR");
+    }
+    if(getFullEvaluation() != eval2){
+        printf("FULL EVAL ERROR");
+    }
+    mirror();
+    if(positionEvaluations[halfMoveNumber] != eval){
+        printf("EVAL ERROR");
+    }
+    if(getLazyEvaluation() != eval1){
+        printf("LAZY EVAL ERROR");
+    }
+    if(getFullEvaluation() != eval2){
+        printf("EVAL ERROR");
+    }
+#endif
 
     perftCounts pfcount, pfcountTemp;
 
@@ -1453,7 +1482,7 @@ perftCounts Position::PERFT(int depth, bool tree){
     GenerateMoves(movelist);
 
     if(depth == 0){
-        if(Evaluate() != getEvaluation()){
+        if(Evaluate() != getFullEvaluation()){
             cout << "eval error";
         }
         perftCounts pfcount0 = {1};
@@ -1494,6 +1523,7 @@ perftCounts Position::PERFT(int depth, bool tree){
     return pfcount;
 }
 
+
 /**
  * Calculates evaluation from scratch. This function is slow, and because PST scores are updated incrementally,
  * this function is only called at the start.
@@ -1501,7 +1531,7 @@ perftCounts Position::PERFT(int depth, bool tree){
  */
 int Position::Evaluate() {
     // score in centipawns (positive is good for white, negative good for black)
-    int score = 0;
+    int scoreWhite = 0;
 
     //start with white
     for(int pieceIndex = 0; pieceIndex < 6; pieceIndex++){
@@ -1515,13 +1545,15 @@ int Position::Evaluate() {
             piece &= ~(1uLL << pieceInt);
 
             // calculate score
-            score += PIECEWEIGHTS[pieceIndex];
+            scoreWhite += PIECEWEIGHTS[pieceIndex];
 
-            score += int((1 - endGameFraction) * double(PSTs[0][pieceIndex][pieceInt]));
-            score += int(endGameFraction * double(PSTs[1][pieceIndex][pieceInt]));
+            scoreWhite += int((1 - endGameFraction) * double(PSTs[0][pieceIndex][pieceInt]));
+            scoreWhite += int(endGameFraction * double(PSTs[1][pieceIndex][pieceInt]));
         }
     }
 
+
+    int scoreBlack = 0;
     // for black
     for(int pieceIndex = 0; pieceIndex < 6; pieceIndex++){
         uint64_t piece = bitboards[BLACK][pieceIndex];
@@ -1536,18 +1568,25 @@ int Position::Evaluate() {
             pieceInt = INVERT[pieceInt]; // invert for black
 
             // calculate score
-            score -= PIECEWEIGHTS[pieceIndex];
+            scoreBlack -= PIECEWEIGHTS[pieceIndex];
 
-            score -= int((1 - endGameFraction) * double(PSTs[0][pieceIndex][pieceInt]));
-            score -= int(endGameFraction * double(PSTs[1][pieceIndex][pieceInt]));
+            scoreBlack -= int((1 - endGameFraction) * double(PSTs[0][pieceIndex][pieceInt]));
+            scoreBlack -= int(endGameFraction * double(PSTs[1][pieceIndex][pieceInt]));
         }
     }
-    return score;
+#ifdef EVALDEBUG
+    printf("scoreWhite: %i \t scoreBlack: %i \t total: %i\n", scoreWhite, scoreBlack, scoreWhite + scoreBlack);
+#endif
+    return scoreWhite + scoreBlack;
 }
 
 int Position::getLazyEvaluation(){
     pawnStructure = getPawnStructureScore(this->turn) - getPawnStructureScore(!this->turn);
     kingSafety = getKingSafety(this->turn) - getKingSafety(!this->turn);
+
+#ifdef EVALDEBUG
+    printf("eval: %i pawnStructure: %i \t kingSafety: %i\n", positionEvaluations[halfMoveNumber], pawnStructure, kingSafety);
+#endif
 
     int score = pawnStructure + kingSafety + 10; // 10 is tempobonus
     /** The positionEvaluations has scores where negative is good for black, and positive good for white.
@@ -1565,8 +1604,12 @@ int Position::getLazyEvaluation(){
  * DO NOT CALL GET_EVALUATION WITHOUT CALLING LAZY EVALUATION FIRST.
  * @return
  */
-int Position::getEvaluation(){
+int Position::getFullEvaluation(){
     int mobilityBonus = calculateMobility(this->turn) - calculateMobility(!this->turn);
+
+#ifdef EVALDEBUG
+    printf("mobilityBones: %i\n", mobilityBonus);
+#endif
 
     int score = mobilityBonus + pawnStructure + kingSafety + 10;
     if(this->turn){
@@ -1761,4 +1804,42 @@ int Position::getKingSafety(bool side) {
         return 0;
     }
     return int((1.0 - endGameFraction) * double(KING_SAFETY_PAWN_MULTIPLIER * popCount(bitboards[side][PAWNS] & LUTs.kingPawnShield[side][kingindex])));
+}
+
+/**
+ * Used as a debugging tool to check if the evaluation is identical for mirrored positions
+ */
+void Position::mirror(){
+    uint64_t whiteTemp[8] {};
+
+    for (int i = 0; i < 8; ++i) {
+        whiteTemp[i] = bitboards[1][i];
+
+        bitboards[1][i] = 0;
+        /** Loop over the ranks */
+        for (int j = 0; j < 8; ++j) {
+            /** Shift the next 8 bits into position */
+            uint64_t temp = bitboards[0][i] >> j * 8;
+
+            /** Take the 8 LSB and shift them to the mirrored position */
+            bitboards[1][i] |= (temp & 0xFF) << ((7 - j) * 8);
+        }
+    }
+
+    /** Same procedure */
+    for (int i = 0; i < 8; ++i) {
+        bitboards[0][i] = 0;
+        for (int j = 0; j < 8; ++j) {
+            uint64_t temp = whiteTemp[i] >> j * 8;
+
+            bitboards[0][i] |= (temp & 0xFF) << ((7 - j) * 8);
+        }
+    }
+    unsigned whiteCastlingRights = castlingRights & WHITE_CASTLING_RIGHTS;
+    castlingRights = castlingRights >> 2;
+    castlingRights |= whiteCastlingRights << 2;
+
+    turn = !turn;
+    positionEvaluations[halfMoveNumber] *= -1;
+    generateHelpBitboardsAndIsInCheck();
 }

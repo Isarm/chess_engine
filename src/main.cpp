@@ -3,29 +3,29 @@
 using namespace std;
 
 #include "uci.h"
+#include "definitions.h"
 #include "tests.h"
 
-bool debug = 0;
+
+//#define DEBUG 1
+
 
 int main(int argc, char *argv[]) {
-    if(!debug) {
-        cout << "Engine initialized v2.00\n";
+#ifndef DEBUG
+    cout << "Engine initialized v2.00\n";
 
-        // get first input
-        string input;
-        getline(cin, input);
+    // get first input
+    string input;
+    getline(cin, input);
 
-        UCI uci = UCI();
+    UCI uci = UCI();
 
-        if (input == "uci") {
-            uci.start();
-        }
-
+    if (input == "uci") {
+        uci.start();
     }
-    else{
-
-        testmain(argc, argv);
-    }
+#else
+    testmain(argc, argv);
+#endif
 }
 
 
