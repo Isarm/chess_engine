@@ -12,7 +12,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 #ifndef DEBUG
-    cout << "Engine initialized v2.00\n";
+    cout << "Engine initialized v2.10\n";
 
     // get first input
     string input;
