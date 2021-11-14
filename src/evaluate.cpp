@@ -35,6 +35,8 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
      * This has become quite ugly with a lot of repetition
      */
     int alphaStart = alpha; // to be able to check if alpha has increased with this position (for tr. table)
+    int bestScoreUnderAlpha = INT32_MIN; // to still be able to determine a best move to store in transposition table in case of alpha node
+    unsigned bestMoveUnderAlpha = 0;
 
     if(exitCondition()){
         return 0;
@@ -97,12 +99,11 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
                     default:
                         cout << "Incorrect entry in TT" << "\n";
                         break;
-
                 }
             }
             // if the ply is not deep enough, or the bounds above are not strong enough, the best moves can still be used
-            // to improve move ordering in the search below. Note that alpha nodes have no valid best moves.
-            if (entry.typeOfNode != UPPER_BOUND_ALPHA) {
+            // to improve move ordering in the search below.
+            if(entry.typeOfNode != UPPER_BOUND_ALPHA) {
                 bestMove = entry.bestMove;
             }
         }
@@ -201,15 +202,18 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
                 }
             }
             return beta; // beta cutoff
-        }
-
-        if(score > alpha){ // principal variation found
+        } else if(score > alpha){ // principal variation found
             searchPV = false;
             alpha = score;
             pline->principalVariation[0] = movelist.moves[i].first;
             memcpy(pline->principalVariation + 1, line.principalVariation, line.nmoves * sizeof (unsigned));
             pline->nmoves = line.nmoves + 1;
+        } else if(score <= alpha){
+            if(score > bestScoreUnderAlpha){
+                bestMoveUnderAlpha = movelist.moves[i].first;
+            }
         }
+
     }
 
     if(alpha > alphaStart) { // this means that the PV is an exact score moves
@@ -220,8 +224,8 @@ int Evaluate::AlphaBeta(int ply, int alpha, int beta, LINE *pline, STATS *stats,
         }
     }
     else{
-        // for an alpha cutoff, there is no known best moves so this is left as 0.
-        TT.addEntry(alpha, 0, ply, UPPER_BOUND_ALPHA, position.getPositionHash(), position.halfMoveNumber);
+        // alpha cutoff. Still set the best move known as bestMoveUnderAlpha
+        TT.addEntry(alpha, bestMoveUnderAlpha, ply, UPPER_BOUND_ALPHA, position.getPositionHash(), position.halfMoveNumber);
     }
 
     return alpha;
