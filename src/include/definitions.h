@@ -199,7 +199,7 @@ namespace definitions {
 
     constexpr int CAPTURE_SCORE = 1000000;
     constexpr int KILLER_BONUS = 900000;
-    constexpr int CASTLING_SCORE = 28;
+    constexpr int CASTLING_SCORE = 1000;
     constexpr int PROMOTION_CAPTURE_SCORE = 1200000;
     constexpr int PROMOTION_SCORE = 1100000;
 

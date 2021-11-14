@@ -750,11 +750,11 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
 
     int score = 0;
 
-    // check if the piece is pinned
+    /** check if the piece is pinned */
     bool pinnedFlag = false;
     if(origin & helpBitboards[PINNED_PIECES]) pinnedFlag = true;
 
-    // combine destinations and loop over them (check can be made later to see if it is a capture moves)
+    /** combine destinations and loop over them (check can be made later to see if it is a capture moves) */
     uint64_t allDestinations = destinations | captureDestinations;
 
     while(allDestinations != 0){
@@ -866,7 +866,12 @@ int Position::staticExchangeEvaluationCapture(const uint64_t from, const uint64_
     return value;
 }
 
-
+/**
+ * Statick exchange evaluation
+ * @param squareBB Square to evaluate
+ * @param side Side that does the attacking
+ * @return
+ */
 int Position::staticExchangeEvaluation(const uint64_t squareBB, const bool side){
     int value = 0;
     uint64_t attacker;
