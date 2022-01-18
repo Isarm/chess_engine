@@ -62,6 +62,11 @@ void UCI::start() {
     settings.threads = 4; //TODO: Make this configureable
     this->threadManager = ThreadManager(settings);
 
+    /** Initialize transposition table */
+    if(!TT.size){
+        TT.setSize(4096); // set default size
+    }
+
     // give the ready signal
     std::cout << "readyok\n";
 
@@ -165,20 +170,12 @@ void UCI::mainLoop(){
                 exitTimer.join();
             }
 
-            // only now check if TT is initialized
-            if(!TT.size){
-                TT.setSize(2048); // set default size
-            }
-
             threadStarted = true;
 
             exitTimer = std::thread(&UCI::timer, this, time);
             evaluation = std::thread{&UCI::go, this, fen, moves};
         }
     }
-    // wait for the evaluation thread to finish so the program can exit safely
-    evaluation.join();
-    exitTimer.join();
 }
 
 void UCI::timer(int ms){
