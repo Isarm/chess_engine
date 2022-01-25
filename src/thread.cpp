@@ -82,11 +82,12 @@ string Thread::search() {
 
         /** This thread is the first to complete the search at this depth, so print and store the information */
         printinformation(milliseconds, score, PVline, searchInfo.stats, iterativeDepth);
-        searchInfoMutex.unlock();
 
         searchInfo.depth = iterativeDepth;
         searchInfo.searchingAt[iterativeDepth + 1]++;
         searchInfo.PVline = PVline;
+
+        searchInfoMutex.unlock();
 
 
         if(abs(score) >= 990000) {
