@@ -8,14 +8,14 @@ https://www.chessprogramming.org/Perft
 ## Structure
 ### Game logic
 The position class is responsible for the chess game logic. It handles everything related to changing the position. 
-The most important member function is the generateMoves function, which generates a list of possible legal moves in the current position. 
-This, combined with the doMove and undoMove functions, can then be used to traverse the search tree.
+The most important method is `generateMoves`, which generates a list of possible legal moves in the current position. 
+This, combined with the `doMove` and `undoMove` methods, can then be used to traverse the search tree.
 
 The definitions.h file contains enums, to improve readability of the code.
 The useful.h file contains some useful short helper functions that the position class uses. 
 The magic-bits directory is taken from: 
 https://github.com/goutham/magic-bits  
-This function is used to generate the slider attacks efficiently.  
+This library is used to generate the slider attacks efficiently.  
 
 The UCI protocol is implemented in the UCI class. 
 
@@ -26,7 +26,7 @@ https://github.com/agausmann/perftree
 Using PERFT, around 100 million positions are found per second, on an Intel® Core™ i7-9750H CPU @ 2.60GHz × 12.
 
 ### Engine
-The engine part is mainly implemented in the Evaluation class. The alpha beta pruning search algorithm is implemented in the alphabeta function. At the leaf nodes, a quiescence search is performed to improve search stability. A transposition table is implemented in the transpositionTable class. Iterative deepening has also been implemented in the start search function, which repeatedly calls the alphabeta search function with increasing depth. 
+The engine part is mainly implemented in the Evaluation class. The alpha beta pruning search algorithm is implemented in the alphabeta function. At the leaf nodes, a quiescence search is performed to improve search stability. A transposition table is implemented in the transpositionTable class. Iterative deepening has also been implemented in the start search function, which repeatedly calls the alphabeta search function with increasing depth, while saving the previously examined best line.
 
 Multithreading is implemented using the Lazy SMP approach.
 
@@ -38,11 +38,32 @@ make
 ```
 The engine uses UCI protocol, so a GUI like Arena can be used to load the engine and play against it. 
 
+To demo in the command line:
+
+```
+uci
+isready
+```
+
+Wait for the `readyok` answer
+
+```
+position startpos
+go
+```
+
+`startpos` can be swapped for any valid FEN. To stop the search simply type `stop`. For more commands and information on the UCI protocol, go to: 
+
+http://wbec-ridderkerk.nl/html/UCIProtocol.html
+
+
 ## TODO
 * ~~Create a simple evaluation function~~
 * ~~Implement the minimax algorithm~~
 * ~~Implement the UCI protocol such that a GUI can be used to improve testing~~
 * ~~Implement Alpha Beta pruning~~
 * ~~Implement Iterative Deepening using a transposition table~~
-* Further improve the evaluation function
+* Fix inconsistent usage of constants (e.g. for mate score, move ordering)
+* Cleanup in general
+* Further improve the evaluation function: 1st step is probably pawn structure evaluation
 * Improve move ordering
