@@ -64,6 +64,7 @@ http://wbec-ridderkerk.nl/html/UCIProtocol.html
 * ~~Implement Alpha Beta pruning~~
 * ~~Implement Iterative Deepening using a transposition table~~
 * Fix inconsistent usage of constants (e.g. for mate score, move ordering)
+* Cleanup uci.cpp: Make number of threads configureable at runtime, put the default settings in a proper place. 
 * Cleanup in general
 * Further improve the evaluation function: 1st step is probably pawn structure evaluation
 * Improve move ordering
