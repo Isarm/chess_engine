@@ -35,17 +35,17 @@ void UCI::start() {
         }
 
         if (input.substr(0, input.find(' ')) == "setoption") {
-            input.erase(0, input.find(' '));  // setoption
-            input.erase(0, input.find(' '));  // name
+            input.erase(0, input.find(' ') + 1);  // setoption
+            input.erase(0, input.find(' ') + 1);  // name
             string optionType = input.substr(0, input.find(' '));
-            input.erase(0, input.find(' '));
 
             if (optionType == "Hash") {
-                input.erase(0, input.find(' ')); // Hash
-                input.erase(0, input.find(' ')); // value
+                input.erase(0, input.find(' ') + 1); // Hash
+                input.erase(0, input.find(' ') + 1); // value
                 unsigned value;
                 try {
                     value = stoi(input);
+					cout << "Hash table size set to: " << value << "MB \n";
                 }
                 catch (invalid_argument &exc) {
                     cout << "invalid hash table size: " << exc.what() << "\n";
@@ -59,7 +59,7 @@ void UCI::start() {
 
     Settings settings;
     settings.depth = MAX_DEPTH;
-    settings.threads = 4; //TODO: Make this configureable
+    settings.threads = 5; //TODO: Make this configureable
     this->threadManager = ThreadManager(settings);
 
     /** Initialize transposition table */
@@ -187,6 +187,7 @@ void UCI::timer(int ms){
         if(milliseconds > ms || timeFlag.load()){
             break;
         }
+        this_thread::sleep_for(chrono::milliseconds(100));
     }
     timeFlag.store(true);
 }

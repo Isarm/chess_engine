@@ -167,6 +167,9 @@ const int INVERT[64] = {
 
 Position::Position(string FEN) {
 
+    allPiecesValue = 0;
+    kingSafety = 0;
+
     string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     if (FEN == "startpos") FEN = startFEN;
 
@@ -229,7 +232,7 @@ Position::Position(string FEN) {
 
     ++i;
 
-    char halfMove50[3];
+    char halfMove50[3] = "00";
     int hmi = 0;
     try {
         while (FEN.at(++i) != ' ') {
@@ -238,7 +241,7 @@ Position::Position(string FEN) {
         // used to check 50 moves rule
         this->halfMoveNumber50 = stoi(halfMove50);
 
-        char fullMove[5];
+        char fullMove[5] = "0000";
         int fmi = 0;
         while (++i < FEN.length() && FEN.at(i) != '"') {
             fullMove[fmi] = FEN.at(i);

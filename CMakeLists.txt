@@ -3,6 +3,7 @@ project(engine)
 
 set(OPTIMIZATION_FLAGS "-Ofast -funroll-loops")
 #set(OPTIMIZATION_FLAGS "")
+#set(CMAKE_BUILD_TYPE Debug)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "-pthread ${OPTIMIZATION_FLAGS}" )
