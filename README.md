@@ -58,6 +58,7 @@ http://wbec-ridderkerk.nl/html/UCIProtocol.html
 
 
 ## TODO
+
 * ~~Create a simple evaluation function~~
 * ~~Implement the minimax algorithm~~
 * ~~Implement the UCI protocol such that a GUI can be used to improve testing~~
@@ -65,6 +66,6 @@ http://wbec-ridderkerk.nl/html/UCIProtocol.html
 * ~~Implement Iterative Deepening using a transposition table~~
 * Fix inconsistent usage of constants (e.g. for mate score, move ordering)
 * Cleanup uci.cpp: Make number of threads configureable at runtime, put the default settings in a proper place. 
-* Cleanup in general
+* Cleanup in general, there is a lot of ugly code in this project.
 * Further improve the evaluation function: 1st step is probably pawn structure evaluation
 * Improve move ordering
