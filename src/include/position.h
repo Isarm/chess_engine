@@ -94,7 +94,7 @@ private:
                                   bool kingMoveFlag = false, bool enPassantMoveFlag = false, bool promotionMoveFlag = false); // flags
 
 
-    short squareAttackedBy(uint64_t square, const bool colour, uint64_t * attacker = nullptr);
+    int squareAttackedBy(uint64_t square, const bool colour, uint64_t * attacker = nullptr);
     uint64_t pinnedPieces(uint64_t pinnedOrigin, bool colour);
 
     void MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour);
@@ -121,7 +121,7 @@ private:
 
     int staticExchangeEvaluation(uint64_t squareBB, bool side);
 
-    short getPieceType(bool side, const uint64_t pieceBB);
+    int getPieceType(bool side, const uint64_t pieceBB);
 
     int staticExchangeEvaluationCapture(uint64_t from, uint64_t to, bool side);
 

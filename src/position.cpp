@@ -277,11 +277,11 @@ Position::Position(string FEN) {
 uint64_t Position::calculateHash() {
     uint64_t posHash = 0;
 // calculate the posHash of the current position;
-    for (short colour = 0; colour < 2; colour++) {
-        for (short piece = 0; piece < 6; piece++) {
+    for (int colour = 0; colour < 2; colour++) {
+        for (int piece = 0; piece < 6; piece++) {
             uint64_t bb = bitboards[colour][piece];
             while (bb) {
-                unsigned short pieceIndex = debruijnSerialization(bb);
+                unsigned int pieceIndex = debruijnSerialization(bb);
                 posHash ^= LUTs.zobristPieceTable[colour][piece][pieceIndex];
                 uint64_t pieceBB = 1ull << pieceIndex;
                 bb &= ~pieceBB;
@@ -293,7 +293,7 @@ uint64_t Position::calculateHash() {
         posHash ^= LUTs.zobristBlackToMove;
     }
     if (bitboards[!this->turn][EN_PASSANT_SQUARES]) {
-        unsigned short enPassantSquare = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
+        unsigned int enPassantSquare = debruijnSerialization(bitboards[!this->turn][EN_PASSANT_SQUARES]);
         posHash ^= LUTs.zobristEnPassantFile[enPassantSquare % 8];
     }
     return posHash;
@@ -302,7 +302,7 @@ uint64_t Position::calculateHash() {
 void Position::generateHelpBitboardsAndIsInCheck() {
     bitboards[BLACK][PIECES] = 0;
     bitboards[WHITE][PIECES] = 0;
-    for(short i = 0; i < 6; i++){
+    for(int i = 0; i < 6; i++){
         bitboards[BLACK][PIECES] |= bitboards[BLACK][i];
         bitboards[WHITE][PIECES] |= bitboards[WHITE][i];
     }
@@ -378,7 +378,7 @@ inline void Position::GeneratePawnMoves(moveList &movelist, const bool onlyCaptu
 
     pawns = bitboards[this->turn][PAWNS];
 
-    unsigned short pieceIndex;
+    unsigned int pieceIndex;
     uint64_t pieceBB;
     while(pawns != 0){
         uint64_t currentPawnMoves = 0, currentPawnCaptureMoves = 0, enPassantMove;
@@ -455,7 +455,7 @@ inline void Position::GenerateKnightMoves(moveList &movelist, const bool onlyCap
     uint64_t knights;
     knights = bitboards[this->turn][KNIGHTS];
 
-    unsigned short pieceIndex;
+    unsigned int pieceIndex;
     uint64_t pieceBB, currentKnightMoves, currentKnightCaptures; //pieceBitboard
 
     while (knights != 0) {
@@ -491,9 +491,9 @@ inline void Position::GenerateKnightMoves(moveList &movelist, const bool onlyCap
 
 
 inline void Position::GenerateSliderMoves(moveList &movelist, bool onlyCaptures){
-    unsigned short pieceIndex;
+    unsigned int pieceIndex;
     uint64_t pieceBB, currentPieceMoves, currentPieceCaptures;
-    const short sliders[] = {BISHOPS, ROOKS, QUEENS}; // sliders to loop over
+    const int sliders[] = {BISHOPS, ROOKS, QUEENS}; // sliders to loop over
     for(int currentSlider: sliders) {
         uint64_t currentPiece;
         currentPiece = bitboards[this->turn][currentSlider];
@@ -543,7 +543,7 @@ inline void Position::GenerateSliderMoves(moveList &movelist, bool onlyCaptures)
 
 inline void Position::GenerateKingMoves(moveList &movelist, const bool onlyCaptures){
     const uint64_t king = bitboards[this->turn][KING];
-    const unsigned short kingIndex = debruijnSerialization(king);
+    const unsigned int kingIndex = debruijnSerialization(king);
 
     uint64_t kingMoves = LUTs.getKingAttacks(kingIndex);
 
@@ -586,7 +586,7 @@ void Position::GenerateCastlingMoves(moveList &movelist) {
 inline void Position::CastlingToMovelist(moveList &movelist, const unsigned castlingType, const uint64_t empty, uint64_t nonattacked){
 
     if(!(empty & helpBitboards[OCCUPIED_SQUARES])) { // check if the squares are empty
-        unsigned short nonAttackedInt;
+        unsigned int nonAttackedInt;
         unsigned move;
         // loop over the squares that should be non attacked
         while(nonattacked){
@@ -608,7 +608,7 @@ inline void Position::CastlingToMovelist(moveList &movelist, const unsigned cast
 // pinned pieces are of colour $colour
 inline uint64_t Position::pinnedPieces(const uint64_t pinnedOrigin, const bool colour){
 
-    unsigned short squareIndex = debruijnSerialization(pinnedOrigin);
+    unsigned int squareIndex = debruijnSerialization(pinnedOrigin);
     uint64_t pinnedPieces = 0;
 
     // check bishop/queen diagonal pins
@@ -661,7 +661,7 @@ inline uint64_t Position::pinnedPieces(const uint64_t pinnedOrigin, const bool c
  * @param attacker Optional attacker
  * @return
  */
-inline short Position::squareAttackedBy(uint64_t square, const bool colour, uint64_t *attacker){ // TODO: clean up this function
+inline int Position::squareAttackedBy(uint64_t square, const bool colour, uint64_t *attacker){ // TODO: clean up this function
     unsigned squareIndex = debruijnSerialization(square);
     uint64_t att = 0;
 
@@ -746,7 +746,7 @@ inline short Position::squareAttackedBy(uint64_t square, const bool colour, uint
  */
 void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origin, const uint64_t destinations, const uint64_t captureDestinations, const Pieces piece,
                                         const bool kingMoveFlag, const bool enPassantMoveFlag, const bool promotionMoveFlag) {
-    unsigned short originInt, destinationInt;
+    unsigned int originInt, destinationInt;
     unsigned int move;
     uint64_t destinationBB;
     originInt = debruijnSerialization(origin);
@@ -847,10 +847,10 @@ void Position::bitboardsToLegalMovelist(moveList &movelist, const uint64_t origi
  * @return
  */
 int Position::staticExchangeEvaluationCapture(const uint64_t from, const uint64_t to, const bool side){
-    const short attackerType = getPieceType(side, from);
+    const int attackerType = getPieceType(side, from);
 
     /** Get the type and value of the piece that is captured */
-    const short takenPieceType = getPieceType(!side, to);
+    const int takenPieceType = getPieceType(!side, to);
     const int takenPieceValue = PIECEWEIGHTS[takenPieceType];
 
     /** Capture the piece (without updating hash and everything) */
@@ -878,12 +878,12 @@ int Position::staticExchangeEvaluationCapture(const uint64_t from, const uint64_
 int Position::staticExchangeEvaluation(const uint64_t squareBB, const bool side){
     int value = 0;
     uint64_t attacker;
-    short attackerType = squareAttackedBy(squareBB, side, &attacker);
+    int attackerType = squareAttackedBy(squareBB, side, &attacker);
     if(attackerType){
         attackerType -= 1; /** To get the correct index, as squareAttacked offsets everything with 1 */
 
         /** Get the position of the attacker */
-        const unsigned short singleAttackerIndex = debruijnSerialization(attacker);
+        const unsigned int singleAttackerIndex = debruijnSerialization(attacker);
         const uint64_t singleAttackerBB = 1ull << singleAttackerIndex;
 
         /** Get the type and value of the piece that is captured */
@@ -917,8 +917,8 @@ int Position::staticExchangeEvaluation(const uint64_t squareBB, const bool side)
 void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour) {
 
     // find the piece that is moved.
-    short pieceToMove = -1;
-    for (short i = 0; i < 6; i++) {
+    int pieceToMove = -1;
+    for (int i = 0; i < 6; i++) {
         if (bitboards[colour][i] & originBB) {
             pieceToMove = i;
             break;
@@ -963,11 +963,11 @@ void Position::MovePiece(uint64_t originBB, uint64_t destinationBB, bool colour)
     }
 
     // remove origin piece
-    unsigned short originInt = debruijnSerialization(originBB);
+    unsigned int originInt = debruijnSerialization(originBB);
     removePiece(pieceToMove, originBB, colour, originInt);
 
     // add destination piece
-    unsigned short destinationint = debruijnSerialization(destinationBB);
+    unsigned int destinationint = debruijnSerialization(destinationBB);
     addPiece(pieceToMove, destinationBB, colour, destinationint);
 }
 
@@ -1662,8 +1662,8 @@ inline int Position::getPieceValue(bool side, const uint64_t pieceBB) {
     return 0;
 }
 
-inline short Position::getPieceType(bool side, const uint64_t pieceBB) {
-    short i = 0;
+inline int Position::getPieceType(bool side, const uint64_t pieceBB) {
+    int i = 0;
     for(uint64_t &bb : bitboards[side]){
         if(bb & pieceBB){
             return i;
@@ -1779,7 +1779,7 @@ int Position::evaluatePawnStructure(bool side) {
     uint64_t pawns = bitboards[side][PAWNS];
 
     while(pawns){
-        unsigned short pawnIndex = debruijnSerialization(pawns);
+        unsigned int pawnIndex = debruijnSerialization(pawns);
         uint64_t pawnBB = 1ull << pawnIndex;
         pawns &= ~pawnBB;
 
@@ -1794,7 +1794,7 @@ int Position::evaluatePawnStructure(bool side) {
         }
 
         /** Check if isolated */
-        unsigned short file = pawnIndex % 8;
+        unsigned int file = pawnIndex % 8;
         if(!(bitboards[side][PAWNS] & ISOLATED_MASK[file])){
             score -= ISOLATED_PENALTY;
         }
