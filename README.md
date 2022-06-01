@@ -1,6 +1,10 @@
+Disclaimer:  
+I've started this project over 2 years ago as one of my first big c++ (or even programming in general) projects. The code quality is therefore quite bad. It does not use modern c++ features like the STL or smart pointers, or things like inheritance and templates. Basically I wrote this as a C project with classes. Maybe I will write a new engine in the future, focusing on readability and extendability and applying the things I've learned over the years in other C++ projects. 
+
+
 # chess_engine
 
-This is a chess engine that I am writing. It uses bitboards to efficiently calculate positions. In the evaluation alpha beta pruning is used, combined with transposition tables and iterative deepening to more efficiently prune the search tree. 
+This chess engine uses bitboards to efficiently calculate positions. In the evaluation alpha beta pruning is used, combined with transposition tables and iterative deepening to more efficiently prune the search tree. 
 
 Game logic has been implemented and tested with the PERFT debugging method:
 https://www.chessprogramming.org/Perft
