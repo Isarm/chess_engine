@@ -4,7 +4,7 @@ I've started this project over 2 years ago as one of my first big c++ (or even p
 
 # chess_engine
 
-This chess engine uses bitboards to efficiently calculate positions. In the evaluation alpha beta pruning is used, combined with transposition tables and iterative deepening to more efficiently prune the search tree. 
+This chess engine uses bitboards to efficiently calculate positions. In the evaluation alpha beta pruning is used, combined with a transposition table and iterative deepening to more efficiently prune the search tree. 
 
 Game logic has been implemented and tested with the PERFT debugging method:
 https://www.chessprogramming.org/Perft
